@@ -1,0 +1,8 @@
+
+                             libmpdclient
+                        http://www.musicpd.org
+
+This is a library for interfacing Music Player Daemon (MPD).
+
+MPD is released under the revised BSD License. 
+For the full license, see COPYING.

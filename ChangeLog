@@ -1,0 +1,170 @@
+2006-05-28  Kuno Woudt <kuno@frob.nl>
+
+	* configure.in: version 0.2.10
+
+	* mbid.c: added .ogg and .flac support for mbid fetching. 
+
+	* mpdscribble.c: I was under the impression that songs with an mbid
+	can be shorter than 30 seconds, but audioscrobbler still doesn't
+	accept them -- so I've put the 30 second check back in.
+
+	* configure.in: version 0.2.9
+
+	* mpdscribble.c (main): added mbid support.
+
+	* mbid.c, mbid.h: mbid fetching, contributed by David Nicolson.
+
+	* configure.in: version 0.2.8
+
+	* configure.in: Applied a patch from Andrey Rahmatullin which fixes
+	libsoup, libgobject and libgthread detection.
+
+	* mpdscribble.c (main): removed check for songs which are too long, 
+	which is no longer required by the audioscrobbler protocol.
+
+2006-04-30  Michal Nazarewicz  <mina86@projektcode.org>
+
+	* configure.in: version 0.2.7.1
+
+	* lmc.c (lmc_failure): changed definition + it zeros g_mpd.
+	* lmc.c (lmc_current): checking whether g_mpd==0 added +
+	lmc_failure no longer returns 0 nor takes an argument.
+	* lmc.c (lmc_reconnect): cheks for error also just after.
+	mpd_newConnection() + lmc_failure no longer returns 0 nor takes an
+	argument.
+
+	* misc.c (log_date): new function
+	* misc.c (fatal, fatal_errno, warning, warning_errno, notice):
+	prints date to log file.
+	* as.c (as_init): '\n' from logged strings removed
+
+2005-08-28  Kuno Woudt  <kuno@frob.nl>
+
+	* configure.in: version 0.2.7
+
+	* conn.c: 
+	* as.c: changed the glib mainloop handling to let it take care of
+	a transfer properly (and without 100% cpu usage :), when one is
+	pending.
+
+	* as.c (as_save_cache): don't save the cache file when there is
+	nothing to save.
+
+2005-08-16  Kuno Woudt  <kuno@frob.nl>
+
+	* configure.in: version 0.2.6
+
+	* mpdscribble.1: added --cache-interval text.
+
+	* misc.c (strdup2, strndup2): removed a few c99-isms, to make it
+	easier to build with gcc 2.95.
+
+	* *.c: call exit (ENOMEM) when malloc fails, instead of using 
+	printf (which apparantly uses malloc on many systems).
+
+2005-08-15  Kuno Woudt  <kuno@frob.nl>
+
+	* mpdscribble.c (main): save cache every ten minutes (configurable
+	in the configuration file).
+
+2005-08-13  Kuno Woudt  <kuno@frob.nl>
+
+	* mpdscribble.c (main): fixed bug where too much sleep()ing caused
+	transfers to fail.
+
+2005-04-17  Kuno Woudt  <kuno@frob.nl>
+
+	* configure.in: version 0.2.5
+
+	* file.c (file_getname): changed the way the various files are
+	located.  default system-wide and $HOME locations are now 
+	specified in full with #defines.
+
+	* file.c (file_read_config): when no cache file was specified,
+	file_config.log would be set to the default cache file instead
+	of file_config.cache.
+
+	* mpdscribble.1: some tiny (mostly cosmetic) changes.
+
+	* setup.sh (LOG): woops, was making directories _before_ asking
+	the user if those locations are ok.  
+	and removed /usr/local/bin remnants.
+
+2005-04-04  Kuno Woudt  <kuno@frob.nl>
+
+	* Makefile.am: 
+	* configure.in: version 0.2.4
+	This version replaces the simple Makefile with an
+	automake/autoconf based build system.
+
+	* as.h (AS_CLIENT_VERSION): version taken from configure.in from
+	now on.
+
+	* file.c (help): fixed a bug where --help would fail
+	if the conf, log or cache could not be found. Some minor other
+	changes to the help text to make it slightly more consistent with
+	GNU. 
+
+2005-04-02  Kuno Woudt  <kuno@frob.nl>
+
+	* as.c (as_songchange): better checking on (null) values submitted
+	to as_songchange. (this fixes a segfault when no album tag was
+	supplied).
+
+2005-03-13  Kuno Woudt  <kuno@frob.nl>
+
+	* as.h (AS_CLIENT_VERSION): 0.2.2
+
+	* lmc.c (lmc_reconnect): fixed sending a password if one is
+	specified in the mpd host string.
+
+	* as.h (AS_CLIENT_VERSION): 0.2.1
+
+	* as.c (as_songchange): incomplete data check was too harsh,
+	fixed. Also changed the error messages to indicate more clearly
+	what's going -- including the filename of the badly tagged
+	file.
+
+	* file.c:
+	* setup.sh: changes all over to support system-wide install.
+
+2005-02-25  Kuno Woudt  <kuno@frob.nl>
+
+	* file.c: some options can be set on the command line.
+
+	* lmc.c: reconnect to mpd when connection is lost.
+
+	* conn.c: replaced libcurl with libsoup, hopefully soup doesn't
+	segfault all over the place :)
+
+2005-02-15  Kuno Woudt  <kuno@frob.nl>
+
+	* all over the place: changed most source files to rely less on
+	C99 features, this should make it compilable with gcc-2.9x.
+
+	* lmc.c (lmc_current): don't report mpd status errors.
+
+	* as.c (as_submit): display post_data when verbose.
+
+	* as.c (as_songchange): don't submit the same song twice
+
+	* as.c (as_parse_handshake_response): correctly goes to AS_BADAUTH
+	state if handshaking fails.  Will not attempt to handshake again
+	or submit songs without a restart.
+
+	* as.c (as_parse_submit_response): go back to handshaking if the
+	md5 challenge is incorrect.
+
+2005-02-12  Nikki
+
+	* setup.sh: md5 the password instead of storing it cleartext.
+	* as.c: assume password is md5 encoded in the config file.
+
+	* conn.c:
+	* conn.h:
+	* as.c: changed song submit from GET to POST
+
+2005-02-08  Kuno Woudt  <kuno@frob.nl>
+
+	* as.c (as_cleanup): removed all the character conversion stuff,
+	mpd can't give me the raw tags.

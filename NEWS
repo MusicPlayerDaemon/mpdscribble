@@ -1,0 +1,70 @@
+New in 0.2.10:
+
+  - Woops, I hadn't noticed David's mbid code only supported .mp3, I 
+    just hacked in .ogg and .flac support in the most dirty fashion.
+
+
+New in 0.2.9:
+
+  - Thanks to David Nicolson mpdscribble now can submit musicbrainz ids. 
+
+
+New in 0.2.8:
+
+    I finally put together 0.2.8 based on suggestions and patches from 
+    several people, so big thank yous for this release go to:
+
+    David Morgan, Michal Nazarewicz, and Andrey Rahmatullin.
+
+Changes:
+
+  - There should be no crashes anymore when mpd is not available for a while.
+
+  - Will submit tracks longer 30 minutes now.
+
+  - Better libsoup and related library detection in ./configure.
+
+  - cosmetic fixes for the logfile (date added, some extra newlines removed).
+
+New in 0.2.5:
+     
+  - just a few minor bug fixes and cosmetic changes, there is no need
+    to upgrade if 0.2.4 is working fine for you.  check the ChangeLog
+    for details.
+
+
+New in 0.2.4:
+
+  - includes manpage written by: Trevor Caira
+
+
+New in 0.2.3:
+
+  - autotools build system, see the README for details.
+
+  - empty album tag segfault bug fix.
+
+
+New in 0.2.2:
+
+  - setting a password as part of MPD_HOST should work now.
+
+New in 0.2.1:
+
+  - easier system-wide install.
+     
+  - please note that the  configuration, log and cache filenames have
+    changed.
+
+
+Things changed in 0.2.0 as opposed to 0.1.x:
+
+  - replaced libcurl with libsoup, _hopefully_ this will eliminate
+    the segfaults many of you were experiencing.
+
+  - tries to reconnect to mpd when the connection is lost.
+
+  - doesn't log sensitive information.
+
+  - some configuration options can be set on the commandline.
+

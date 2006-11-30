@@ -1,0 +1,30 @@
+#!/sbin/runscript
+
+depend() {
+	need localmount
+	need net
+}
+
+checkconfig() {
+	if [ ! -f /etc/mpdscribble/mpdscribble.conf ]; then
+	eerror "mpdscribble configuration file /etc/mpdscribble/mpdscribble.conf doesn't exist"
+	eerror "run \"ebuild /var/db/pkg/net-misc/mpdscribble-<your-version>/mpdscribble-<your-version>.ebuild config\""
+	eerror "to create a new config file."
+		return 1
+	fi
+}
+
+start () {
+	checkconfig || return 1
+	
+	ebegin "Starting Music Player Daemon Audioscrobbler Client: mpdscribble"
+	start-stop-daemon --start -p /var/run/mpdscribble.pid -b -m --exec /usr/bin/mpdscribble
+	eend $?
+}
+
+stop () {
+	ebegin "Stopping Music Player Daemon Audioscrobbler Client: mpdscribble"
+	start-stop-daemon --stop --quiet -p /var/run/mpdscribble.pid -m --exec /usr/bin/mpdscribble || eerror "mpdscribble is not running"
+	rm -f /var/run/mpdscribble.pid
+	eend $?
+}

@@ -1,0 +1,170 @@
+.\" Process this file with
+.\" groff -man -Tascii foo.1
+.\"
+.TH mpdscribble 1 "APRIL 2005" Linux "User Manuals"
+.SH NAME
+mpd scribble \- A Music Player Daemon (MPD) client which submits 
+information about tracks being played to Audioscrobbler.
+.SH SYNOPSIS
+.B mpdscribble [options] 
+.SH DESCRIPTION
+.B mpdscribble
+is a client for MPD, the Music Player Daemon. mpdscribble connects to
+an MPD running on the local network and works in parallel with other
+MPD clients on the network.
+
+By default it will get the hostname and port for mpd from the MPD_HOST 
+and MPD_PORT environment variables. mpdscribble will use localhost:6600 
+if those are not set. The hostname and port can also be specified in the
+configuration file or on the command line. 
+
+$ mpdscribble --host myhost --port=12345
+
+Values specified on the command line override values from the configuration 
+file or environment variables.
+
+If you want to use mpdscribble with a password-protected MPD, set the 
+environment variable MPD_HOST to password@host, or specify the host in the
+configuration file similarly.
+
+.SH "OPTIONS"
+.TP
+.B \-\-help
+Display help and exit.
+.TP
+.B \-\-version
+Display version information and exit.
+.TP
+.B \-\-log FILE
+Specify log file. /var/log/mpdscribble.log is used by default.
+.TP
+.B \-\-cache FILE
+Specify Audioscrobbler cache file. /var/cache/mpdscribble.cache is used
+by default.
+.TP
+.B \-\-conf FILE
+Read configuration options from file. /etc/mpdscribble/mpdscribble.conf
+is used by default.
+.TP
+.B \-\-host [PASSWORD@]HOSTNAME
+Specify host protected by password. 
+.TP
+.B \-\-port PORT
+Specify which port the MPD listens on.
+.TP
+.B \-\-sleep INTERVAL
+Specify how often mpdscribble should query MPD (in seconds, default is 5).
+.TP
+.B \-\-cache-interval INTERVAL
+Specify how often mpdscribble should write its cache file (in seconds, default is 600).
+.TP
+.B \-\-verbose LEVEL
+Specify how verbosely mpdscribble should log. Possible values are 0, 1, 2.
+.SH CONFIGURATION
+mpdscribble looks for its configuration file first at 
+~/.mpdscribble/mpdscribble.conf and then at /etc/mpdscribble/mpdscribble.conf 
+but this can be overridden by specifying an alternate configuration
+file using the command line option
+--conf. 
+
+Supported configuration options:
+.TP
+.B username = USERNAME
+Your audioscrobbler username.
+.TP
+.B password = MD5SUM
+The md5sum of your Audioscrobbler password.
+.TP
+.B log = FILE
+The file to which mpdscribble should output debugging information.
+.TP
+.B cache = FILE
+The file where mpdscribble should store its Audioscrobbler cache in case
+you do not have a connection to the Audioscrobbler server.
+.TP
+.B musicdir = PATH
+The path to your mpd music directory, this is optional.
+If this option is set, mpdscribble will attempt to fetch musicbrainz ids from there.
+.TP
+.B host = [PASSWORD@]HOSTNAME
+The host running MPD, possibly protected by a password.
+.TP
+.B port = PORT
+The port that the MPD listens on and mpdscribble should try to connect to.
+.TP
+.B verbose = 0, 1, 2
+How verbose mpdscribble's logging should be. 
+.TP 
+.B sleep = INTERVAL
+How long mpdscribble should wait between MPD status queries.
+.SH FILES
+.I /etc/mpdscribble/mpdscribble.conf
+.RS
+The system wide configuration file. 
+.RE
+
+.I ~/.mpdscribble/.mpdscribble.conf
+.RS
+Per user configuration file. 
+.RE
+
+.I /var/cache/mpdscribble.cache
+.RS
+The system wide Audioscrobbler cache file.
+.RE
+
+.I ~/.mpdscribble/mpdscribble.cache
+.RS
+Per user Audioscrobbler cache file. 
+.RE
+
+.I /var/log/mpdscribble.log
+.RS
+The system wide log file. 
+.RE
+
+.I ~/.mpdscribble/.mpdscribble.log
+.RS
+Per user log file. 
+.RE
+.SH BUGS
+mpdscribble does not currently work when crossfading is enabled.
+(this will be fixed when MPD provides a listener API, this is
+ scheduled for mpd 0.13).
+
+mpdscribble does not obtain musicbrainz tags from MPD (this is a
+limitation in the way MPD handles metadata, and will hopefully
+be fixed in the distant future).
+
+File permissions on cache/log file may be insecure by default.
+
+Currently there is no proxy support (neither for connecting to
+AS nor MPD).
+
+Please report new bugs to Kuno Woudt <kuno@frob.nl>.
+
+.SH CREDITS
+Author: Kuno Woudt <kuno@frob.nl>
+.RS
+http://www.audioscrobbler.com/user/warp/
+.RE
+
+Various patches: Nikki
+.RS
+http://www.audioscrobbler.com/user/cikkolata/
+.RE
+
+The name mpdscribble coined by: honey in #audioscrobbler
+.RS
+http://www.audioscrobbler.com/user/honeypea/
+.RE
+
+Manpage written by: Trevor Caira <trevor.caira@gmail.com>
+.RS
+http://www.audioscrobbler.com/user/TrevorCaira/
+.RE
+
+.SH "SEE ALSO"
+.BR mpd (1),
+.BR mpc (1)
+
