@@ -1,3 +1,14 @@
+New in 0.2.11:
+
+  - a crash and some logfile bugs were fixed by Michal Nazarewicz.
+
+  - openbsd compilation fixes by Eric Gillingham.
+
+  - crossfading should not interfere with song submission anymore.
+
+  - no longer tries to submit more than 10 songs at once (as per spec).
+
+
 New in 0.2.10:
 
   - Woops, I hadn't noticed David's mbid code only supported .mp3, I 
