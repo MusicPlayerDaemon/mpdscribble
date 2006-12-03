@@ -31,7 +31,7 @@
 
 #include "mbid.h"
 
-#define MAX_SKIP_ERROR (file_config.sleep - 1) /* in seconds. */
+#define MAX_SKIP_ERROR (3 + file_config.sleep) /* in seconds. */
 
 const char *program_name;
 

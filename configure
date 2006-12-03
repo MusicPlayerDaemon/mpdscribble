@@ -1593,7 +1593,7 @@ fi
 
 # Define the identity of the package.
  PACKAGE=mpdscribble
- VERSION=0.2.11
+ VERSION=0.2.12
 
 
 cat >>confdefs.h <<_ACEOF
