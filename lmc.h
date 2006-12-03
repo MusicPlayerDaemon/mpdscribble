@@ -35,6 +35,7 @@
 void lmc_connect (char *host, int port);
 void lmc_disconnect (void);
 int lmc_current (lmc_song *);
+int lmc_xfade_hack (void);
 
 
 #endif /* LMC_H */

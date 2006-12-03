@@ -159,15 +159,17 @@ char *
 strdup2 (const char *const s)
 {
   char *p;
+  int size;
 
   if (!s)
     return NULL;
 
-  p = malloc (strlen (s) + 1);
+  size = strlen (s) + 1;  
+  p = malloc (size);
   if (!p)
     exit (ENOMEM);
 
-  strcpy (p, s);
+  strncpy (p, s, size);
   return p;
 }
 

@@ -101,10 +101,13 @@ main (int argc, char** argv)
 
   while (1)
     {
+      int max_skip_error;
+
       as_poll ();
       fflush (log);
       as_sleep ();
       elapsed = lmc_current (&song);
+      max_skip_error = MAX_SKIP_ERROR + lmc_xfade_hack ();
 
       if (now () > next_save)
         {
@@ -137,7 +140,7 @@ main (int argc, char** argv)
       if (song.id != last_id)
         {
           if (song.artist && song.title)
-            notice ("new song detected (%s - %s)", song.artist, song.title);
+            notice ("new song detected (%s - %s), id: %i, pos: %i", song.artist, song.title, song.id, song.pos);
           else
             notice ("new song detected with tags missing (%s)", song.file); 
           last_id = song.id;
@@ -162,7 +165,7 @@ main (int argc, char** argv)
           /* don't submit the song which is being played when we start,.. too
              many double submits when restarting the client during testing in
              the first half of a song ;) */
-          else if (elapsed > MAX_SKIP_ERROR*2)
+          else if (elapsed > max_skip_error*2)
             notice ("skipping detected, not submitting.");
           else
             submitted = 0;
@@ -173,8 +176,8 @@ main (int argc, char** argv)
           int time = now ();
           int calculated = last_el + (time-last_mark);
 
-          if ((elapsed+MAX_SKIP_ERROR < calculated)
-              || (elapsed-MAX_SKIP_ERROR > calculated))
+          if ((elapsed+max_skip_error < calculated)
+              || (elapsed-max_skip_error > calculated))
             {
               notice ("skipping detected, not submitting.");
               submitted = 1;

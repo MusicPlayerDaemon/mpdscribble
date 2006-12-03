@@ -1,3 +1,29 @@
+2006-12-03  Kuno Woudt <kuno@frob.nl>
+
+	* configure.in: version 0.2.11
+
+	* lmc.c:
+	* lmc.h:
+	* mpdscribble.c: added a little hack so skip detection doesn't 
+	crossfaded songs to be submitted.
+
+	* applied OpenBSD compilation error fixes from Eric Gillingham.
+
+	* as.c: changed MAX_SUBMIT_COUNT from 50 to 10, according to
+	protocol spec.
+
+2006-11-19  Michal Nazarewicz  <mina86@mina86.com>
+
+	* lmc.c (lmc_disconnect): checks if g_mpd is zero before closing
+	connection and then zeros it; also zeros g_entity (just to keep
+	convention).
+
+2006-10-30  Michal Nazarewicz  <mina86@mina86.com>
+
+	* lmc.c (lmc_failure): warning message includes 'error' not
+	'errorCode' and added replacing new lines with spaces in
+	'errorStr'.
+
 2006-05-28  Kuno Woudt <kuno@frob.nl>
 
 	* configure.in: version 0.2.10
@@ -22,7 +48,7 @@
 	* mpdscribble.c (main): removed check for songs which are too long, 
 	which is no longer required by the audioscrobbler protocol.
 
-2006-04-30  Michal Nazarewicz  <mina86@projektcode.org>
+2006-04-30  Michal Nazarewicz  <mina86@mina86.com>
 
 	* configure.in: version 0.2.7.1
 

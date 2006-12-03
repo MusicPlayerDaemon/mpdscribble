@@ -41,7 +41,7 @@
 #define AS_HOST "http://post.audioscrobbler.com/"
 
 /* don't submit more than this amount of songs in a batch. */
-#define MAX_SUBMIT_COUNT 50
+#define MAX_SUBMIT_COUNT 10
 
 typedef enum
   {
@@ -150,7 +150,7 @@ md5 (char *in)
 
   for (i = 0;i < 0x10; i++)
     {
-      sprintf(a, "%02x", md5result[i]);
+      snprintf(a, 3, "%02x", md5result[i]);
       tmp[(i<<1)] = a[0];
       tmp[(i<<1)+1] = a[1];
     }

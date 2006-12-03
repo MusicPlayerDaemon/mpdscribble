@@ -30,13 +30,21 @@
 static mpd_Connection *g_mpd = NULL;
 mpd_InfoEntity *g_entity = NULL;
 
-char *g_host;
-int g_port;
+static char *g_host;
+static int g_port;
+static int g_xfade_hack;
 
 static void
 lmc_failure ()
 {
-  warning ("mpd error (%i): %s", g_mpd->errorCode, g_mpd->errorStr);
+  char *ch;
+  for (ch = g_mpd->errorStr; *ch; ++ch) {
+    if (*ch=='\n' || *ch=='\t' || *ch=='\r' | *ch=='\v') {
+      *ch = ' ';
+    }
+  }
+
+  warning ("mpd error (%i): %s", g_mpd->error, g_mpd->errorStr);
   mpd_closeConnection (g_mpd);
   g_mpd = 0;
 }
@@ -88,6 +96,7 @@ lmc_connect (char *host, int port)
 {
   g_host = host;
   g_port = port;
+  g_xfade_hack = 0;
   lmc_reconnect ();
 }
 
@@ -95,9 +104,23 @@ void
 lmc_disconnect (void)
 {
   if (g_entity)
-    mpd_freeInfoEntity (g_entity);
+    {
+      mpd_freeInfoEntity (g_entity);
+      g_entity = 0;
+    }
 
-  mpd_closeConnection (g_mpd);
+  if (g_mpd)
+    {
+      mpd_closeConnection (g_mpd);
+      g_mpd = 0;
+    }
+}
+
+int
+lmc_xfade_hack ()
+{
+    // call lmc_current to update this value.
+    return g_xfade_hack;
 }
 
 int
@@ -198,6 +221,8 @@ lmc_current (mpd_Song *songptr)
       lmc_failure ();
       return 0;
     }
+
+  g_xfade_hack = status->crossfade;
 
   mpd_freeStatus(status);
 
