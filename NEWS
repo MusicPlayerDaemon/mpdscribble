@@ -1,3 +1,11 @@
+New in 0.2.12:
+
+  - Just noticed a patch for 0.2.6 by Decklin Foster in my mailbox
+    which i forgot to include in the subsequent releases. Sorry!
+
+    It's included now and is a little bugfix for those who change
+    the --sleep parameter.
+
 New in 0.2.11:
 
   - a crash and some logfile bugs were fixed by Michal Nazarewicz.

@@ -1,5 +1,11 @@
 2006-12-03  Kuno Woudt <kuno@frob.nl>
 
+	* configure.in: version 0.2.12
+
+	* mpdscribble.c: adapt skipping window depending on the size of
+	the --sleep option. (an old patch by Decklin Foster which I just
+	noticed I had never applied).
+
 	* configure.in: version 0.2.11
 
 	* lmc.c:

@@ -31,7 +31,7 @@
 
 #include "mbid.h"
 
-#define MAX_SKIP_ERROR 4 /* in seconds. */
+#define MAX_SKIP_ERROR (file_config.sleep - 1) /* in seconds. */
 
 const char *program_name;
 
@@ -166,7 +166,7 @@ main (int argc, char** argv)
              many double submits when restarting the client during testing in
              the first half of a song ;) */
           else if (elapsed > max_skip_error*2)
-            notice ("skipping detected, not submitting.");
+            notice ("skipping detected (%i), not submitting.", elapsed);
           else
             submitted = 0;
         }
@@ -179,7 +179,8 @@ main (int argc, char** argv)
           if ((elapsed+max_skip_error < calculated)
               || (elapsed-max_skip_error > calculated))
             {
-              notice ("skipping detected, not submitting.");
+              notice ("skipping detected (%i to %i), not submitting.", elapsed,
+                calculated);
               submitted = 1;
             }
 
