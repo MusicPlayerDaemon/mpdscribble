@@ -72,17 +72,17 @@ static int
 toInteger(char bytes[])
 {
     int size = 0;
-    int i;
-    for (i=0; i<sizeof(bytes); i++) {
+
+    for (size_t i = 0; i < sizeof(bytes); i++) {
         size = size * 256 + ((int)bytes[i] & 0x000000FF);
     }
     return size;
 }
 
 static void
-mfile(int length, char ret[], FILE *fp, int *s)
+mfile(size_t length, char ret[], FILE *fp, int *s)
 {
-    int bytes = fread(ret,1,length,fp);
+    size_t bytes = fread(ret,1,length,fp);
     
     if (bytes != length) {
         *s = 0;
@@ -93,12 +93,11 @@ mfile(int length, char ret[], FILE *fp, int *s)
  * I expect most .ogg files will have less than 8kbyte of metadata. */
 #define OGG_MAX_CHUNK_SIZE 0x2000 
 
-static int
+static size_t
 read_ogg_chunk_length (FILE *fp)
 {
   uint32_t data;
-
-  int bytes = fread (&data, sizeof(data), 1, fp);
+  size_t bytes = fread (&data, sizeof(data), 1, fp);
   if (bytes != 1)
     {
       debug ("Failed to read ogg chunk.\n");
@@ -111,7 +110,8 @@ read_ogg_chunk_length (FILE *fp)
 static int
 read_ogg_chunk (char *data, FILE *fp)
 {
-  int length = read_ogg_chunk_length (fp);
+  size_t length = read_ogg_chunk_length (fp);
+  size_t bytes;
 
   if (length >= OGG_MAX_CHUNK_SIZE)
     { 
@@ -121,7 +121,7 @@ read_ogg_chunk (char *data, FILE *fp)
       return 0;
     }
 
-  int bytes = fread (data, 1, length, fp);
+  bytes = fread (data, 1, length, fp);
   if (bytes < length)
     {
       debug ("Error reading ogg file.\n");
@@ -137,7 +137,7 @@ static int
 getOGG_MBID(const char *path, char mbid[MBID_BUFFER_SIZE]) 
 {
   FILE *fp;
-  int i;
+  size_t bytes, marker_size, items;
   const char *marker = "\003vorbis";
   char data[OGG_MAX_CHUNK_SIZE]; 
 
@@ -155,14 +155,14 @@ getOGG_MBID(const char *path, char mbid[MBID_BUFFER_SIZE])
       return -1;
     }
 
-  int bytes = fread (data, 1, OGG_MAX_CHUNK_SIZE, fp);
+  bytes = fread (data, 1, OGG_MAX_CHUNK_SIZE, fp);
   if (bytes != OGG_MAX_CHUNK_SIZE)
     goto ogg_failed;
 
-  int marker_size = strlen (marker);
+  marker_size = strlen (marker);
 
   int offset = -1;
-  for (i=0; i < OGG_MAX_CHUNK_SIZE - marker_size; i++)
+  for (size_t i=0; i < OGG_MAX_CHUNK_SIZE - marker_size; i++)
     if (!strncmp (data+i, marker, marker_size))
       {
         offset = i + marker_size;
@@ -179,8 +179,8 @@ getOGG_MBID(const char *path, char mbid[MBID_BUFFER_SIZE])
   if (read_ogg_chunk (data, fp))
     goto ogg_failed;
 
-  int items = read_ogg_chunk_length (fp);
-  for (i = 0; i < items; i++)
+  items = read_ogg_chunk_length (fp);
+  for (size_t i = 0; i < items; i++)
     {
       if (read_ogg_chunk (data, fp))
         goto ogg_failed;
@@ -229,7 +229,7 @@ static int
 getFLAC_MBID(const char *path, char mbid[MBID_BUFFER_SIZE]) 
 {
   FILE *fp;
-  int i = 0;
+  size_t bytes, items;
   char data[FLAC_MAX_CHUNK_SIZE];
 
   if (path == NULL)
@@ -246,7 +246,7 @@ getFLAC_MBID(const char *path, char mbid[MBID_BUFFER_SIZE])
       return -1;
     }
 
-  int bytes = fread (data, 1, 4, fp);
+  bytes = fread (data, 1, 4, fp);
   if (bytes < 4)
     goto flac_failed;
 
@@ -262,8 +262,8 @@ getFLAC_MBID(const char *path, char mbid[MBID_BUFFER_SIZE])
       if (read_ogg_chunk (data, fp))
         goto flac_failed;
 
-      int items = read_ogg_chunk_length (fp);
-      for (i = 0; i < items; i++)
+      items = read_ogg_chunk_length (fp);
+      for (size_t i = 0; i < items; i++)
         {
           if (read_ogg_chunk (data, fp))
             goto flac_failed;
