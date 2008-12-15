@@ -29,6 +29,7 @@
 #include "as.h"
 #include "file.h"
 #include "misc.h"
+#include "config.h"
 
 struct pair
 {

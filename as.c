@@ -34,6 +34,7 @@
 #include "md5.h"
 #include "conn.h"
 #include "as.h"
+#include "config.h"
 
 #define MAX_VAR_SIZE 8192
 #define MAX_TIMESTAMP_SIZE 64

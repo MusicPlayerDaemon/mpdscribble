@@ -5,6 +5,7 @@ mkdir build
 
 aclocal
 autoconf
+autoheader
 automake --add-missing
 
 if test x$NOCONFIGURE = x; then

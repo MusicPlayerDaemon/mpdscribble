@@ -29,6 +29,7 @@
 #include "file.h"
 #include "misc.h"
 #include "as.h"
+#include "config.h"
 
 struct global {
   SoupSession *session;
