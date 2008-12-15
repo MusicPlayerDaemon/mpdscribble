@@ -6,6 +6,7 @@ mpdscribble_SOURCES = mpdscribble.c as.c conn.c escape.c file.c lmc.c \
 
 mpdscribble_SOURCES += \
 	libmpdclient/str_pool.c libmpdclient/str_pool.h \
+	libmpdclient/resolver.c libmpdclient/resolver.h \
 	libmpdclient/song.c libmpdclient/song.h \
 	libmpdclient/libmpdclient.c libmpdclient/libmpdclient.h
 
