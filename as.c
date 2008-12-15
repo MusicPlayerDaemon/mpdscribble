@@ -83,8 +83,7 @@ static int g_submit_pending = 0;
 static int g_sleep = 0;
 
 static char *
-add_var_internal (char *sep, char *key, signed char index, char *val,
-                  int abort_if_empty)
+add_var_internal(char *sep, char *key, signed char index, char *val)
 {
   char *ret = (char *) malloc (MAX_VAR_SIZE);
   char *escaped;
@@ -114,21 +113,21 @@ add_var_internal (char *sep, char *key, signed char index, char *val,
 }
 
 static char *
-first_var (char *key, char *val, int abort_if_empty)
+first_var(char *key, char *val)
 {
-  return add_var_internal ("?", key, -1, val, abort_if_empty);
+  return add_var_internal("?", key, -1, val);
 }
 
 static char *
-add_var (char *key, char *val, int abort_if_empty)
+add_var(char *key, char *val)
 {
-  return add_var_internal ("&", key, -1, val, abort_if_empty);
+  return add_var_internal("&", key, -1, val);
 }
 
 static char *
-add_var_i (char *key, signed char index, char *val, int abort_if_empty)
+add_var_i(char *key, signed char index, char *val)
 {
-  return add_var_internal ("&", key, index, val, abort_if_empty);
+  return add_var_internal("&", key, index, val);
 }
 
 static char *
@@ -499,11 +498,11 @@ as_handshake (void)
 
   /* construct the handshake url. */
   url = concatDX (host,
-                  first_var ("hs", "true", 0),
-                  add_var ("p", "1.1", 0),
-                  add_var ("c", AS_CLIENT_ID, 0),
-                  add_var ("v", AS_CLIENT_VERSION, 0),
-                  add_var ("u", file_config.username, 0),
+                  first_var("hs", "true"),
+                  add_var("p", "1.1"),
+                  add_var("c", AS_CLIENT_ID),
+                  add_var("v", AS_CLIENT_VERSION),
+                  add_var("u", file_config.username),
                   //                  add_var ("a", file_config.password, 0),
                   NULL);
 
@@ -540,8 +539,8 @@ as_submit (void)
 
   /* construct the handshake url. */
   url = concatDX (strdup2 (g_submit_url),
-                  first_var ("u", file_config.username, 0),
-                  add_var ("s", g_md5_response, 0),
+                  first_var("u", file_config.username),
+                  add_var("s", g_md5_response),
                   NULL);
 
   post_data = strdup2 ("\0");
@@ -550,12 +549,12 @@ as_submit (void)
     {
       snprintf (len, MAX_VAR_SIZE, "%i", queue->length);
 
-      a = add_var_i ("a", count, queue->artist, 1);
-      t = add_var_i ("t", count, queue->track, 1);
-      l = add_var_i ("l", count, len, 1);
-      i = add_var_i ("i", count, queue->time, 1);
-      b = add_var_i ("b", count, queue->album, 0);
-      m = add_var_i ("m", count, queue->mbid, 0);
+      a = add_var_i("a", count, queue->artist);
+      t = add_var_i("t", count, queue->track);
+      l = add_var_i("l", count, len);
+      i = add_var_i("i", count, queue->time);
+      b = add_var_i("b", count, queue->album);
+      m = add_var_i("m", count, queue->mbid);
 
       if (a && t && l && i)
         {

@@ -207,7 +207,7 @@ ogg_failed:
 #define FLAC_MAX_CHUNK_SIZE 0x2000
 
 static int
-read_flac_block (char *data, FILE *fp)
+read_flac_block(FILE *fp)
 {
   int size;
   int bytes;
@@ -257,7 +257,7 @@ getFLAC_MBID(const char *path, char mbid[MBID_BUFFER_SIZE])
 
   while (!feof (fp)) 
     {
-      if (read_flac_block (data, fp))
+      if (read_flac_block(fp))
         continue;
 
       // actual vorbis comment  parsing starts here. 
