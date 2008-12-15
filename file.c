@@ -410,7 +410,7 @@ file_read_config (int argc, char **argv)
   if (!file_config.password)
     fatal ("no audioscrobbler password specified in %s", file_config.conf);
   if (!file_config.host)
-    file_config.host = mpd_host;
+    file_config.host = strdup2(mpd_host);
   if (!file_config.host)
     file_config.host = strdup2 (FILE_DEFAULT_HOST);
   if (!file_config.log)
