@@ -121,6 +121,7 @@ static int
 conn_mainloop_quit (void *data)
 {
   g_main_loop_quit (g.mainloop);
+  return 0;
 }
 
 int

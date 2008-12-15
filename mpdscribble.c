@@ -23,6 +23,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <unistd.h>
 
 #include "file.h"
 #include "misc.h"
@@ -149,11 +150,10 @@ main (int argc, char** argv)
 
           submitted = 1;
 
-          if (file_config.musicdir)
+          if (file_config.musicdir && chdir (file_config.musicdir) != 0)
             {
               // yeah, I know i'm being silly, but I can't be arsed to 
               // concat the parts :P
-              chdir (file_config.musicdir);
               if (getMBID (song.file, mbid))
                 mbid[0] = 0x00;
               else

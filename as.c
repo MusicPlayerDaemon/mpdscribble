@@ -730,7 +730,9 @@ as_cleanup (void)
 unsigned int
 as_sleep (void)
 {
+  /*
   long end;
+  */
 
   if (!conn_pending ())
     return sleep (g_sleep);

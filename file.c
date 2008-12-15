@@ -327,7 +327,7 @@ file_read_config (int argc, char **argv)
   char *mpd_host = getenv ("MPD_HOST");
   char *mpd_port = getenv ("MPD_PORT");
   char *http_proxy = getenv ("http_proxy");
-  char *data;
+  char *data = NULL;
   int i;
 
   file_config.verbose = -1;

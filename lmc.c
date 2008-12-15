@@ -39,7 +39,7 @@ lmc_failure ()
 {
   char *ch;
   for (ch = g_mpd->errorStr; *ch; ++ch) {
-    if (*ch=='\n' || *ch=='\t' || *ch=='\r' | *ch=='\v') {
+    if (*ch=='\n' || *ch=='\t' || *ch=='\r' || *ch=='\v') {
       *ch = ' ';
     }
   }

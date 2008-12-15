@@ -72,7 +72,7 @@ int toInteger(char bytes[]) {
     return size;
 }
 
-int mfile(int length, char ret[], FILE *fp, int *s) {
+void mfile(int length, char ret[], FILE *fp, int *s) {
     int bytes = fread(ret,1,length,fp);
     
     if (bytes != length) {
@@ -151,6 +151,9 @@ getOGG_MBID(const char *path, char mbid[MBID_BUFFER_SIZE])
     }
 
   int bytes = fread (data, 1, OGG_MAX_CHUNK_SIZE, fp);
+  if (bytes != OGG_MAX_CHUNK_SIZE)
+    goto ogg_failed;
+
   int marker_size = strlen (marker);
 
   int offset = -1;
@@ -203,7 +206,10 @@ read_flac_block (char *data, FILE *fp)
   int bytes;
   unsigned char header[4];
   
-  fread (header, 1, 4, fp);
+  bytes = fread (header, 1, 4, fp);
+  if (bytes != 4)
+    return -1;
+
   size = header[3] | header[2]<<0x08 | header[1]<<0x10;
 
   if ((header[0] & 0x7F) == 0x04)
@@ -311,13 +317,12 @@ int getMP3_MBID(const char *path, char mbid[MBID_BUFFER_SIZE]) {
 
         mfile(2,version,fp,&s);
         int version_major = (int)version[0];
-        int version_minor = (int)version[1];
         if (version_major == 2) {
             debug("ID3v2.2.0 does not support MBIDs: %s\n",path);
             break;
         }
         if (version_major != 3 && version_major != 4) {
-            debug("Unsupported ID3 version: v2.%d.%d\n",version_major,version_minor);
+            debug("Unsupported ID3 version: v2.%d.%d\n",version_major,(int)version[1]);
             break;
         }
 
