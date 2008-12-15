@@ -172,6 +172,9 @@ get_pair (char *str)
   do
     {
       ptr += m[0].rm_eo + 1;
+      if(*ptr == '\0') {
+         break;
+      }
       error = regexec (&compiled, ptr, 4, m, 0);
       if (!error && m[3].rm_eo != -1)
         add_pair (&p, ptr,
