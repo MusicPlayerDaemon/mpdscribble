@@ -1,0 +1,11 @@
+.deps
+Makefile
+Makefile.in
+aclocal.m4
+*.cache
+*.log
+*.status
+configure
+build
+.stgitmsg.txt*
+*.tar.*
