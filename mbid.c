@@ -44,6 +44,9 @@ History/Changes:
 
 #include "mbid.h"
 
+#include <glib.h>
+
+#include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -93,21 +96,16 @@ mfile(int length, char ret[], FILE *fp, int *s)
 static int
 read_ogg_chunk_length (FILE *fp)
 {
-  unsigned char data[4];
+  uint32_t data;
 
-  int bytes = fread (data, 1, 4, fp);
-  if (bytes != 4)
+  int bytes = fread (&data, sizeof(data), 1, fp);
+  if (bytes != 1)
     {
       debug ("Failed to read ogg chunk.\n");
       return -1;
     }
 
-  int length = data[0]
-    | data[1]<<0x08
-    | data[2]<<0x10
-    | data[3]<<0x18;
-
-  return length;
+  return GUINT32_FROM_LE(data);
 }
 
 static int
