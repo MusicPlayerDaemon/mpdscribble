@@ -58,7 +58,7 @@ History/Changes:
 #ifdef MBID_DEBUG
 #define debug(fmt, ...) printf(fmt, ## __VA_ARGS__)
 #else
-#define debug(fmt, ...)
+#define debug(...)
 #endif
 
 
