@@ -10,5 +10,5 @@ mpdscribble_SOURCES += \
 	libmpdclient/song.c libmpdclient/song.h \
 	libmpdclient/libmpdclient.c libmpdclient/libmpdclient.h
 
-AM_CFLAGS = $(libgobject_CFLAGS) $(libgthread_CFLAGS) $(libsoup_CFLAGS) "-I./libmpdclient"
+AM_CPPFLAGS = $(libgobject_CFLAGS) $(libgthread_CFLAGS) $(libsoup_CFLAGS) "-I./libmpdclient"
 LDADD = $(libgobject_LIBS) $(libgthread_LIBS) $(libsoup_LIBS)
