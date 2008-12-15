@@ -472,7 +472,7 @@ as_submit_callback (int length, char *response)
     g_state = AS_READY;
 }
 
-char *
+static char *
 as_timestamp (void)
 {
   /* create timestamp for 1.1 protocol. */

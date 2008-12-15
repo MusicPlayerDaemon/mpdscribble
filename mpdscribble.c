@@ -25,6 +25,8 @@
 #include "as.h"
 #include "mbid.h"
 
+#include <glib.h>
+
 #include <signal.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -45,13 +47,13 @@ cleanup (void)
 }
 
 static void
-signal_handler (int signum)
+signal_handler(G_GNUC_UNUSED int signum)
 {
   exit (23);
 }
 
 static void
-sigpipe_handler (int signum)
+sigpipe_handler(G_GNUC_UNUSED int signum)
 {
   warning ("broken pipe, disconnected from mpd");
 }

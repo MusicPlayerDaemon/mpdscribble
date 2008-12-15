@@ -63,7 +63,8 @@ conn_grow_buffer (size_t new)
 
 static void
 #ifdef HAVE_SOUP_24
-conn_callback (SoupSession * session, SoupMessage * msg, gpointer uri)
+conn_callback(G_GNUC_UNUSED SoupSession * session,
+              SoupMessage * msg, gpointer uri)
 #else
 conn_callback (SoupMessage * msg, gpointer uri)
 #endif
@@ -118,7 +119,7 @@ conn_setup (void)
 }
 
 static int
-conn_mainloop_quit (void *data)
+conn_mainloop_quit(G_GNUC_UNUSED void *data)
 {
   g_main_loop_quit (g.mainloop);
   return 0;
