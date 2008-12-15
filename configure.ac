@@ -1,6 +1,9 @@
-dnl Process this file with autoconf to produce a configure script.
-AC_INIT(mpdscribble.c)
-AM_INIT_AUTOMAKE(mpdscribble, 0.2.12)
+AC_PREREQ(2.60)
+AC_INIT(mpdscribble, 0.12.12, max@duempel.org, mpdscribble)
+AC_CONFIG_SRCDIR([mpdscribble.c])
+AC_CONFIG_AUX_DIR(build)
+AM_INIT_AUTOMAKE([foreign 1.9 dist-bzip2])
+
 AC_PROG_CC
 AC_PROG_RANLIB
 
