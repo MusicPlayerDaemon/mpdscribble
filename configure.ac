@@ -5,7 +5,7 @@ AC_CONFIG_AUX_DIR(build)
 AM_INIT_AUTOMAKE([foreign 1.9 dist-bzip2])
 AM_CONFIG_HEADER([config.h])
 
-AC_PROG_CC
+AC_PROG_CC_C99
 
 PKG_CHECK_MODULES([libgobject],[gobject-2.0],,[AC_MSG_ERROR([libgobject-2.0 not found])])
 AC_SUBST(libgobject_CFLAGS)
