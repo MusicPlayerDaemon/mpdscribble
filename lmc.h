@@ -30,7 +30,7 @@
 #define LMC_PAUSED -2
 #define LMC_NOTPLAYING -1
 
-#define lmc_song mpd_Song
+#define lmc_song struct mpd_song
 
 void lmc_connect (char *host, int port);
 void lmc_disconnect (void);

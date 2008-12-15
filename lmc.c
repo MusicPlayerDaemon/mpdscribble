@@ -124,9 +124,9 @@ lmc_xfade_hack ()
 }
 
 int
-lmc_current (mpd_Song *songptr)
+lmc_current (struct mpd_song *songptr)
 {
-  mpd_Song *song;
+  struct mpd_song *song;
   mpd_Status *status;
   int elapsed;
 
@@ -205,7 +205,7 @@ lmc_current (mpd_Song *songptr)
       else
         {
           song = g_entity->info.song;
-          memcpy (songptr, song, sizeof (mpd_Song));
+          memcpy (songptr, song, sizeof(*songptr));
 
           if (g_mpd->error)
             {

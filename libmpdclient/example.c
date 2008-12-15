@@ -103,7 +103,7 @@ int main(int argc, char ** argv) {
 		mpd_nextListOkCommand(conn);
 
 		while((entity = mpd_getNextInfoEntity(conn))) {
-			mpd_Song * song = entity->info.song;
+			struct mpd_song * song = entity->info.song;
 
 			if(entity->type!=MPD_INFO_ENTITY_TYPE_SONG) {
 				mpd_freeInfoEntity(entity);
@@ -166,7 +166,7 @@ int main(int argc, char ** argv) {
 
 		while((entity = mpd_getNextInfoEntity(conn))) {
 			if(entity->type==MPD_INFO_ENTITY_TYPE_SONG) {
-				mpd_Song * song = entity->info.song;
+				struct mpd_song * song = entity->info.song;
 
 				printf("file: %s\n",song->file);
 				if(song->artist) {
