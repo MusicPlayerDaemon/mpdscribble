@@ -173,8 +173,8 @@ main (int argc, char** argv)
       /* not a new song, so check for skipping. */
       else if (!submitted)
         {
-          int time = now ();
-          int calculated = last_el + (time-last_mark);
+          int time2 = now();
+          int calculated = last_el + (time2 - last_mark);
 
           if ((elapsed+max_skip_error < calculated)
               || (elapsed-max_skip_error > calculated))
@@ -185,7 +185,7 @@ main (int argc, char** argv)
             }
 
           last_el = elapsed;
-          last_mark = time;
+          last_mark = time2;
         }
 
       if (!submitted && ((elapsed > 240) || (elapsed > (song.time/2))))

@@ -84,7 +84,7 @@ static int g_sleep = 0;
 
 static char *
 add_var_internal(const char *sep, const char *key,
-                 signed char index, const char *val)
+                 signed char idx, const char *val)
 {
   char *ret = (char *) malloc (MAX_VAR_SIZE);
   char *escaped;
@@ -104,10 +104,10 @@ add_var_internal(const char *sep, const char *key,
       escaped = strdup2 ("");
     }
 
-  if (index == -1)
+  if (idx == -1)
     snprintf (ret, MAX_VAR_SIZE, "%s%s=%s", sep, key, escaped);
   else
-    snprintf (ret, MAX_VAR_SIZE, "%s%s[%i]=%s", sep, key, index, escaped);
+    snprintf (ret, MAX_VAR_SIZE, "%s%s[%i]=%s", sep, key, idx, escaped);
   free (escaped);
 
   return ret;
@@ -126,9 +126,9 @@ add_var(const char *key, const char *val)
 }
 
 static char *
-add_var_i(const char *key, signed char index, const char *val)
+add_var_i(const char *key, signed char idx, const char *val)
 {
-  return add_var_internal("&", key, index, val);
+  return add_var_internal("&", key, idx, val);
 }
 
 static char *
@@ -360,8 +360,8 @@ as_handshake_callback (int length, char *response)
           break;
         case AS_CHALLENGE:
           {
-            char *response = concat (file_config.password, next, NULL);
-            g_md5_response = md5 (response);
+            char *response2 = concat(file_config.password, next, NULL);
+            g_md5_response = md5(response2);
             state = AS_SUBMIT;
             break;
           }
@@ -595,7 +595,7 @@ as_submit (void)
 int
 as_songchange (const char *file, const char *artist, const char *track,
                const char *album, const char *mbid, const int length,
-               const char *time)
+               const char *time2)
 {
   struct song *current;
 
@@ -630,7 +630,7 @@ as_songchange (const char *file, const char *artist, const char *track,
   current->album = strdup2 (album);
   current->mbid = strdup2 (mbid);
   current->length = length;
-  current->time = time ? strdup2 (time) : as_timestamp ();
+  current->time = time2 ? strdup2(time2) : as_timestamp ();
 
   if (!current->artist) current->artist = strdup2 ("");
   if (!current->track) current->track = strdup2 ("");
