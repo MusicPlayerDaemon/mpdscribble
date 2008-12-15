@@ -82,7 +82,7 @@ static int g_submit_pending = 0;
 static int g_sleep = 0;
 
 static void
-add_var_internal(GString *s, const char *sep, const char *key,
+add_var_internal(GString *s, char sep, const char *key,
                  signed char idx, const char *val)
 {
   char *escaped;
@@ -99,7 +99,7 @@ add_var_internal(GString *s, const char *sep, const char *key,
       escaped = g_strdup("");
     }
 
-  g_string_append(s, sep);
+  g_string_append_c(s, sep);
   g_string_append(s, key);
 
   if (idx >= 0)
@@ -113,19 +113,19 @@ add_var_internal(GString *s, const char *sep, const char *key,
 static void
 first_var(GString *s, const char *key, const char *val)
 {
-  add_var_internal(s, "?", key, -1, val);
+  add_var_internal(s, '?', key, -1, val);
 }
 
 static void
 add_var(GString *s, const char *key, const char *val)
 {
-  add_var_internal(s, "&", key, -1, val);
+  add_var_internal(s, '&', key, -1, val);
 }
 
 static void
 add_var_i(GString *s, const char *key, signed char idx, const char *val)
 {
-  add_var_internal(s, "&", key, idx, val);
+  add_var_internal(s, '&', key, idx, val);
 }
 
 static void
