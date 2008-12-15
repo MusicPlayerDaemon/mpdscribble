@@ -37,8 +37,4 @@ void warning_errno (const char *template, ...);
 
 void notice (const char *template, ...);
 
-/* concat originally from gnu libc manual,
-   this version free()s everything submitted to it. */
-char *concatDX (char *str, ...);
-
 #endif /* MISC_H */

@@ -81,15 +81,11 @@ static int g_queue_size = 0;
 static int g_submit_pending = 0;
 static int g_sleep = 0;
 
-static char *
-add_var_internal(const char *sep, const char *key,
+static void
+add_var_internal(GString *s, const char *sep, const char *key,
                  signed char idx, const char *val)
 {
-  char *ret = (char *) malloc (MAX_VAR_SIZE);
   char *escaped;
-
-  if (!ret)
-    exit (ENOMEM);
 
   if (val)
     {
@@ -103,31 +99,33 @@ add_var_internal(const char *sep, const char *key,
       escaped = g_strdup("");
     }
 
-  if (idx == -1)
-    snprintf (ret, MAX_VAR_SIZE, "%s%s=%s", sep, key, escaped);
-  else
-    snprintf (ret, MAX_VAR_SIZE, "%s%s[%i]=%s", sep, key, idx, escaped);
+  g_string_append(s, sep);
+  g_string_append(s, key);
+
+  if (idx >= 0)
+    g_string_append_printf(s, "[%i]", idx);
+
+  g_string_append_c(s, '=');
+  g_string_append(s, escaped);
   free (escaped);
-
-  return ret;
 }
 
-static char *
-first_var(const char *key, const char *val)
+static void
+first_var(GString *s, const char *key, const char *val)
 {
-  return add_var_internal("?", key, -1, val);
+  add_var_internal(s, "?", key, -1, val);
 }
 
-static char *
-add_var(const char *key, const char *val)
+static void
+add_var(GString *s, const char *key, const char *val)
 {
-  return add_var_internal("&", key, -1, val);
+  add_var_internal(s, "&", key, -1, val);
 }
 
-static char *
-add_var_i(const char *key, signed char idx, const char *val)
+static void
+add_var_i(GString *s, const char *key, signed char idx, const char *val)
 {
-  return add_var_internal("&", key, idx, val);
+  add_var_internal(s, "&", key, idx, val);
 }
 
 static void
@@ -360,34 +358,6 @@ as_queue_remove_oldest (int count)
     }
 }
 
-static struct song *
-as_queue_remove (struct song *sng)
-{
-  struct song *tmp = g_queue;
-
-  /* remove first entry in queue. */
-  if (sng == tmp)
-    {
-      as_queue_remove_oldest (1);
-      return g_queue;
-    }
-
-  /* it's not the first entry, so look for it. */
-  while (tmp && sng != tmp->next)
-    tmp = tmp->next;
-
-  if (sng != tmp->next)
-    fatal ("internal error in as_queue_remove, this is a bug.");
-
-  /* take it out of the link chain. */
-  tmp->next = sng->next;
-  as_song_cleanup (sng, 1);
-
-  g_queue_size--;
-
-  return tmp->next;
-}
-
 static void
 as_submit_callback (int length, char *response)
 {
@@ -459,26 +429,22 @@ as_timestamp (void)
 static void
 as_handshake (void)
 {
-  char *host;
-  char *url;
+  GString *url;
 
   g_state = AS_HANDSHAKING;
 
-  host = g_strdup(AS_HOST);
-
   /* construct the handshake url. */
-  url = concatDX (host,
-                  first_var("hs", "true"),
-                  add_var("p", "1.1"),
-                  add_var("c", AS_CLIENT_ID),
-                  add_var("v", AS_CLIENT_VERSION),
-                  add_var("u", file_config.username),
-                  //                  add_var ("a", file_config.password, 0),
-                  NULL);
+  url = g_string_new(AS_HOST);
+  first_var(url, "hs", "true");
+  add_var(url, "p", "1.1");
+  add_var(url, "c", AS_CLIENT_ID);
+  add_var(url, "v", AS_CLIENT_VERSION);
+  add_var(url, "u", file_config.username);
+  // add_var ("a", file_config.password, 0),
 
   //  notice ("handshake url:\n%s", url);
 
-  if (!conn_initiate (url, &as_handshake_callback, NULL, g_sleep))
+  if (!conn_initiate(url->str, &as_handshake_callback, NULL, g_sleep))
     {
       warning ("something went wrong when trying to connect,"
                " probably a bug.");
@@ -487,7 +453,7 @@ as_handshake (void)
       as_increase_interval ();
     }
 
-  free (url);
+  g_string_free(url, true);
 }
 
 static void
@@ -497,10 +463,8 @@ as_submit (void)
   int count = 0;
   int queue_size = g_queue_size;
   struct song *queue = g_queue;
-  char *url;
-  char *post_data;
+  GString *url, *post_data;
   char len[MAX_VAR_SIZE];
-  char *a, *t, *l, *i, *b, *m;
 
   if (!g_queue_size)
     return;
@@ -508,48 +472,34 @@ as_submit (void)
   g_state = AS_SUBMITTING;
 
   /* construct the handshake url. */
-  url = concatDX (g_strdup(g_submit_url),
-                  first_var("u", file_config.username),
-                  add_var("s", g_md5_response),
-                  NULL);
+  url = g_string_new(g_submit_url);
+  first_var(url, "u", file_config.username);
+  add_var(url, "s", g_md5_response);
 
-  post_data = g_strdup("\0");
+  post_data = g_string_new(NULL);
 
   while (queue_size && (count < MAX_SUBMIT_COUNT))
     {
       snprintf (len, MAX_VAR_SIZE, "%i", queue->length);
 
-      a = add_var_i("a", count, queue->artist);
-      t = add_var_i("t", count, queue->track);
-      l = add_var_i("l", count, len);
-      i = add_var_i("i", count, queue->time);
-      b = add_var_i("b", count, queue->album);
-      m = add_var_i("m", count, queue->mbid);
+      add_var_i(post_data, "a", count, queue->artist);
+      add_var_i(post_data, "t", count, queue->track);
+      add_var_i(post_data, "l", count, len);
+      add_var_i(post_data, "i", count, queue->time);
+      add_var_i(post_data, "b", count, queue->album);
+      add_var_i(post_data, "m", count, queue->mbid);
 
-      if (a && t && l && i)
-        {
-          /* build submit url. */
-          post_data = concatDX (post_data, a, t, b, m, l, i, NULL);
-          count++;
-          queue = queue->next;
-        }
-      else
-        {
-          /* NOTE: this is completely untested :( */
-
-          /* not submitting invalid etry, remove it from queue. */
-          queue = as_queue_remove (queue);
-        }
-
+      count++;
+      queue = queue->next;
       queue_size--;
     }
 
   notice ("submitting %i song%s.", count, count==1 ? "" : "s");
-  notice ("post data: %s", post_data);
-  notice ("url: %s", url);
+  notice ("post data: %s", post_data->str);
+  notice ("url: %s", url->str);
 
   g_submit_pending = count;
-  if (!conn_initiate (url, &as_submit_callback, post_data, g_sleep))
+  if (!conn_initiate (url->str, &as_submit_callback, post_data->str, g_sleep))
     {
       warning ("something went wrong when trying to connect,"
                " probably a bug.");
@@ -558,7 +508,8 @@ as_submit (void)
       as_increase_interval ();
     }
 
-  free (url);
+  g_string_free(url, true);
+  g_string_free(post_data, true);
 }
 
 int
