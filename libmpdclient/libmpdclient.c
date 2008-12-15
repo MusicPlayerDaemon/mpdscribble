@@ -246,7 +246,7 @@ static int mpd_connect(mpd_Connection * connection, const char * host, int port,
 }
 #endif /* !MPD_HAVE_GAI */
 
-char * mpdTagItemKeys[MPD_TAG_NUM_OF_ITEM_TYPES] =
+const char *const mpdTagItemKeys[MPD_TAG_NUM_OF_ITEM_TYPES] =
 {
 	"Artist",
 	"Album",
@@ -439,11 +439,12 @@ void mpd_closeConnection(mpd_Connection * connection) {
 	WSACleanup();
 }
 
-static void mpd_executeCommand(mpd_Connection * connection, char * command) {
+static void mpd_executeCommand(mpd_Connection *connection,
+			       const char *command) {
 	int ret;
 	struct timeval tv;
 	fd_set fds;
-	char * commandPtr = command;
+	const char *commandPtr = command;
 	int commandLen = strlen(command);
 
 	if (connection->idle)
@@ -918,7 +919,7 @@ void mpd_freeSong(mpd_Song * song) {
 	free(song);
 }
 
-mpd_Song * mpd_songDup(mpd_Song * song) {
+mpd_Song * mpd_songDup(const mpd_Song * song) {
 	mpd_Song * ret = mpd_newSong();
 
 	if(song->file) ret->file = strdup(song->file);
@@ -962,7 +963,7 @@ void mpd_freeDirectory(mpd_Directory * directory) {
 	free(directory);
 }
 
-mpd_Directory * mpd_directoryDup(mpd_Directory * directory) {
+mpd_Directory * mpd_directoryDup(const mpd_Directory * directory) {
 	mpd_Directory * ret = mpd_newDirectory();
 
 	if (directory->path)
@@ -993,7 +994,7 @@ void mpd_freePlaylistFile(mpd_PlaylistFile * playlist) {
 	free(playlist);
 }
 
-mpd_PlaylistFile * mpd_playlistFileDup(mpd_PlaylistFile * playlist) {
+mpd_PlaylistFile * mpd_playlistFileDup(const mpd_PlaylistFile * playlist) {
 	mpd_PlaylistFile * ret = mpd_newPlaylistFile();
 
 	if (playlist->path)
@@ -1474,7 +1475,7 @@ void mpd_sendSeekIdCommand(mpd_Connection * connection, int id, int time) {
 	free(string);
 }
 
-void mpd_sendUpdateCommand(mpd_Connection * connection, char * path) {
+void mpd_sendUpdateCommand(mpd_Connection * connection, const char * path) {
 	char * sPath = mpd_sanitizeArg(path);
 	char * string = malloc(strlen("update")+strlen(sPath)+5);
 	sprintf(string,"update \"%s\"\n",sPath);
@@ -1678,7 +1679,7 @@ void mpd_startSearch(mpd_Connection *connection, int exact)
 
 void mpd_startFieldSearch(mpd_Connection *connection, int type)
 {
-	char *strtype;
+	const char *strtype;
 
 	if (connection->request) {
 		strcpy(connection->errorStr, "search already in progress");
@@ -1702,7 +1703,7 @@ void mpd_startFieldSearch(mpd_Connection *connection, int type)
 
 void mpd_addConstraintSearch(mpd_Connection *connection, int type, char *name)
 {
-	char *strtype;
+	const char *strtype;
 	char *arg;
 
 	if (!connection->request) {

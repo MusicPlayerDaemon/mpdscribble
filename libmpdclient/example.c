@@ -39,8 +39,8 @@
 
 int main(int argc, char ** argv) {
 	mpd_Connection * conn;
-	char *hostname = getenv("MPD_HOST");
-	char *port = getenv("MPD_PORT");
+	const char *hostname = getenv("MPD_HOST");
+	const char *port = getenv("MPD_PORT");
 
 	if(hostname == NULL)
 		hostname = "localhost";
