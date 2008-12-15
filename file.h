@@ -52,6 +52,7 @@ struct config
   char *musicdir;
   char *conf;
   char *host;
+  char *proxy;
   int port;
   int sleep;
   int cache_interval;

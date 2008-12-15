@@ -82,6 +82,7 @@ help (void)
           "  --conf           <filename> \tconfiguration file\n"
           "  --host           <host>     \tmpd host\n"
           "  --port           <port>     \tmpd port\n"
+          "  --proxy          <proxy>    \tHTTP proxy URI\n"
           "  --sleep          <interval> \tupdate interval (default 1 second)\n"
           "  --cache-interval <interval> \twrite cache file every i seconds\n"
           "                              \t(default 600 seconds)\n"
@@ -321,6 +322,7 @@ file_read_config (int argc, char **argv)
 {
   char *mpd_host = getenv ("MPD_HOST");
   char *mpd_port = getenv ("MPD_PORT");
+  char *http_proxy = getenv ("http_proxy");
   char *data;
   int i;
 
@@ -360,6 +362,8 @@ file_read_config (int argc, char **argv)
             file_config.host = strdup2 (p->val);
           else if (!strcmp ("port", p->key))
             file_config.port = file_atoi (p->val);
+          else if (!strcmp ("proxy", p->key))
+            file_config.proxy = strdup2 (p->val);
           else if (!strcmp ("sleep", p->key))
             file_config.sleep = file_atoi (p->val);
           else if (!strcmp ("cache_interval", p->key))
@@ -393,6 +397,8 @@ file_read_config (int argc, char **argv)
         file_config.cache_interval = file_atoi (argv[++i]);
       else if (!strcmp ("--verbose", argv[i]))
         file_config.verbose = file_atoi (argv[++i]);
+      else if (!strcmp ("--proxy", argv[i]))
+        file_config.proxy = file_atoi (argv[++i]);
     }
 
   if (!file_config.conf)
@@ -414,6 +420,8 @@ file_read_config (int argc, char **argv)
     file_config.port = file_atoi (mpd_port);
   if (!file_config.port)
     file_config.port = FILE_DEFAULT_PORT;
+  if (!file_config.proxy)
+    file_config.proxy = http_proxy;
   if (!file_config.sleep)
     file_config.sleep = 1;
   if (!file_config.cache_interval)

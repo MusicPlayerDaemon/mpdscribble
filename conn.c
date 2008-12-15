@@ -26,6 +26,7 @@
 #include <libsoup/soup.h>
 
 #include "conn.h"
+#include "file.h"
 #include "misc.h"
 #include "as.h"
 
@@ -38,6 +39,7 @@ struct global {
   size_t count;
   callback_t *callback;
   GMainLoop *mainloop;
+  SoupUri *proxy;
 };
 
 static struct global g;
@@ -86,6 +88,10 @@ conn_setup (void)
   g.receive = NULL;
   g.pending = 0;
   g.count = 0;
+  if (file_config.proxy != NULL)
+    g.proxy = soup_uri_new(file_config.proxy);
+  else
+    g.proxy = NULL;
 }
 
 static int
@@ -107,7 +113,9 @@ conn_initiate (char *url, callback_t *callback, char *post_data,
   if (!g.base_uri)
     fatal ("Could not parse '%s' as a URL", g.base);
 
-  g.session = soup_session_async_new ();
+  g.session = soup_session_async_new_with_options (
+		SOUP_SESSION_PROXY_URI, g.proxy,
+		NULL);
 
   if (post_data)
     {
