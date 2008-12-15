@@ -20,13 +20,15 @@
 */
 
 #include "as.h"
-#include "escape.h"
 #include "file.h"
 #include "misc.h"
 #include "md5.h"
 #include "conn.h"
 #include "config.h"
 
+#include <glib.h>
+
+#include <stdbool.h>
 #include <ctype.h>
 #include <errno.h>
 #include <stdio.h>
@@ -92,7 +94,7 @@ add_var_internal (char *sep, char *key, signed char index, char *val,
 
   if (val)
     {
-      escaped = uri_escape (val, 0);
+      escaped = g_uri_escape_string(val, NULL, false);
       if (!escaped)
         /* FIXME: there probably are other things which could cause uri_escape to fail. */
         fatal ("out of memory");
