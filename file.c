@@ -42,8 +42,9 @@ struct pair
 
 enum file_type { conf_type, cache_type, log_type, };
 
-struct config file_config =
-  { NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 0, file_unknown, };
+struct config file_config = {
+  .loc = file_unknown,
+};
 
 FILE *file_loghandle = NULL;
 int file_saved_count = 0;
