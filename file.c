@@ -24,6 +24,8 @@
 #include "misc.h"
 #include "config.h"
 
+#include <glib.h>
+
 #include <errno.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -235,13 +237,13 @@ file_expand_tilde(const char *path)
   const char *home;
 
   if (path[0] != '~')
-    return strdup2 (path);
+    return g_strdup(path);
     
   home = getenv ("HOME");
   if (!home)
     home = "./";
 
-  return concat (home, path+1, NULL);
+  return g_strconcat(home, path + 1, NULL);
 }
 
 
@@ -336,7 +338,7 @@ file_read_config (int argc, char **argv)
   for (i = 0; i < argc; i++)
     {
       if (!strcmp ("--conf", argv[i]))
-        replace (&file_config.conf, strdup2 (argv[++i]));
+        replace (&file_config.conf, g_strdup(argv[++i]));
     }
 
   if (!file_config.conf
@@ -353,21 +355,21 @@ file_read_config (int argc, char **argv)
       while (p)
         {
           if (!strcmp ("username", p->key))
-            file_config.username = strdup2 (p->val);
+            file_config.username = g_strdup(p->val);
           else if (!strcmp ("password", p->key))
-            file_config.password = strdup2 (p->val);
+            file_config.password = g_strdup(p->val);
           else if (!strcmp ("log", p->key))
-            file_config.log = strdup2 (p->val);
+            file_config.log = g_strdup(p->val);
           else if (!strcmp ("cache", p->key))
-            file_config.cache = strdup2 (p->val);
+            file_config.cache = g_strdup(p->val);
           else if (!strcmp ("musicdir", p->key))
-            file_config.musicdir = strdup2 (p->val);
+            file_config.musicdir = g_strdup(p->val);
           else if (!strcmp ("host", p->key))
-            file_config.host = strdup2 (p->val);
+            file_config.host = g_strdup(p->val);
           else if (!strcmp ("port", p->key))
             file_config.port = file_atoi (p->val);
           else if (!strcmp ("proxy", p->key))
-            file_config.proxy = strdup2 (p->val);
+            file_config.proxy = g_strdup(p->val);
           else if (!strcmp ("sleep", p->key))
             file_config.sleep = file_atoi (p->val);
           else if (!strcmp ("cache_interval", p->key))
@@ -388,11 +390,11 @@ file_read_config (int argc, char **argv)
       else if (!strcmp ("--version", argv[i]))
         version ();
       else if (!strcmp ("--host", argv[i]))
-        replace (&file_config.host, strdup2 (argv[++i]));
+        replace (&file_config.host, g_strdup(argv[++i]));
       else if (!strcmp ("--log", argv[i]))
-        replace (&file_config.log, strdup2 (argv[++i]));
+        replace (&file_config.log, g_strdup(argv[++i]));
       else if (!strcmp ("--cache", argv[i]))
-        replace (&file_config.cache, strdup2 (argv[++i]));
+        replace (&file_config.cache, g_strdup(argv[++i]));
       else if (!strcmp ("--port", argv[i]))
         file_config.port = file_atoi (argv[++i]);
       else if (!strcmp ("--sleep", argv[i]))
@@ -413,9 +415,9 @@ file_read_config (int argc, char **argv)
   if (!file_config.password)
     fatal ("no audioscrobbler password specified in %s", file_config.conf);
   if (!file_config.host)
-    file_config.host = strdup2(mpd_host);
+    file_config.host = g_strdup(mpd_host);
   if (!file_config.host)
-    file_config.host = strdup2 (FILE_DEFAULT_HOST);
+    file_config.host = g_strdup(FILE_DEFAULT_HOST);
   if (!file_config.log)
     file_config.log = file_getname (log_type);
   if (!file_config.cache)
@@ -516,11 +518,11 @@ file_read_cache (void)
 
       while (p)
         {
-          if (!strcmp ("a", p->key)) sng.artist = strdup2 (p->val);
-          if (!strcmp ("t", p->key)) sng.track = strdup2 (p->val);
-          if (!strcmp ("b", p->key)) sng.album = strdup2 (p->val);
-          if (!strcmp ("m", p->key)) sng.mbid = strdup2 (p->val);
-          if (!strcmp ("i", p->key)) sng.time = strdup2 (p->val);
+          if (!strcmp ("a", p->key)) sng.artist = g_strdup(p->val);
+          if (!strcmp ("t", p->key)) sng.track = g_strdup(p->val);
+          if (!strcmp ("b", p->key)) sng.album = g_strdup(p->val);
+          if (!strcmp ("m", p->key)) sng.mbid = g_strdup(p->val);
+          if (!strcmp ("i", p->key)) sng.time = g_strdup(p->val);
           if (!strcmp ("l", p->key))
             {
               sng.length = file_atoi (p->val);

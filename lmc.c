@@ -22,6 +22,8 @@
 #include "lmc.h"
 #include "misc.h"
 
+#include <glib.h>
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -59,7 +61,7 @@ lmc_reconnect (void)
   if (at)
     {
       host = at+1;
-      password = strndup2 (g_host, at-g_host);
+      password = g_strndup(g_host, at-g_host);
     }
 
   g_mpd = mpd_newConnection (host, g_port, 10);

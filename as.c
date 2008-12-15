@@ -101,7 +101,7 @@ add_var_internal(const char *sep, const char *key,
     }
   else
     {
-      escaped = strdup2 ("");
+      escaped = g_strdup("");
     }
 
   if (idx == -1)
@@ -360,13 +360,13 @@ as_handshake_callback (int length, char *response)
           break;
         case AS_CHALLENGE:
           {
-            char *response2 = concat(file_config.password, next, NULL);
+            char *response2 = g_strconcat(file_config.password, next, NULL);
             g_md5_response = md5(response2);
             state = AS_SUBMIT;
             break;
           }
         case AS_SUBMIT:
-          g_submit_url = strdup2 (next);
+          g_submit_url = g_strdup(next);
           notice ("submit url: %s", g_submit_url);
           state = AS_COMMAND;
           g_state = AS_READY;
@@ -495,7 +495,7 @@ as_handshake (void)
 
   g_state = AS_HANDSHAKING;
 
-  host = strdup2 (AS_HOST);
+  host = g_strdup(AS_HOST);
 
   /* construct the handshake url. */
   url = concatDX (host,
@@ -539,12 +539,12 @@ as_submit (void)
   g_state = AS_SUBMITTING;
 
   /* construct the handshake url. */
-  url = concatDX (strdup2 (g_submit_url),
+  url = concatDX (g_strdup(g_submit_url),
                   first_var("u", file_config.username),
                   add_var("s", g_md5_response),
                   NULL);
 
-  post_data = strdup2 ("\0");
+  post_data = g_strdup("\0");
 
   while (queue_size && (count < MAX_SUBMIT_COUNT))
     {
@@ -625,17 +625,17 @@ as_songchange (const char *file, const char *artist, const char *track,
     exit (ENOMEM);
 
   current->next = NULL;
-  current->artist = strdup2 (artist);
-  current->track = strdup2 (track);
-  current->album = strdup2 (album);
-  current->mbid = strdup2 (mbid);
+  current->artist = g_strdup(artist);
+  current->track = g_strdup(track);
+  current->album = g_strdup(album);
+  current->mbid = g_strdup(mbid);
   current->length = length;
-  current->time = time2 ? strdup2(time2) : as_timestamp ();
+  current->time = time2 ? g_strdup(time2) : as_timestamp ();
 
-  if (!current->artist) current->artist = strdup2 ("");
-  if (!current->track) current->track = strdup2 ("");
-  if (!current->album) current->album = strdup2 ("");
-  if (!current->mbid) current->mbid = strdup2 ("");
+  if (!current->artist) current->artist = g_strdup("");
+  if (!current->track) current->track = g_strdup("");
+  if (!current->album) current->album = g_strdup("");
+  if (!current->mbid) current->mbid = g_strdup("");
 
   notice ("%s, songchange: %s - %s / %s (%i)",
           current->time, current->artist, current->album,
