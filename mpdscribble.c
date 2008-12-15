@@ -36,7 +36,7 @@
 
 const char *program_name;
 
-void
+static void
 cleanup (void)
 {
   notice ("shutting down...");
@@ -46,13 +46,13 @@ cleanup (void)
   file_cleanup ();
 }
 
-void
+static void
 signal_handler (int signum)
 {
   exit (23);
 }
 
-void
+static void
 sigpipe_handler (int signum)
 {
   warning ("broken pipe, disconnected from mpd");

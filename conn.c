@@ -53,7 +53,7 @@ struct global {
 
 static struct global g;
 
-void
+static void
 conn_grow_buffer (size_t new)
 {
   g.receive = realloc (g.receive, new);

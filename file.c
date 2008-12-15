@@ -55,7 +55,7 @@ static const char *blurb =
   "\n";
 
 
-void
+static void
 version (void)
 {
   printf (blurb);
@@ -69,7 +69,7 @@ version (void)
   exit (1);
 }
 
-void
+static void
 help (void)
 {
   printf (blurb);

@@ -59,11 +59,15 @@ History/Changes:
 #endif
 
 
-int toSynchSafe(char bytes[]) {
+static int
+toSynchSafe(char bytes[])
+{
     return ((int)bytes[0] << 21) + ((int)bytes[1] << 14) + ((int)bytes[2] << 7) + (int)bytes[3];
 }
 
-int toInteger(char bytes[]) {
+static int
+toInteger(char bytes[])
+{
     int size = 0;
     int i;
     for (i=0; i<sizeof(bytes); i++) {
@@ -72,7 +76,9 @@ int toInteger(char bytes[]) {
     return size;
 }
 
-void mfile(int length, char ret[], FILE *fp, int *s) {
+static void
+mfile(int length, char ret[], FILE *fp, int *s)
+{
     int bytes = fread(ret,1,length,fp);
     
     if (bytes != length) {
@@ -84,7 +90,8 @@ void mfile(int length, char ret[], FILE *fp, int *s) {
  * I expect most .ogg files will have less than 8kbyte of metadata. */
 #define OGG_MAX_CHUNK_SIZE 0x2000 
 
-int read_ogg_chunk_length (FILE *fp)
+static int
+read_ogg_chunk_length (FILE *fp)
 {
   unsigned char data[4];
 
@@ -103,8 +110,8 @@ int read_ogg_chunk_length (FILE *fp)
   return length;
 }
 
-
-int read_ogg_chunk (char *data, FILE *fp)
+static int
+read_ogg_chunk (char *data, FILE *fp)
 {
   int length = read_ogg_chunk_length (fp);
 
@@ -128,7 +135,7 @@ int read_ogg_chunk (char *data, FILE *fp)
   return 0;
 }
 
-int 
+static int
 getOGG_MBID(const char *path, char mbid[MBID_BUFFER_SIZE]) 
 {
   FILE *fp;
@@ -199,7 +206,7 @@ ogg_failed:
  * (yes, the flac parser is fairly dirty, sorry, I was in a hurry :P). */
 #define FLAC_MAX_CHUNK_SIZE 0x2000
 
-int
+static int
 read_flac_block (char *data, FILE *fp)
 {
   int size;
@@ -220,7 +227,7 @@ read_flac_block (char *data, FILE *fp)
   return -1;
 }
 
-int 
+static int
 getFLAC_MBID(const char *path, char mbid[MBID_BUFFER_SIZE]) 
 {
   FILE *fp;
@@ -281,7 +288,9 @@ flac_failed:
   return -1;
 }
 
-int getMP3_MBID(const char *path, char mbid[MBID_BUFFER_SIZE]) {
+static int
+getMP3_MBID(const char *path, char mbid[MBID_BUFFER_SIZE])
+{
 
     FILE *fp;
     static int s = 1;
