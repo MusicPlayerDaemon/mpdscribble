@@ -22,10 +22,10 @@
 #ifndef AS_H
 #define AS_H
 
+#include <stdio.h>
+
 #define AS_CLIENT_ID "mdc"
 #define AS_CLIENT_VERSION VERSION
-
-#include <stdio.h>
 
 struct song
 {

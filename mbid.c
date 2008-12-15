@@ -42,6 +42,8 @@ History/Changes:
     
 */
 
+#include "mbid.h"
+
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -49,8 +51,6 @@ History/Changes:
 #ifndef __NT__
 #include <sys/errno.h>
 #endif
-
-#include "mbid.h"
 
 #ifdef MBID_DEBUG
 #define debug(fmt, ...) printf(fmt, ## __VA_ARGS__)

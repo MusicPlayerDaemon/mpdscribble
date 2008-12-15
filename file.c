@@ -19,17 +19,17 @@
 
 */
 
+#include "file.h"
+#include "as.h"
+#include "misc.h"
+#include "config.h"
+
 #include <errno.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 
 #include <regex.h>
-
-#include "as.h"
-#include "file.h"
-#include "misc.h"
-#include "config.h"
 
 struct pair
 {

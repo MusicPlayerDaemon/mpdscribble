@@ -19,17 +19,17 @@
 
 */
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-
-#include <libsoup/soup.h>
-
 #include "conn.h"
 #include "file.h"
 #include "misc.h"
 #include "as.h"
 #include "config.h"
+
+#include <libsoup/soup.h>
+
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
 
 struct global {
   SoupSession *session;

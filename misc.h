@@ -22,7 +22,8 @@
 #ifndef MISC_H
 #define MISC_H
 
-#include <stdlib.h>
+#include <stddef.h>
+#include <stdio.h>
 
 long now (void);
 

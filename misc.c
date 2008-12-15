@@ -19,17 +19,16 @@
 
 */
 
+#include "misc.h"
+
 #include <sys/time.h>
 #include <unistd.h>
 
 #include <time.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
 #include <string.h>
 #include <errno.h>
-
-#include "misc.h"
 
 static FILE *g_log;
 static int g_verbose;

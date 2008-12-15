@@ -22,6 +22,8 @@
 #ifndef FILE_H
 #define FILE_H
 
+#include <stdio.h>
+
 /* 
   default locations for files.
 
@@ -39,9 +41,9 @@
 #define FILE_DEFAULT_PORT 6600
 #define FILE_DEFAULT_HOST "localhost"
 
-enum file_location { file_etc, file_home, file_unknown, };
+struct song;
 
-#include "as.h"
+enum file_location { file_etc, file_home, file_unknown, };
 
 struct config
 {

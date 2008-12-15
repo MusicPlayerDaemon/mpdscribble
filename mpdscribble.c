@@ -19,18 +19,16 @@
 
 */
 
-#include <signal.h>
-
-#include <stdlib.h>
-#include <stdio.h>
-#include <unistd.h>
-
 #include "file.h"
 #include "misc.h"
 #include "lmc.h"
 #include "as.h"
-
 #include "mbid.h"
+
+#include <signal.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <unistd.h>
 
 #define MAX_SKIP_ERROR (3 + file_config.sleep) /* in seconds. */
 

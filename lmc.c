@@ -19,13 +19,13 @@
 
 */
 
+#include "lmc.h"
+#include "misc.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-
-#include "lmc.h"
-#include "misc.h"
 
 static mpd_Connection *g_mpd = NULL;
 mpd_InfoEntity *g_entity = NULL;

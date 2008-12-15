@@ -19,6 +19,14 @@
 
 */
 
+#include "as.h"
+#include "escape.h"
+#include "file.h"
+#include "misc.h"
+#include "md5.h"
+#include "conn.h"
+#include "config.h"
+
 #include <ctype.h>
 #include <errno.h>
 #include <stdio.h>
@@ -27,14 +35,6 @@
 #include <stdarg.h>
 #include <string.h>
 #include <time.h>
-
-#include "escape.h"
-#include "file.h"
-#include "misc.h"
-#include "md5.h"
-#include "conn.h"
-#include "as.h"
-#include "config.h"
 
 #define MAX_VAR_SIZE 8192
 #define MAX_TIMESTAMP_SIZE 64
