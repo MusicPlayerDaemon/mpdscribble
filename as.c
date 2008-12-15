@@ -90,9 +90,6 @@ add_var_internal(GString *s, char sep, const char *key,
   if (val)
     {
       escaped = g_uri_escape_string(val, NULL, false);
-      if (!escaped)
-        /* FIXME: there probably are other things which could cause uri_escape to fail. */
-        fatal ("out of memory");
     }
   else
     {
