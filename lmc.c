@@ -37,7 +37,7 @@ static int g_port;
 static int g_xfade_hack;
 
 static void
-lmc_failure ()
+lmc_failure(void)
 {
   char *ch;
   for (ch = g_mpd->errorStr; *ch; ++ch) {
