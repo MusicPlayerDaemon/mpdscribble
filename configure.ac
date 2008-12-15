@@ -15,7 +15,15 @@ PKG_CHECK_MODULES([libgthread],[gthread-2.0],,[AC_MSG_ERROR([libgthread-2.0 not 
 AC_SUBST(libgthread_CFLAGS)
 AC_SUBST(libgthread_LIBS)
 
-PKG_CHECK_MODULES([libsoup],[libsoup-2.2],,[AC_MSG_ERROR([libsoup-2.2 not found])])
+PKG_CHECK_MODULES([libsoup],[libsoup-2.4],
+	found_soup_24=yes,
+	found_soup_24=no)
+if test x$found_soup_24 = xyes; then
+	AC_DEFINE([HAVE_SOUP_24], [1], [Defined if libsoup-2.4 instead of libsoup-2.2 is used])
+else
+	PKG_CHECK_MODULES([libsoup],[libsoup-2.2],,
+		[AC_MSG_ERROR([libsoup (2.4 or 2.2) not found])])
+fi
 AC_SUBST(libsoup_CFLAGS)
 AC_SUBST(libsoup_LIBS)
 

@@ -33,14 +33,22 @@
 
 struct global {
   SoupSession *session;
+#ifdef HAVE_SOUP_24
+  SoupURI *base_uri;
+#else
   SoupUri *base_uri;
+#endif
   char *base;
   int pending;
   char *receive;
   size_t count;
   callback_t *callback;
   GMainLoop *mainloop;
+#ifdef HAVE_SOUP_24
+  SoupURI *proxy;
+#else
   SoupUri *proxy;
+#endif
 };
 
 static struct global g;
@@ -54,19 +62,33 @@ conn_grow_buffer (size_t new)
 }
 
 static void
+#ifdef HAVE_SOUP_24
+conn_callback (SoupSession * session, SoupMessage * msg, gpointer uri)
+#else
 conn_callback (SoupMessage * msg, gpointer uri)
+#endif
 {
   size_t l;
 
   if (SOUP_STATUS_IS_SUCCESSFUL (msg->status_code))
     {
+#ifdef HAVE_SOUP_24
+      l = msg->response_body->length;
+#else
       l = msg->response.length;
+#endif
       conn_grow_buffer (g.count + l);
+#ifdef HAVE_SOUP_24
+      memcpy (g.receive + g.count, msg->response_body->data, l);
+#else
       memcpy (g.receive + g.count, msg->response.body, l);
+#endif
       g.count += l;
     }
 
-  soup_uri_free (uri);
+  if (uri)
+    soup_uri_free (uri);
+
   if (!--g.pending)
     {
       g.callback (g.count, g.receive);
@@ -121,6 +143,15 @@ conn_initiate (char *url, callback_t *callback, char *post_data,
   if (post_data)
     {
       msg = soup_message_new (SOUP_METHOD_POST, g.base);
+#ifdef HAVE_SOUP_24
+      soup_message_set_request
+        (msg, "application/x-www-form-urlencoded",
+         SOUP_MEMORY_COPY, post_data, strlen (post_data));
+      soup_message_headers_append (msg->request_headers, "User-Agent",
+                               AS_CLIENT_ID "/" AS_CLIENT_VERSION);
+      soup_message_headers_append (msg->request_headers, "Pragma", "no-cache");
+      soup_message_headers_append (msg->request_headers, "Accept", "*/*");
+#else
       soup_message_set_request
         (msg, "application/x-www-form-urlencoded",
          SOUP_BUFFER_USER_OWNED, post_data, strlen (post_data));
@@ -128,6 +159,7 @@ conn_initiate (char *url, callback_t *callback, char *post_data,
                                AS_CLIENT_ID "/" AS_CLIENT_VERSION);
       soup_message_add_header (msg->request_headers, "Pragma", "no-cache");
       soup_message_add_header (msg->request_headers, "Accept", "*/*");
+#endif
     }
   else
     {
