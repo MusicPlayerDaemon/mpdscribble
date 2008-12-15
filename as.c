@@ -85,17 +85,6 @@ static void
 add_var_internal(GString *s, char sep, const char *key,
                  signed char idx, const char *val)
 {
-  char *escaped;
-
-  if (val)
-    {
-      escaped = g_uri_escape_string(val, NULL, false);
-    }
-  else
-    {
-      escaped = g_strdup("");
-    }
-
   g_string_append_c(s, sep);
   g_string_append(s, key);
 
@@ -103,8 +92,12 @@ add_var_internal(GString *s, char sep, const char *key,
     g_string_append_printf(s, "[%i]", idx);
 
   g_string_append_c(s, '=');
-  g_string_append(s, escaped);
-  free (escaped);
+
+  if (val != NULL) {
+    char *escaped = g_uri_escape_string(val, NULL, false);
+    g_string_append(s, escaped);
+    g_free(escaped);
+  }
 }
 
 static void
