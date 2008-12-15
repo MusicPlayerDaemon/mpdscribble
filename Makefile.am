@@ -3,7 +3,7 @@ AUTOMAKE_OPTIONS = foreign 1.9 dist-bzip2
 
 bin_PROGRAMS = mpdscribble
 mpdscribble_SOURCES = mpdscribble.c as.c conn.c file.c lmc.c \
-  md5.c misc.c mbid.c as.h conn.h file.h lmc.h md5.h misc.h mbid.h
+  misc.c mbid.c as.h conn.h file.h lmc.h misc.h mbid.h
 
 mpdscribble_SOURCES += \
 	libmpdclient/str_pool.c libmpdclient/str_pool.h \

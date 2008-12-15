@@ -22,7 +22,6 @@
 #include "as.h"
 #include "file.h"
 #include "misc.h"
-#include "md5.h"
 #include "conn.h"
 #include "config.h"
 
@@ -129,36 +128,6 @@ static char *
 add_var_i(const char *key, signed char idx, const char *val)
 {
   return add_var_internal("&", key, idx, val);
-}
-
-static char *
-md5 (char *in)
-{
-  md5_state_t md5state;
-  unsigned char md5result[16];
-  char *tmp;
-  int i;
-  char a[3];
-
-  if (!strlen(in))
-    return NULL;
-
-  md5_init (&md5state);
-  md5_append (&md5state, (unsigned const char *) in, (int) strlen (in));
-  md5_finish (&md5state, md5result);
-
-  tmp = (char *) calloc (34, 1);
-  if (!tmp)
-    fatal ("out of memory");
-
-  for (i = 0;i < 0x10; i++)
-    {
-      snprintf(a, 3, "%02x", md5result[i]);
-      tmp[(i<<1)] = a[0];
-      tmp[(i<<1)+1] = a[1];
-    }
-
-  return tmp;
 }
 
 static void
@@ -361,7 +330,7 @@ as_handshake_callback (int length, char *response)
         case AS_CHALLENGE:
           {
             char *response2 = g_strconcat(file_config.password, next, NULL);
-            g_md5_response = md5(response2);
+            g_md5_response = g_compute_checksum_for_string(G_CHECKSUM_MD5, response2, -1);
             state = AS_SUBMIT;
             break;
           }
