@@ -405,7 +405,7 @@ file_read_config (int argc, char **argv)
       else if (!strcmp ("--verbose", argv[i]))
         file_config.verbose = file_atoi (argv[++i]);
       else if (!strcmp ("--proxy", argv[i]))
-        file_config.proxy = file_atoi (argv[++i]);
+        file_config.proxy = g_strdup(argv[++i]);
     }
 
   if (!file_config.conf)
