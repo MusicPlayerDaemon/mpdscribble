@@ -140,6 +140,7 @@ getOGG_MBID(const char *path, char mbid[MBID_BUFFER_SIZE])
   size_t bytes, marker_size, items;
   const char *marker = "\003vorbis";
   char data[OGG_MAX_CHUNK_SIZE]; 
+  int offset;
 
   if (path == NULL)
     {
@@ -161,7 +162,7 @@ getOGG_MBID(const char *path, char mbid[MBID_BUFFER_SIZE])
 
   marker_size = strlen (marker);
 
-  int offset = -1;
+  offset = -1;
   for (size_t i=0; i < OGG_MAX_CHUNK_SIZE - marker_size; i++)
     if (!strncmp (data+i, marker, marker_size))
       {
@@ -316,6 +317,8 @@ getMP3_MBID(const char *path, char mbid[MBID_BUFFER_SIZE])
     }
 
     while (s) {
+        int version_major;
+
         mfile(3,head,fp,&s);
         if (!strncmp(head,"ID3",3) == 0) {
             debug("No ID3v2 tag found: %s\n",path);
@@ -323,7 +326,7 @@ getMP3_MBID(const char *path, char mbid[MBID_BUFFER_SIZE])
         }
 
         mfile(2,version,fp,&s);
-        int version_major = (int)version[0];
+        version_major = (int)version[0];
         if (version_major == 2) {
             debug("ID3v2.2.0 does not support MBIDs: %s\n",path);
             break;
