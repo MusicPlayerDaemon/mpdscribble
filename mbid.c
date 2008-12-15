@@ -140,7 +140,7 @@ getOGG_MBID(const char *path, char mbid[MBID_BUFFER_SIZE])
 {
   FILE *fp;
   int i;
-  char *marker = "\003vorbis";
+  const char *marker = "\003vorbis";
   char data[OGG_MAX_CHUNK_SIZE]; 
 
   if (path == NULL)

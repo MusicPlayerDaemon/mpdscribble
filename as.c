@@ -83,7 +83,8 @@ static int g_submit_pending = 0;
 static int g_sleep = 0;
 
 static char *
-add_var_internal(char *sep, char *key, signed char index, char *val)
+add_var_internal(const char *sep, const char *key,
+                 signed char index, const char *val)
 {
   char *ret = (char *) malloc (MAX_VAR_SIZE);
   char *escaped;
@@ -113,19 +114,19 @@ add_var_internal(char *sep, char *key, signed char index, char *val)
 }
 
 static char *
-first_var(char *key, char *val)
+first_var(const char *key, const char *val)
 {
   return add_var_internal("?", key, -1, val);
 }
 
 static char *
-add_var(char *key, char *val)
+add_var(const char *key, const char *val)
 {
   return add_var_internal("&", key, -1, val);
 }
 
 static char *
-add_var_i(char *key, signed char index, char *val)
+add_var_i(const char *key, signed char index, const char *val)
 {
   return add_var_internal("&", key, index, val);
 }

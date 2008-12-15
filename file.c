@@ -123,7 +123,7 @@ free_pairs (struct pair *p)
 }
 
 static void
-add_pair (struct pair **stack, char *ptr,
+add_pair (struct pair **stack, const char *ptr,
           int s0, int e0, int s1, int e1)
 {
   char *key = (char *) calloc (e0 - s0 + 1, 1);
@@ -154,10 +154,10 @@ add_pair (struct pair **stack, char *ptr,
 }
 
 static struct pair *
-get_pair (char *str)
+get_pair(const char *str)
 {
   struct pair *p = NULL;
-  char *ptr;
+  const char *ptr;
   regex_t compiled;
   regmatch_t m[4];
   int error = 0;
@@ -189,7 +189,7 @@ get_pair (char *str)
 }
 
 static char *
-read_file (char *filename)
+read_file(const char *filename)
 {
   long size;
   char *ret;
@@ -219,7 +219,7 @@ read_file (char *filename)
 }
 
 static int
-file_exists (char *filename)
+file_exists(const char *filename)
 {
   FILE *handle = fopen (filename, "rb");
   if (!handle)
@@ -230,9 +230,9 @@ file_exists (char *filename)
 }
 
 static char *
-file_expand_tilde (char *path)
+file_expand_tilde(const char *path)
 {
-  char *home;
+  const char *home;
 
   if (path[0] != '~')
     return strdup2 (path);
