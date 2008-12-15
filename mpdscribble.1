@@ -3,8 +3,8 @@
 .\"
 .TH mpdscribble 1 "APRIL 2005" Linux "User Manuals"
 .SH NAME
-mpd scribble \- A Music Player Daemon (MPD) client which submits 
-information about tracks being played to Audioscrobbler.
+mpdscribble - A Music Player Daemon (MPD) client which submits
+information about tracks being played to Last.fm (formerly Audioscrobbler).
 .SH SYNOPSIS
 .B mpdscribble [options] 
 .SH DESCRIPTION
@@ -18,7 +18,7 @@ and MPD_PORT environment variables. mpdscribble will use localhost:6600
 if those are not set. The hostname and port can also be specified in the
 configuration file or on the command line. 
 
-$ mpdscribble --host myhost --port=12345
+$ mpdscribble \-\-host myhost \-\-port=12345
 
 Values specified on the command line override values from the configuration 
 file or environment variables.
@@ -39,11 +39,11 @@ Display version information and exit.
 Specify log file. /var/log/mpdscribble.log is used by default.
 .TP
 .B \-\-cache FILE
-Specify Audioscrobbler cache file. /var/cache/mpdscribble.cache is used
+Specify Last.fm cache file. /var/cache/mpdscribble.cache is used
 by default.
 .TP
 .B \-\-conf FILE
-Read configuration options from file. /etc/mpdscribble/mpdscribble.conf
+Read configuration options from file. /etc/mpdscribble.conf
 is used by default.
 .TP
 .B \-\-host [PASSWORD@]HOSTNAME
@@ -55,17 +55,17 @@ Specify which port the MPD listens on.
 .B \-\-sleep INTERVAL
 Specify how often mpdscribble should query MPD (in seconds, default is 5).
 .TP
-.B \-\-cache-interval INTERVAL
+.B \-\-cache\-interval INTERVAL
 Specify how often mpdscribble should write its cache file (in seconds, default is 600).
 .TP
 .B \-\-verbose LEVEL
 Specify how verbosely mpdscribble should log. Possible values are 0, 1, 2.
 .SH CONFIGURATION
 mpdscribble looks for its configuration file first at 
-~/.mpdscribble/mpdscribble.conf and then at /etc/mpdscribble/mpdscribble.conf 
+~/.mpdscribble/mpdscribble.conf and then at /etc/mpdscribble.conf
 but this can be overridden by specifying an alternate configuration
 file using the command line option
---conf. 
+\-\-conf.
 
 Supported configuration options:
 .TP
@@ -73,14 +73,14 @@ Supported configuration options:
 Your audioscrobbler username.
 .TP
 .B password = MD5SUM
-The md5sum of your Audioscrobbler password.
+The md5sum of your Last.fm password.
 .TP
 .B log = FILE
 The file to which mpdscribble should output debugging information.
 .TP
 .B cache = FILE
-The file where mpdscribble should store its Audioscrobbler cache in case
-you do not have a connection to the Audioscrobbler server.
+The file where mpdscribble should store its Last.fm cache in case
+you do not have a connection to the Last.fm server.
 .TP
 .B musicdir = PATH
 The path to your mpd music directory, this is optional.
@@ -110,12 +110,12 @@ Per user configuration file.
 
 .I /var/cache/mpdscribble.cache
 .RS
-The system wide Audioscrobbler cache file.
+The system wide Last.fm cache file.
 .RE
 
 .I ~/.mpdscribble/mpdscribble.cache
 .RS
-Per user Audioscrobbler cache file. 
+Per user Last.fm cache file.
 .RE
 
 .I /var/log/mpdscribble.log
