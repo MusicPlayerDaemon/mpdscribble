@@ -213,7 +213,7 @@ read_file(const char *filename)
   count = fread (ret, 1, size, handle);
   fclose (handle);
 
-  if (count == size)
+  if ((long)count == size)
     return ret;
 
   warning_errno ("error reading %s", filename);
