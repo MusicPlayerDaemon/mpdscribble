@@ -1,3 +1,4 @@
+ACLOCAL_AMFLAGS = -I m4
 AUTOMAKE_OPTIONS = foreign 1.9 dist-bzip2
 
 bin_PROGRAMS = mpdscribble

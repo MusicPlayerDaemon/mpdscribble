@@ -3,7 +3,7 @@
 rm -rf config.cache build
 mkdir build
 
-aclocal
+aclocal -I $PWD/m4
 autoconf
 autoheader
 automake --add-missing
