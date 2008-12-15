@@ -87,7 +87,7 @@ help (void)
           "  --sleep          <interval> \tupdate interval (default 1 second)\n"
           "  --cache-interval <interval> \twrite cache file every i seconds\n"
           "                              \t(default 600 seconds)\n"
-          "  --verbose <0-2>             \tverbosity (default 1)\n"
+          "  --verbose <0-2>             \tverbosity (default 2)\n"
           "\n"
           "Report bugs to <kuno@frob.nl>.\n");
 
