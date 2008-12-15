@@ -5,7 +5,6 @@ AC_CONFIG_AUX_DIR(build)
 AM_INIT_AUTOMAKE([foreign 1.9 dist-bzip2])
 
 AC_PROG_CC
-AC_PROG_RANLIB
 
 PKG_CHECK_MODULES([libgobject],[gobject-2.0],,[AC_MSG_ERROR([libgobject-2.0 not found])])
 AC_SUBST(libgobject_CFLAGS)
@@ -19,4 +18,4 @@ PKG_CHECK_MODULES([libsoup],[libsoup-2.2],,[AC_MSG_ERROR([libsoup-2.2 not found]
 AC_SUBST(libsoup_CFLAGS)
 AC_SUBST(libsoup_LIBS)
 
-AC_OUTPUT(Makefile libmpdclient/Makefile)
+AC_OUTPUT(Makefile)
