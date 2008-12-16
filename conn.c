@@ -41,8 +41,6 @@ struct global {
 #endif
   char *base;
   bool pending;
-  char *receive;
-  size_t count;
   callback_t *callback;
   GMainLoop *mainloop;
 #ifdef HAVE_SOUP_24
@@ -55,14 +53,6 @@ struct global {
 static struct global g;
 
 static void
-conn_grow_buffer (size_t new)
-{
-  g.receive = realloc (g.receive, new);
-  if (!g.receive)
-    fatal ("out of memory");
-}
-
-static void
 #ifdef HAVE_SOUP_24
 conn_callback(G_GNUC_UNUSED SoupSession * session,
               SoupMessage * msg, gpointer uri)
@@ -70,34 +60,22 @@ conn_callback(G_GNUC_UNUSED SoupSession * session,
 conn_callback (SoupMessage * msg, gpointer uri)
 #endif
 {
-  size_t l;
-
   assert(g.pending);
-
-  if (SOUP_STATUS_IS_SUCCESSFUL (msg->status_code))
-    {
-#ifdef HAVE_SOUP_24
-      l = msg->response_body->length;
-#else
-      l = msg->response.length;
-#endif
-      conn_grow_buffer (g.count + l);
-#ifdef HAVE_SOUP_24
-      memcpy (g.receive + g.count, msg->response_body->data, l);
-#else
-      memcpy (g.receive + g.count, msg->response.body, l);
-#endif
-      g.count += l;
-    }
 
   if (uri)
     soup_uri_free (uri);
 
   g.pending = false;
-  g.callback (g.count, g.receive);
-  free (g.receive);
-  g.receive = NULL;
-  g.count = 0;
+
+  if (SOUP_STATUS_IS_SUCCESSFUL(msg->status_code)) {
+#ifdef HAVE_SOUP_24
+    g.callback(msg->response_body->length, msg->response_body->data);
+#else
+    g.callback(msg->response.length, msg->response.body);
+#endif
+  } else
+    g.callback(0, NULL);
+
   g_main_loop_quit (g.mainloop);
   g_main_loop_unref (g.mainloop);
 }
@@ -110,9 +88,7 @@ conn_setup (void)
   g_thread_init (NULL);
 
   g.base_uri = NULL;
-  g.receive = NULL;
   g.pending = false;
-  g.count = 0;
   if (file_config.proxy != NULL)
     g.proxy = soup_uri_new(file_config.proxy);
   else
@@ -212,7 +188,5 @@ conn_poll (void)
 void
 conn_cleanup (void)
 {
-  if (g.receive)
-    free (g.receive);
 }
 
