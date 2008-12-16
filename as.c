@@ -261,7 +261,7 @@ as_song_cleanup (struct song *s, int free_struct)
 }
 
 static void
-as_handshake_callback (int length, char *response)
+as_handshake_callback(size_t length, const char *response)
 {
   as_handshaking state = AS_COMMAND;
   char *newline;
@@ -327,7 +327,7 @@ as_queue_remove_oldest (int count)
 }
 
 static void
-as_submit_callback (int length, char *response)
+as_submit_callback(size_t length, const char *response)
 {
   char *newline;
   char *next;

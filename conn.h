@@ -23,8 +23,9 @@
 #define CONN_H
 
 #include <stdbool.h>
+#include <stddef.h>
 
-typedef void callback_t(int, char *);
+typedef void callback_t(size_t, const char *);
 
 #define CONN_FAIL 0
 #define CONN_OK 1
