@@ -27,6 +27,7 @@
 
 #include <glib.h>
 
+#include <assert.h>
 #include <stdbool.h>
 #include <ctype.h>
 #include <errno.h>
@@ -437,6 +438,67 @@ as_handshake (void)
     }
 
   g_string_free(url, true);
+}
+
+static void
+as_now_playing_callback(size_t length, const char *response)
+{
+  char *newline;
+
+  if (length == 0)
+    {
+      g_state = AS_READY;
+      warning("the 'now playing' submit has failed");
+      return;
+    }
+
+  assert(g_state == AS_SUBMITTING);
+
+  newline = memchr(response, '\n', length);
+  if (newline != NULL)
+    length = newline - response;
+
+  notice("now playing notification response: %.*s",
+         (int)length, response);
+
+  g_state = AS_READY;
+}
+
+void
+as_now_playing(const char *artist, const char *track,
+               const char *album, const char *mbid, const int length)
+{
+  GString *post_data;
+  char len[MAX_VAR_SIZE];
+
+  if (g_state != AS_READY)
+    return; /* XXX postpone if busy? */
+
+  g_state = AS_SUBMITTING;
+
+  snprintf (len, MAX_VAR_SIZE, "%i", length);
+
+  post_data = g_string_new(NULL);
+  add_var(post_data, "s", g_session);
+  add_var(post_data, "a", artist);
+  add_var(post_data, "t", track);
+  add_var(post_data, "b", album);
+  add_var(post_data, "l", len);
+  add_var(post_data, "n", "");
+  add_var(post_data, "m", mbid);
+
+  notice("sending 'now playing' notification");
+
+  if (!conn_initiate(g_nowplay_url, as_now_playing_callback,
+                     post_data->str, g_sleep))
+    {
+      warning("failed to POST to %s", g_nowplay_url);
+
+      g_state = AS_READY;
+      as_increase_interval ();
+    }
+
+  g_string_free(post_data, true);
 }
 
 static void

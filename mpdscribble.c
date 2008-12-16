@@ -169,6 +169,10 @@ main (int argc, char** argv)
             notice ("skipping detected (%i), not submitting.", elapsed);
           else
             submitted = 0;
+
+          if (song.artist != NULL && song.title != NULL)
+            as_now_playing(song.artist, song.title, song.album,
+                           mbid, song.time);
         }
       /* not a new song, so check for skipping. */
       else if (!submitted)

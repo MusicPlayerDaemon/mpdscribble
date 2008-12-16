@@ -42,6 +42,10 @@ void as_init (unsigned int seconds);
 void as_poll (void);
 void as_cleanup (void);
 
+void
+as_now_playing(const char *artist, const char *track,
+               const char *album, const char *mbid, const int length);
+
 int as_songchange (const char *file, const char *artist, const char *track,
                    const char *album, const char *mbid, const int length,
                    const char *time);
