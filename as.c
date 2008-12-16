@@ -158,7 +158,7 @@ as_throttle (void)
 }
 
 static int
-as_parse_submit_response (char *line)
+as_parse_submit_response(const char *line)
 {
   static const char *FAILED = "FAILED";
   static const char *BADUSER = "BADUSER";
@@ -168,7 +168,7 @@ as_parse_submit_response (char *line)
 
   if (!strncmp (line, INTERVAL, strlen (INTERVAL)))
     {
-      char *start = line + strlen (INTERVAL) + 1;
+      const char *start = line + strlen (INTERVAL) + 1;
       /* atoi will probably return 0 on error,
          we do NOT want to set interval to 0 on error. */
       if (isdigit (*start))
@@ -195,7 +195,7 @@ as_parse_submit_response (char *line)
     }
   else if (!strncmp (line, FAILED, strlen (FAILED)))
     {
-      char *start = line + strlen (FAILED);
+      const char *start = line + strlen (FAILED);
       if (*start)
         warning ("submission rejected: %s", start);
       else
@@ -210,7 +210,7 @@ as_parse_submit_response (char *line)
 }
 
 static as_handshaking
-as_parse_handshake_response (char *line)
+as_parse_handshake_response(const char *line)
 {
   static const char *UPTODATE = "UPTODATE";
   static const char *UPDATE = "UPDATE";
@@ -223,7 +223,7 @@ as_parse_handshake_response (char *line)
      and as_parse_submit_response. */
   if (!strncmp (line, INTERVAL, strlen (INTERVAL)))
     {
-      char *start = line + strlen (INTERVAL) + 1;
+      const char *start = line + strlen (INTERVAL) + 1;
       /* atoi will probably return 0 on error,
          we do NOT want to set interval to 0 on error. */
       if (isdigit (*start))
