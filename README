@@ -42,13 +42,10 @@ CONFIGURE
 
 
 SUPPORT
-   
-   There are  probably lots of bugs.   Most of the code still needs a
-   lot of testing.
-   
-   In case of  trouble, you can find me as  warp in #audioscrobbler on
-   phasenet irc, or in #mpd and #musicbrainz on freenode irc.
-   
-   Failing that, try e-mail at <kuno@frob.nl>.
 
+If you find a bug, please file a bug report at MPD's bug tracker:
 
+  http://www.musicpd.org/mantis
+
+You can contact me via email <max@duempel.org> or via IRC in #mpd on
+freenode.
