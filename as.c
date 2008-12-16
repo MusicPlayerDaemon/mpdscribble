@@ -57,7 +57,8 @@ typedef enum
 typedef enum
   {
     AS_COMMAND,
-    AS_CHALLENGE,
+    AS_SESSION,
+    AS_NOWPLAY,
     AS_SUBMIT,
   } as_handshaking;
 
@@ -69,6 +70,8 @@ typedef enum
     AS_SUBMIT_HANDSHAKE,
   } as_submitting;
 
+static char *g_session = NULL;
+static char *g_nowplay_url = NULL;
 static char *g_submit_url = NULL;
 static char *g_md5_response = NULL;
 static int g_interval = 1;
@@ -160,35 +163,18 @@ as_throttle (void)
 static int
 as_parse_submit_response(const char *line)
 {
-  static const char *FAILED = "FAILED";
-  static const char *BADUSER = "BADUSER";
-  static const char *BADAUTH = "BADAUTH";
   static const char *OK = "OK";
-  static const char *INTERVAL = "INTERVAL";
+  static const char *BADSESSION = "BADSESSION";
+  static const char *FAILED = "FAILED";
 
-  if (!strncmp (line, INTERVAL, strlen (INTERVAL)))
-    {
-      const char *start = line + strlen (INTERVAL) + 1;
-      /* atoi will probably return 0 on error,
-         we do NOT want to set interval to 0 on error. */
-      if (isdigit (*start))
-        notice ("interval set to %i seconds.",
-                g_interval = atoi (start));
-      else
-        notice ("error parsing interval command.");
-
-      return AS_SUBMIT_NOP;
-    }
-  else if (!strncmp (line, OK, strlen (OK)))
+  if (!strncmp (line, OK, strlen (OK)))
     {
       notice ("OK");
       return AS_SUBMIT_OK;
     }
-  else if (!strncmp (line, BADUSER, strlen (BADUSER))
-           || !strncmp (line, BADAUTH, strlen (BADAUTH)))
+  else if (!strncmp (line, BADSESSION, strlen (BADSESSION)))
     {
-      warning ("md5 challenge incorrect,"
-               " wrong username or password?");
+      warning ("invalid session");
 
       g_state = AS_NOTHING;
       return AS_SUBMIT_HANDSHAKE;
@@ -212,45 +198,35 @@ as_parse_submit_response(const char *line)
 static as_handshaking
 as_parse_handshake_response(const char *line)
 {
-  static const char *UPTODATE = "UPTODATE";
-  static const char *UPDATE = "UPDATE";
-  static const char *FAILED = "FAILED";
-  static const char *BADUSER = "BADUSER";
+  static const char *OK = "OK";
+  static const char *BANNED = "BANNED";
   static const char *BADAUTH = "BADAUTH";
-  static const char *INTERVAL = "INTERVAL";
+  static const char *BADTIME = "BADTIME";
+  static const char *FAILED = "FAILED";
 
   /* FIXME: some code duplication between this
      and as_parse_submit_response. */
-  if (!strncmp (line, INTERVAL, strlen (INTERVAL)))
-    {
-      const char *start = line + strlen (INTERVAL) + 1;
-      /* atoi will probably return 0 on error,
-         we do NOT want to set interval to 0 on error. */
-      if (isdigit (*start))
-        notice ("interval set to %i seconds.",
-                g_interval = atoi (start));
-      else
-        warning ("error parsing interval command.");
-
-      return AS_COMMAND;
-    }
-  else if (!strncmp (line, UPTODATE, strlen (UPTODATE)))
+  if (!strncmp (line, OK, strlen (OK)))
     {
       notice ("handshake ok.");
       g_interval = 1;
-      return AS_CHALLENGE;
+      return AS_SESSION;
     }
-  else if (!strncmp (line, UPDATE, strlen (UPDATE)))
+  else if (!strncmp (line, BANNED, strlen (BANNED)))
     {
-      warning ("handshake ok, however, a newer version"
-               " of your audioscrobbler plugin is available (%s).", line);
-      g_interval = 1;
-      return AS_CHALLENGE;
+      warning ("handshake failed, we're banned (%s).", line);
+      g_state = AS_BADAUTH;
+      return AS_COMMAND;
     }
-  else if (!strncmp (line, BADUSER, strlen (BADUSER))
-           || !strncmp (line, BADAUTH, strlen (BADAUTH)))
+  else if (!strncmp (line, BADAUTH, strlen (BADAUTH)))
     {
       warning ("handshake failed, username or password incorrect (%s).", line);
+      g_state = AS_BADAUTH;
+      return AS_COMMAND;
+    }
+  else if (!strncmp (line, BADTIME, strlen (BADTIME)))
+    {
+      warning ("handshake failed, clock not synchronized (%s).", line);
       g_state = AS_BADAUTH;
       return AS_COMMAND;
     }
@@ -315,13 +291,16 @@ as_handshake_callback (int length, char *response)
         case AS_COMMAND:
           state = as_parse_handshake_response (next);
           break;
-        case AS_CHALLENGE:
-          {
-            char *response2 = g_strconcat(file_config.password, next, NULL);
-            g_md5_response = g_compute_checksum_for_string(G_CHECKSUM_MD5, response2, -1);
-            state = AS_SUBMIT;
-            break;
-          }
+        case AS_SESSION:
+          g_session = g_strdup(next);
+          notice ("session: %s", g_session);
+          state = AS_NOWPLAY;
+          break;
+        case AS_NOWPLAY:
+          g_nowplay_url = g_strdup(next);
+          notice ("now playing url: %s", g_nowplay_url);
+          state = AS_SUBMIT;
+          break;
         case AS_SUBMIT:
           g_submit_url = g_strdup(next);
           notice ("submit url: %s", g_submit_url);
@@ -404,31 +383,49 @@ as_submit_callback (int length, char *response)
 static char *
 as_timestamp (void)
 {
-  /* create timestamp for 1.1 protocol. */
-  time_t t;
-  char *utc = g_malloc(MAX_TIMESTAMP_SIZE);
+  /* create timestamp for 1.2 protocol. */
+  time_t timestamp = time (NULL);
+  char timestr[12];
+  snprintf(timestr, 12, "%ld", timestamp);
 
-  t = time (NULL);
-  strftime (utc, MAX_TIMESTAMP_SIZE, "%Y-%m-%d %H:%M:%S", gmtime (&t));
+  return g_strdup(timestr);
+}
 
-  return utc;
+static char *
+as_md5(const char *password, const char *timestamp)
+{
+  char *cat, *result;
+
+  cat = g_strconcat(password, timestamp, NULL);
+  result = g_compute_checksum_for_string(G_CHECKSUM_MD5, cat, -1);
+  g_free(cat);
+
+  return result;
 }
 
 static void
 as_handshake (void)
 {
   GString *url;
+  char *timestr, *md5;
 
   g_state = AS_HANDSHAKING;
+
+  timestr = as_timestamp();
+  md5 = as_md5(file_config.password, timestr);
 
   /* construct the handshake url. */
   url = g_string_new(AS_HOST);
   first_var(url, "hs", "true");
-  add_var(url, "p", "1.1");
+  add_var(url, "p", "1.2");
   add_var(url, "c", AS_CLIENT_ID);
   add_var(url, "v", AS_CLIENT_VERSION);
   add_var(url, "u", file_config.username);
-  // add_var ("a", file_config.password, 0),
+  add_var(url, "t", timestr);
+  add_var(url, "a", md5);
+
+  g_free(timestr);
+  g_free(md5);
 
   //  notice ("handshake url:\n%s", url);
 
@@ -451,7 +448,7 @@ as_submit (void)
   int count = 0;
   int queue_size = g_queue_size;
   struct song *queue = g_queue;
-  GString *url, *post_data;
+  GString *post_data;
   char len[MAX_VAR_SIZE];
 
   if (!g_queue_size)
@@ -460,11 +457,8 @@ as_submit (void)
   g_state = AS_SUBMITTING;
 
   /* construct the handshake url. */
-  url = g_string_new(g_submit_url);
-  first_var(url, "u", file_config.username);
-  add_var(url, "s", g_md5_response);
-
   post_data = g_string_new(NULL);
+  add_var(post_data, "s", g_session);
 
   while (queue_size && (count < MAX_SUBMIT_COUNT))
     {
@@ -474,7 +468,10 @@ as_submit (void)
       add_var_i(post_data, "t", count, queue->track);
       add_var_i(post_data, "l", count, len);
       add_var_i(post_data, "i", count, queue->time);
+      add_var_i(post_data, "o", count, "P");
+      add_var_i(post_data, "r", count, "");
       add_var_i(post_data, "b", count, queue->album);
+      add_var_i(post_data, "n", count, "");
       add_var_i(post_data, "m", count, queue->mbid);
 
       count++;
@@ -484,10 +481,11 @@ as_submit (void)
 
   notice ("submitting %i song%s.", count, count==1 ? "" : "s");
   notice ("post data: %s", post_data->str);
-  notice ("url: %s", url->str);
+  notice ("url: %s", g_submit_url);
 
   g_submit_pending = count;
-  if (!conn_initiate (url->str, &as_submit_callback, post_data->str, g_sleep))
+  if (!conn_initiate(g_submit_url, &as_submit_callback, post_data->str,
+                     g_sleep))
     {
       warning ("something went wrong when trying to connect,"
                " probably a bug.");
@@ -496,7 +494,6 @@ as_submit (void)
       as_increase_interval ();
     }
 
-  g_string_free(url, true);
   g_string_free(post_data, true);
 }
 
