@@ -27,6 +27,7 @@
 
 #include <libsoup/soup.h>
 
+#include <assert.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -39,7 +40,7 @@ struct global {
   SoupUri *base_uri;
 #endif
   char *base;
-  int pending;
+  bool pending;
   char *receive;
   size_t count;
   callback_t *callback;
@@ -71,6 +72,8 @@ conn_callback (SoupMessage * msg, gpointer uri)
 {
   size_t l;
 
+  assert(g.pending);
+
   if (SOUP_STATUS_IS_SUCCESSFUL (msg->status_code))
     {
 #ifdef HAVE_SOUP_24
@@ -90,15 +93,13 @@ conn_callback (SoupMessage * msg, gpointer uri)
   if (uri)
     soup_uri_free (uri);
 
-  if (!--g.pending)
-    {
-      g.callback (g.count, g.receive);
-      free (g.receive);
-      g.receive = NULL;
-      g.count = 0;
-      g_main_loop_quit (g.mainloop);
-      g_main_loop_unref (g.mainloop);
-    }
+  g.pending = false;
+  g.callback (g.count, g.receive);
+  free (g.receive);
+  g.receive = NULL;
+  g.count = 0;
+  g_main_loop_quit (g.mainloop);
+  g_main_loop_unref (g.mainloop);
 }
 
 
@@ -110,7 +111,7 @@ conn_setup (void)
 
   g.base_uri = NULL;
   g.receive = NULL;
-  g.pending = 0;
+  g.pending = false;
   g.count = 0;
   if (file_config.proxy != NULL)
     g.proxy = soup_uri_new(file_config.proxy);
@@ -130,6 +131,8 @@ conn_initiate (char *url, callback_t *callback, char *post_data,
                unsigned int seconds)
 {
   SoupMessage *msg;
+
+  assert(!g.pending);
 
   g.callback = callback;
 
@@ -170,7 +173,7 @@ conn_initiate (char *url, callback_t *callback, char *post_data,
 
   soup_message_set_flags (msg, SOUP_MESSAGE_NO_REDIRECT);
 
-  g.pending++;
+  g.pending = true;
   soup_session_queue_message (g.session, msg,
                               conn_callback, soup_uri_new (g.base));
 
@@ -180,13 +183,13 @@ conn_initiate (char *url, callback_t *callback, char *post_data,
   return CONN_OK;
 }
 
-int
+bool
 conn_pending (void)
 {
   return g.pending;
 }
 
-int
+bool
 conn_poll (void)
 {
   g_main_loop_run (g.mainloop);

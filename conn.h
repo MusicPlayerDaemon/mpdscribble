@@ -22,6 +22,8 @@
 #ifndef CONN_H
 #define CONN_H
 
+#include <stdbool.h>
+
 typedef void callback_t(int, char *);
 
 #define CONN_FAIL 0
@@ -35,7 +37,7 @@ void conn_cleanup (void);
 
 int conn_initiate (char *url, callback_t *callback, char *post_data,
                    unsigned int seconds);
-int conn_poll (void);
-int conn_pending (void);
+bool conn_poll (void);
+bool conn_pending (void);
 
 #endif /* CONN_H */

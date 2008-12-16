@@ -583,8 +583,6 @@ as_init (unsigned int seconds)
 void
 as_poll (void)
 {
-  int i;
-
   switch (g_state)
     {
     case AS_NOTHING:
@@ -593,7 +591,7 @@ as_poll (void)
       break;
     case AS_SUBMITTING:
     case AS_HANDSHAKING:
-      i = conn_poll ();
+      conn_poll ();
       break;
     case AS_READY:
       if (as_throttle ())
