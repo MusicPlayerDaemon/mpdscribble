@@ -1,3 +1,15 @@
+mpdscribble 0.13 - not yet released
+  * libmpdclient update from upstream:
+    - suport for Unix domain sockets
+    - try all IP addresses from the resolver, resulting in better IPv6 support
+    - smaller buffers, less memory usage
+  * support the Last.fm Submissions Protocol v1.2
+  * HTTP proxy support
+  * support for libsoup 2.4
+  * fixed several crash bugs
+  * fixed gcc warnings
+
+
 New in 0.2.12:
 
   - Just noticed a patch for 0.2.6 by Decklin Foster in my mailbox
