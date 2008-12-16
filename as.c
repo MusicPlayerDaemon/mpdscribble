@@ -276,11 +276,11 @@ as_parse_handshake_response (char *line)
 static void
 as_song_cleanup (struct song *s, int free_struct)
 {
-  if (s->artist) free (s->artist);
-  if (s->track) free (s->track);
-  if (s->album) free (s->album);
-  if (s->mbid) free (s->mbid);
-  if (s->time) free (s->time);
+  g_free(s->artist);
+  g_free(s->track);
+  g_free(s->album);
+  g_free(s->mbid);
+  g_free(s->time);
   if (free_struct) free (s);
 }
 
@@ -406,9 +406,7 @@ as_timestamp (void)
 {
   /* create timestamp for 1.1 protocol. */
   time_t t;
-  char *utc = malloc (MAX_TIMESTAMP_SIZE);
-  if (!utc)
-    exit (ENOMEM);
+  char *utc = g_malloc(MAX_TIMESTAMP_SIZE);
 
   t = time (NULL);
   strftime (utc, MAX_TIMESTAMP_SIZE, "%Y-%m-%d %H:%M:%S", gmtime (&t));
@@ -530,10 +528,7 @@ as_songchange (const char *file, const char *artist, const char *track,
       return -1;
     }
 
-  current = (struct song *) malloc (sizeof (struct song));
-  if (!current)
-    exit (ENOMEM);
-
+  current = g_new(struct song, 1);
   current->next = NULL;
   current->artist = g_strdup(artist);
   current->track = g_strdup(track);
@@ -631,10 +626,8 @@ as_cleanup (void)
       sng = sng->next;
     }
 
-  if (g_submit_url)
-    free (g_submit_url);
-  if (g_md5_response)
-    free (g_md5_response);
+  g_free(g_submit_url);
+  g_free(g_md5_response);
 
   conn_cleanup ();
 }

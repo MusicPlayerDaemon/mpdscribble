@@ -129,19 +129,11 @@ static void
 add_pair (struct pair **stack, const char *ptr,
           int s0, int e0, int s1, int e1)
 {
-  char *key = (char *) calloc (e0 - s0 + 1, 1);
-  char *val = (char *) calloc (e1 - s1 + 1, 1);
-  struct pair *p = (struct pair *) malloc (sizeof (struct pair));
+  struct pair *p = g_new(struct pair, 1);
   struct pair *last;
 
-  if (!p)
-    exit (ENOMEM);
-
-  memcpy (key, ptr + s0, e0 - s0);
-  memcpy (val, ptr + s1, e1 - s1);
-
-  p->key = key;
-  p->val = val;
+  p->key = g_strndup(ptr + s0, e0 - s0);
+  p->val = g_strndup(ptr + s1, e1 - s1);
   p->next = NULL;
 
   if (!*stack)
