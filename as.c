@@ -264,6 +264,7 @@ static void
 as_handshake_callback (int length, char *response)
 {
   as_handshaking state = AS_COMMAND;
+  char *newline;
   char *next;
 
   if (g_state != AS_HANDSHAKING)
@@ -278,14 +279,9 @@ as_handshake_callback (int length, char *response)
       return;
     }
 
-  /* although we cannot be certain response ends with a
-     \0, a valid response ends with a useless newline.
-     so we overwrite that newline with a \0 here. */
-  response[length-1] = 0;
-
-  next = strtok (response, "\n");
-  do
+  while ((newline = memchr(response, '\n', length)) != NULL)
     {
+      next = g_strndup(response, newline - response);
       switch (state)
         {
         case AS_COMMAND:
@@ -308,8 +304,11 @@ as_handshake_callback (int length, char *response)
           g_state = AS_READY;
           break;
         }
+
+      g_free(next);
+      length = response + length - (newline + 1);
+      response = newline + 1;
     }
-  while ((next = strtok (NULL, "\n")));
 }
 
 static void
@@ -330,6 +329,7 @@ as_queue_remove_oldest (int count)
 static void
 as_submit_callback (int length, char *response)
 {
+  char *newline;
   char *next;
   int failed = 0;
 
@@ -346,14 +346,9 @@ as_submit_callback (int length, char *response)
     warning ("as_submit_callback called when not submitting,"
              " this is probably a bug.");
 
-  /* although we cannot be certain response ends with a
-     \0, a valid response ends with a useless newline.
-     so we overwrite that newline with a \0 here. */
-  response[length-1] = 0;
-
-  next = strtok (response, "\n");
-  do
+  while ((newline = memchr(response, '\n', length)) != NULL)
     {
+      next = g_strndup(response, newline - response);
       switch (as_parse_submit_response (next))
         {
         case AS_SUBMIT_OK:
@@ -368,8 +363,11 @@ as_submit_callback (int length, char *response)
         case AS_SUBMIT_HANDSHAKE:
           break;
         }
+
+      g_free(next);
+      length = response + length - (newline + 1);
+      response = newline + 1;
     }
-  while ((next = strtok (NULL, "\n")));
 
   if (failed)
     as_increase_interval ();
