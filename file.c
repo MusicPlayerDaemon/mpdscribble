@@ -26,7 +26,7 @@
 
 #include <glib.h>
 
-#include <errno.h>
+#include <stdbool.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -186,31 +186,18 @@ get_pair(const char *str)
 static char *
 read_file(const char *filename)
 {
-  long size;
-  char *ret;
-  size_t count;
+  bool ret;
+  gchar *contents;
+  GError *error = NULL;
 
-  FILE *handle = fopen (filename, "rb");
-  if (!handle)
-    {
-      warning_errno ("error opening %s", filename);
-      return NULL;
-    }
+  ret = g_file_get_contents(filename, &contents, NULL, &error);
+  if (!ret) {
+    warning("%s", error->message);
+    g_error_free(error);
+    return NULL;
+  }
 
-  fseek (handle, 0, SEEK_END);
-  size = ftell (handle);
-  fseek (handle, 0, SEEK_SET);
-
-  ret = (char *) calloc (size+1, 1);
-  count = fread (ret, 1, size, handle);
-  fclose (handle);
-
-  if ((long)count == size)
-    return ret;
-
-  warning_errno ("error reading %s", filename);
-  free (ret);
-  return NULL;
+  return contents;
 }
 
 static int
