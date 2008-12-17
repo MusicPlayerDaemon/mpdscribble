@@ -27,13 +27,12 @@
 
 #include <glib.h>
 
+#include <stdbool.h>
 #include <signal.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <unistd.h>
 #include <string.h>
-
-#define MAX_SKIP_ERROR (3 + file_config.sleep) /* in seconds. */
 
 const char *program_name;
 
@@ -59,15 +58,29 @@ sigpipe_handler(G_GNUC_UNUSED int signum)
   warning ("broken pipe, disconnected from mpd");
 }
 
+static bool
+played_long_enough(GTimer *timer, int length)
+{
+  int elapsed = g_timer_elapsed(timer, NULL);
+
+  /* http://www.lastfm.de/api/submissions "The track must have been
+     played for a duration of at least 240 seconds or half the track's
+     total length, whichever comes first. Skipping or pausing the
+     track is irrelevant as long as the appropriate amount has been
+     played."
+   */
+  return elapsed > 240 ||
+    (length >= 30 && elapsed > length / 2);
+}
+
 int
 main (int argc, char** argv)
 {
   lmc_song song, streaming_song;
 
   int last_id = -1;
-  int last_el = 0;
-  int last_mark = 0;
   int elapsed = 0;
+  GTimer *timer;
   int submitted = 1;
   int was_paused = 0;
   int next_save = 0;
@@ -105,15 +118,14 @@ main (int argc, char** argv)
   next_save = now () + file_config.cache_interval;
   mbid[0] = 0x00;
 
+  timer = g_timer_new();
+
   while (1)
     {
-      int max_skip_error;
-
       as_poll ();
       fflush (log);
       as_sleep ();
       elapsed = lmc_current (&song);
-      max_skip_error = MAX_SKIP_ERROR + lmc_xfade_hack ();
 
       if (now () > next_save)
         {
@@ -124,6 +136,8 @@ main (int argc, char** argv)
 
       if (elapsed == LMC_PAUSED)
         {
+          if (!was_paused)
+            g_timer_stop(timer);
           was_paused = 1;
           continue;
         }
@@ -135,11 +149,9 @@ main (int argc, char** argv)
 
       if (was_paused)
         {
-          /* song is paused, reset the measured time to the amount
-             the song has actually played. */
-          was_paused = 0;
-          last_el = elapsed;
-          last_mark = now ();
+          if (song.id == last_id)
+            g_timer_continue(timer);
+          was_paused = false;
         }
 
       /* new song. */
@@ -171,10 +183,7 @@ main (int argc, char** argv)
           else
             notice ("new song detected with tags missing (%s)", song.file); 
           last_id = song.id;
-          last_el = elapsed;
-          last_mark = now ();
-
-          submitted = 1;
+          g_timer_start(timer);
 
           if (file_config.musicdir && chdir (file_config.musicdir) != 0)
             {
@@ -199,39 +208,15 @@ main (int argc, char** argv)
             notice ("streaming song (%s - %s) detected",
                     streaming_song.artist, streaming_song.title);
 
-          } else if (song.time < 30)
-            notice ("however, song is too short, not submitting.");
-          /* don't submit the song which is being played when we start,.. too
-             many double submits when restarting the client during testing in
-             the first half of a song ;) */
-          else if (elapsed > max_skip_error*2)
-            notice ("skipping detected (%i), not submitting.", elapsed);
-          else
+          } else
             submitted = 0;
 
           if (song.artist != NULL && song.title != NULL)
             as_now_playing(song.artist, song.title, song.album,
                            mbid, song.time);
         }
-      /* not a new song, so check for skipping. */
-      else if (!submitted)
-        {
-          int time2 = now();
-          int calculated = last_el + (time2 - last_mark);
 
-          if ((elapsed+max_skip_error < calculated)
-              || (elapsed-max_skip_error > calculated))
-            {
-              notice ("skipping detected (%i to %i), not submitting.", elapsed,
-                calculated);
-              submitted = 1;
-            }
-
-          last_el = elapsed;
-          last_mark = time2;
-        }
-
-      if (!submitted && ((elapsed > 240) || (elapsed > (song.time/2))))
+      if (!submitted && played_long_enough(timer, song.time))
         {
           /* FIXME:
              libmpdclient doesn't have any way to fetch the musicbrainz id. */
@@ -244,6 +229,8 @@ main (int argc, char** argv)
           submitted = 1;
         }
     }
+
+  g_timer_destroy(timer);
 
   return 0;
 }
