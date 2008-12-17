@@ -34,8 +34,6 @@
 #include <unistd.h>
 #include <string.h>
 
-const char *program_name;
-
 static void
 cleanup (void)
 {
@@ -89,7 +87,6 @@ main (int argc, char** argv)
 
   /* apparantly required for regex.h, which
      is used in file.h */
-  program_name = argv[0];
   set_logfile (stderr, 2);
   if (!file_read_config (argc, argv))
     fatal ("cannot read configuration file.\n");
