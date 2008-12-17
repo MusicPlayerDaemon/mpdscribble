@@ -34,7 +34,6 @@ mpd_InfoEntity *g_entity = NULL;
 
 static char *g_host;
 static int g_port;
-static int g_xfade_hack;
 
 static void
 lmc_failure(void)
@@ -98,7 +97,6 @@ lmc_connect (char *host, int port)
 {
   g_host = host;
   g_port = port;
-  g_xfade_hack = 0;
   lmc_reconnect ();
 }
 
@@ -116,13 +114,6 @@ lmc_disconnect (void)
       mpd_closeConnection (g_mpd);
       g_mpd = 0;
     }
-}
-
-int
-lmc_xfade_hack ()
-{
-    // call lmc_current to update this value.
-    return g_xfade_hack;
 }
 
 int
@@ -223,8 +214,6 @@ lmc_current (struct mpd_song *songptr)
       lmc_failure ();
       return 0;
     }
-
-  g_xfade_hack = status->crossfade;
 
   mpd_freeStatus(status);
 
