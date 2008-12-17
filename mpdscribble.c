@@ -76,7 +76,7 @@ played_long_enough(GTimer *timer, int length)
 int
 main (int argc, char** argv)
 {
-  lmc_song song, streaming_song;
+  lmc_song song;
 
   int last_id = -1;
   int elapsed = 0;
@@ -84,12 +84,8 @@ main (int argc, char** argv)
   int submitted = 1;
   int was_paused = 0;
   int next_save = 0;
-  int streaming_time = 0;
-  char * streaming_start = NULL;
   char mbid[MBID_BUFFER_SIZE];
   FILE * log;
-
-  memset(&streaming_song, 0, sizeof (streaming_song));
 
   /* apparantly required for regex.h, which
      is used in file.h */
@@ -157,27 +153,6 @@ main (int argc, char** argv)
       /* new song. */
       if (song.id != last_id)
         {
-          /* song change, did we have a streaming_song queued up? */
-          if (streaming_time) {
-              int q;
-
-              streaming_song.time = time(NULL) - streaming_time;
-
-              q = as_songchange(streaming_song.file, streaming_song.artist,
-                                streaming_song.title, streaming_song.album,
-                                mbid, streaming_song.time, streaming_start);
-              if (q != -1)
-                notice ("added streaming (%s - %s) to submit queue at position %i.",
-                        streaming_song.artist, streaming_song.title, q);
-
-              streaming_time = 0;
-              g_free(streaming_start);
-              g_free(streaming_song.file);
-              g_free(streaming_song.artist);
-              g_free(streaming_song.title);
-              g_free(streaming_song.album);
-          }
-
           if (song.artist && song.title)
             notice ("new song detected (%s - %s), id: %i, pos: %i", song.artist, song.title, song.id, song.pos);
           else
@@ -195,21 +170,7 @@ main (int argc, char** argv)
                 notice ("mbid is %s.", mbid);
             }
 
-          if (0 == strncmp (song.file, "http://", 7)) {
-            // this is a streamed song
-            streaming_song.file = g_strdup(song.file);
-            streaming_song.artist = g_strdup(song.artist);
-            streaming_song.title = g_strdup(song.title);
-            streaming_song.album = g_strdup(song.album);
-
-            streaming_time = time(NULL);
-            streaming_start = as_timestamp();
-
-            notice ("streaming song (%s - %s) detected",
-                    streaming_song.artist, streaming_song.title);
-
-          } else
-            submitted = 0;
+          submitted = 0;
 
           if (song.artist != NULL && song.title != NULL)
             as_now_playing(song.artist, song.title, song.album,
@@ -221,7 +182,10 @@ main (int argc, char** argv)
           /* FIXME:
              libmpdclient doesn't have any way to fetch the musicbrainz id. */
           int q = as_songchange (song.file, song.artist, song.title,
-                                 song.album, mbid, song.time, NULL);
+                                 song.album, mbid,
+                                 song.time > 0 ? song.time
+                                 : (int)g_timer_elapsed(timer, NULL),
+                                 NULL);
           if (q != -1)
             notice ("added (%s - %s) to submit queue at position %i.",
                     song.artist, song.title, q);
