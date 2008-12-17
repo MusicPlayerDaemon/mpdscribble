@@ -298,6 +298,37 @@ replace (char **dst, char *src)
   *dst = src;
 }
 
+static void
+load_string(GKeyFile *file, const char *name, char **value_r)
+{
+  GError *error = NULL;
+  char *value = g_key_file_get_string(file, PACKAGE, name, &error);
+
+  if (error != NULL) {
+    if (error->code == G_KEY_FILE_ERROR_KEY_NOT_FOUND)
+      return;
+    fatal("%s", error->message);
+  }
+
+  g_free(*value_r);
+  *value_r = value;
+}
+
+static void
+load_integer(GKeyFile *file, const char *name, int *value_r)
+{
+  GError *error = NULL;
+  int value = g_key_file_get_integer(file, PACKAGE, name, &error);
+
+  if (error != NULL) {
+    if (error->code == G_KEY_FILE_ERROR_KEY_NOT_FOUND)
+      return;
+    fatal("%s", error->message);
+  }
+
+  *value_r = value;
+}
+
 int
 file_read_config (int argc, char **argv)
 {
@@ -325,36 +356,33 @@ file_read_config (int argc, char **argv)
   /* parse config file options. */
   if (file_config.conf && (data = read_file (file_config.conf)))
     {
-      struct pair *p = get_pair (data);
+      /* GKeyFile does not allow values without a section.  Apply a
+         hack here: prepend the string "[mpdscribble]" to have all
+         values in the "mpdscribble" section */
+      char *data2 = g_strconcat("[" PACKAGE "]\n", data, NULL);
+      GKeyFile *file = g_key_file_new();
+      GError *error = NULL;
 
-      while (p)
-        {
-          if (!strcmp ("username", p->key))
-            file_config.username = g_strdup(p->val);
-          else if (!strcmp ("password", p->key))
-            file_config.password = g_strdup(p->val);
-          else if (!strcmp ("log", p->key))
-            file_config.log = g_strdup(p->val);
-          else if (!strcmp ("cache", p->key))
-            file_config.cache = g_strdup(p->val);
-          else if (!strcmp ("musicdir", p->key))
-            file_config.musicdir = g_strdup(p->val);
-          else if (!strcmp ("host", p->key))
-            file_config.host = g_strdup(p->val);
-          else if (!strcmp ("port", p->key))
-            file_config.port = file_atoi (p->val);
-          else if (!strcmp ("proxy", p->key))
-            file_config.proxy = g_strdup(p->val);
-          else if (!strcmp ("sleep", p->key))
-            file_config.sleep = file_atoi (p->val);
-          else if (!strcmp ("cache_interval", p->key))
-            file_config.cache_interval = file_atoi (p->val);
-          else if (!strcmp ("verbose", p->key))
-            file_config.verbose = file_atoi (p->val);
-          p = p->next;
-        }
+      g_free(data);
+      g_key_file_load_from_data(file, data2, strlen(data2),
+                                G_KEY_FILE_NONE, &error);
+      g_free(data2);
+      if (error != NULL)
+        fatal("%s", error->message);
 
-      free_pairs (p);
+      load_string(file, "username", &file_config.username);
+      load_string(file, "password", &file_config.password);
+      load_string(file, "log", &file_config.log);
+      load_string(file, "cache", &file_config.cache);
+      load_string(file, "musicdir", &file_config.musicdir);
+      load_string(file, "host", &file_config.host);
+      load_integer(file, "port", &file_config.port);
+      load_string(file, "proxy", &file_config.proxy);
+      load_integer(file, "sleep", &file_config.sleep);
+      load_integer(file, "cache_interval", &file_config.cache_interval);
+      load_integer(file, "verbose", &file_config.verbose);
+
+      g_key_file_free(file);
     }
 
   /* parse command-line options. */
@@ -410,7 +438,6 @@ file_read_config (int argc, char **argv)
   if (file_config.verbose == -1)
     file_config.verbose = 2;
 
-  free (data);
   return 1;
 }
 
