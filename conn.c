@@ -135,7 +135,7 @@ conn_initiate (char *url, callback_t *callback, char *post_data,
 #else
       soup_message_set_request
         (msg, "application/x-www-form-urlencoded",
-         SOUP_BUFFER_USER_OWNED, post_data, strlen (post_data));
+         SOUP_BUFFER_SYSTEM_OWNED, g_strdup(post_data), strlen(post_data));
       soup_message_add_header (msg->request_headers, "User-Agent", 
                                AS_CLIENT_ID "/" AS_CLIENT_VERSION);
       soup_message_add_header (msg->request_headers, "Pragma", "no-cache");
