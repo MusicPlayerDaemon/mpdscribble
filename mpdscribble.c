@@ -34,6 +34,10 @@
 #include <unistd.h>
 #include <string.h>
 
+static bool submitted = true;
+static GTimer *timer;
+static char mbid[MBID_BUFFER_SIZE];
+
 static void
 cleanup (void)
 {
@@ -57,7 +61,7 @@ sigpipe_handler(G_GNUC_UNUSED int signum)
 }
 
 static bool
-played_long_enough(GTimer *timer, int length)
+played_long_enough(int length)
 {
   int elapsed = g_timer_elapsed(timer, NULL);
 
@@ -71,6 +75,34 @@ played_long_enough(GTimer *timer, int length)
     (length >= 30 && elapsed > length / 2);
 }
 
+static void
+song_changed(const struct mpd_song *song)
+{
+  if (song->artist && song->title)
+    notice("new song detected (%s - %s), id: %i, pos: %i",
+            song->artist, song->title, song->id, song->pos);
+  else
+    notice("new song detected with tags missing (%s)", song->file);
+
+  g_timer_start(timer);
+
+  if (file_config.musicdir && chdir (file_config.musicdir) != 0)
+    {
+      // yeah, I know i'm being silly, but I can't be arsed to
+      // concat the parts :P
+      if (getMBID (song->file, mbid))
+        mbid[0] = 0x00;
+      else
+        notice ("mbid is %s.", mbid);
+    }
+
+  submitted = false;
+
+  if (song->artist != NULL && song->title != NULL)
+    as_now_playing(song->artist, song->title, song->album,
+                   mbid, song->time);
+}
+
 int
 main (int argc, char** argv)
 {
@@ -78,11 +110,8 @@ main (int argc, char** argv)
 
   int last_id = -1;
   int elapsed = 0;
-  GTimer *timer;
-  int submitted = 1;
   int was_paused = 0;
   int next_save = 0;
-  char mbid[MBID_BUFFER_SIZE];
   FILE * log;
 
   /* apparantly required for regex.h, which
@@ -109,7 +138,6 @@ main (int argc, char** argv)
     signal (SIGPIPE, SIG_IGN);
 
   next_save = now () + file_config.cache_interval;
-  mbid[0] = 0x00;
 
   timer = g_timer_new();
 
@@ -150,31 +178,11 @@ main (int argc, char** argv)
       /* new song. */
       if (song.id != last_id)
         {
-          if (song.artist && song.title)
-            notice ("new song detected (%s - %s), id: %i, pos: %i", song.artist, song.title, song.id, song.pos);
-          else
-            notice ("new song detected with tags missing (%s)", song.file); 
+          song_changed(&song);
           last_id = song.id;
-          g_timer_start(timer);
-
-          if (file_config.musicdir && chdir (file_config.musicdir) != 0)
-            {
-              // yeah, I know i'm being silly, but I can't be arsed to 
-              // concat the parts :P
-              if (getMBID (song.file, mbid))
-                mbid[0] = 0x00;
-              else
-                notice ("mbid is %s.", mbid);
-            }
-
-          submitted = 0;
-
-          if (song.artist != NULL && song.title != NULL)
-            as_now_playing(song.artist, song.title, song.album,
-                           mbid, song.time);
         }
 
-      if (!submitted && played_long_enough(timer, song.time))
+      if (!submitted && played_long_enough(song.time))
         {
           /* FIXME:
              libmpdclient doesn't have any way to fetch the musicbrainz id. */
