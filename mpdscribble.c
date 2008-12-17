@@ -78,11 +78,14 @@ played_long_enough(int length)
 static void
 song_changed(const struct mpd_song *song)
 {
-  if (song->artist && song->title)
-    notice("new song detected (%s - %s), id: %i, pos: %i",
-            song->artist, song->title, song->id, song->pos);
-  else
+  if (song->artist == NULL || song->title == NULL) {
     notice("new song detected with tags missing (%s)", song->file);
+    submitted = true;
+    return;
+  }
+
+  notice("new song detected (%s - %s), id: %i, pos: %i",
+         song->artist, song->title, song->id, song->pos);
 
   g_timer_start(timer);
 
@@ -98,9 +101,8 @@ song_changed(const struct mpd_song *song)
 
   submitted = false;
 
-  if (song->artist != NULL && song->title != NULL)
-    as_now_playing(song->artist, song->title, song->album,
-                   mbid, song->time);
+  as_now_playing(song->artist, song->title, song->album,
+                 mbid, song->time);
 }
 
 int
