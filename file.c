@@ -444,18 +444,12 @@ file_read_config (int argc, char **argv)
 void
 file_cleanup (void)
 {
-  if (file_config.username)
-    free (file_config.username);
-  if (file_config.password)
-    free (file_config.password);
-  if (file_config.host)
-    free (file_config.host);
-  if (file_config.log)
-    free (file_config.log);
-  if (file_config.conf)
-    free (file_config.conf);
-  if (file_config.cache)
-    free (file_config.cache);
+  g_free(file_config.username);
+  g_free(file_config.password);
+  g_free(file_config.host);
+  g_free(file_config.log);
+  g_free(file_config.conf);
+  g_free(file_config.cache);
 
   if (file_loghandle)
     fclose (file_loghandle);
