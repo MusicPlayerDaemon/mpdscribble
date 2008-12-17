@@ -55,6 +55,7 @@ static const char *blurb =
   "mpdscribble (" AS_CLIENT_ID " " AS_CLIENT_VERSION ").\n"
   "another audioscrobbler plugin for music player daemon.\n"
   "Copyright 2005,2006 Kuno Woudt <kuno@frob.nl>.\n"
+  "Copyright 2008 Max Kellermann <max@duempel.org>\n"
   "\n";
 
 
