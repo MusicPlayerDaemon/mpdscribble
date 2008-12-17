@@ -203,12 +203,7 @@ read_file(const char *filename)
 static int
 file_exists(const char *filename)
 {
-  FILE *handle = fopen (filename, "rb");
-  if (!handle)
-    return 0;
-
-  fclose (handle);
-  return 1;
+  return g_file_test(filename, G_FILE_TEST_IS_REGULAR);
 }
 
 static char *
