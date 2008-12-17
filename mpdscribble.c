@@ -31,6 +31,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <unistd.h>
+#include <string.h>
 
 #define MAX_SKIP_ERROR (3 + file_config.sleep) /* in seconds. */
 
@@ -61,7 +62,7 @@ sigpipe_handler(G_GNUC_UNUSED int signum)
 int
 main (int argc, char** argv)
 {
-  lmc_song song;
+  lmc_song song, streaming_song;
 
   int last_id = -1;
   int last_el = 0;
@@ -70,8 +71,12 @@ main (int argc, char** argv)
   int submitted = 1;
   int was_paused = 0;
   int next_save = 0;
+  int streaming_time = 0;
+  char * streaming_start = NULL;
   char mbid[MBID_BUFFER_SIZE];
   FILE * log;
+
+  memset(&streaming_song, 0, sizeof (streaming_song));
 
   /* apparantly required for regex.h, which
      is used in file.h */
@@ -140,6 +145,27 @@ main (int argc, char** argv)
       /* new song. */
       if (song.id != last_id)
         {
+          /* song change, did we have a streaming_song queued up? */
+          if (streaming_time) {
+              int q;
+
+              streaming_song.time = time(NULL) - streaming_time;
+
+              q = as_songchange(streaming_song.file, streaming_song.artist,
+                                streaming_song.title, streaming_song.album,
+                                mbid, streaming_song.time, streaming_start);
+              if (q != -1)
+                notice ("added streaming (%s - %s) to submit queue at position %i.",
+                        streaming_song.artist, streaming_song.title, q);
+
+              streaming_time = 0;
+              g_free(streaming_start);
+              g_free(streaming_song.file);
+              g_free(streaming_song.artist);
+              g_free(streaming_song.title);
+              g_free(streaming_song.album);
+          }
+
           if (song.artist && song.title)
             notice ("new song detected (%s - %s), id: %i, pos: %i", song.artist, song.title, song.id, song.pos);
           else
@@ -160,7 +186,20 @@ main (int argc, char** argv)
                 notice ("mbid is %s.", mbid);
             }
 
-          if (song.time < 30)
+          if (0 == strncmp (song.file, "http://", 7)) {
+            // this is a streamed song
+            streaming_song.file = g_strdup(song.file);
+            streaming_song.artist = g_strdup(song.artist);
+            streaming_song.title = g_strdup(song.title);
+            streaming_song.album = g_strdup(song.album);
+
+            streaming_time = time(NULL);
+            streaming_start = as_timestamp();
+
+            notice ("streaming song (%s - %s) detected",
+                    streaming_song.artist, streaming_song.title);
+
+          } else if (song.time < 30)
             notice ("however, song is too short, not submitting.");
           /* don't submit the song which is being played when we start,.. too
              many double submits when restarting the client during testing in

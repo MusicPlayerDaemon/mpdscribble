@@ -53,5 +53,6 @@ int as_songchange (const char *file, const char *artist, const char *track,
 unsigned int as_sleep (void);
 void as_save_cache (void);
 
+char* as_timestamp (void);
 
 #endif /* AS_H */

@@ -379,7 +379,7 @@ as_submit_callback(size_t length, const char *response)
     g_state = AS_READY;
 }
 
-static char *
+char *
 as_timestamp (void)
 {
   /* create timestamp for 1.2 protocol. */
