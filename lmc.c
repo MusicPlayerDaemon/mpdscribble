@@ -119,7 +119,6 @@ lmc_disconnect (void)
 int
 lmc_current (struct mpd_song *songptr)
 {
-  struct mpd_song *song;
   mpd_Status *status;
   int state;
 
@@ -194,9 +193,6 @@ lmc_current (struct mpd_song *songptr)
       return MPD_STATUS_STATE_UNKNOWN;
     }
 
-  song = g_entity->info.song;
-  memcpy (songptr, song, sizeof(*songptr));
-
   if (g_mpd->error)
     {
       lmc_failure ();
@@ -210,5 +206,6 @@ lmc_current (struct mpd_song *songptr)
       return MPD_STATUS_STATE_UNKNOWN;
     }
 
+  *songptr = *g_entity->info.song;
   return MPD_STATUS_STATE_PLAY;
 }
