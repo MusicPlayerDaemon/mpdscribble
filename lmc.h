@@ -27,10 +27,8 @@
 #include <libmpdclient.h>
 #include <stdio.h>
 
-#define lmc_song struct mpd_song
-
 void lmc_connect (char *host, int port);
 void lmc_disconnect (void);
-int lmc_current (lmc_song *);
+int lmc_current (struct mpd_song *);
 
 #endif /* LMC_H */

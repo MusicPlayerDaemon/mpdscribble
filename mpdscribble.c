@@ -108,7 +108,7 @@ song_changed(const struct mpd_song *song)
 int
 main (int argc, char** argv)
 {
-  lmc_song song;
+  struct mpd_song song;
 
   int last_id = -1;
   int elapsed = 0;
