@@ -30,7 +30,6 @@
 #include <unistd.h>
 
 static mpd_Connection *g_mpd = NULL;
-static mpd_InfoEntity *g_entity = NULL;
 
 static char *g_host;
 static int g_port;
@@ -99,12 +98,6 @@ lmc_connect (char *host, int port)
 void
 lmc_disconnect (void)
 {
-  if (g_entity)
-    {
-      mpd_freeInfoEntity (g_entity);
-      g_entity = 0;
-    }
-
   if (g_mpd)
     {
       mpd_closeConnection (g_mpd);
@@ -113,10 +106,11 @@ lmc_disconnect (void)
 }
 
 int
-lmc_current (struct mpd_song *songptr)
+lmc_current (struct mpd_song **song_r)
 {
   mpd_Status *status;
   int state;
+  struct mpd_InfoEntity *entity;
 
   if (!g_mpd)
     {
@@ -170,20 +164,13 @@ lmc_current (struct mpd_song *songptr)
 
   mpd_nextListOkCommand(g_mpd);
 
-  if (g_entity)
+  while ((entity = mpd_getNextInfoEntity(g_mpd)) != NULL
+         && entity->type != MPD_INFO_ENTITY_TYPE_SONG)
     {
-      mpd_freeInfoEntity (g_entity);
-      g_entity = NULL;
+      mpd_freeInfoEntity(entity);
     }
 
-  while ((g_entity = mpd_getNextInfoEntity (g_mpd))
-         && (g_entity->type != MPD_INFO_ENTITY_TYPE_SONG))
-    {
-      mpd_freeInfoEntity (g_entity);
-      g_entity = NULL;
-    }
-
-  if (!g_entity)
+  if (entity == NULL)
     {
       mpd_finishCommand(g_mpd);
       return MPD_STATUS_STATE_UNKNOWN;
@@ -191,6 +178,7 @@ lmc_current (struct mpd_song *songptr)
 
   if (g_mpd->error)
     {
+      mpd_freeInfoEntity(entity);
       lmc_failure ();
       return MPD_STATUS_STATE_UNKNOWN;
     }
@@ -198,10 +186,12 @@ lmc_current (struct mpd_song *songptr)
   mpd_finishCommand(g_mpd);
   if (g_mpd->error)
     {
+      mpd_freeInfoEntity(entity);
       lmc_failure ();
       return MPD_STATUS_STATE_UNKNOWN;
     }
 
-  *songptr = *g_entity->info.song;
+  *song_r = mpd_songDup(entity->info.song);
+  mpd_freeInfoEntity(entity);
   return MPD_STATUS_STATE_PLAY;
 }

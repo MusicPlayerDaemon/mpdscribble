@@ -29,6 +29,6 @@
 
 void lmc_connect (char *host, int port);
 void lmc_disconnect (void);
-int lmc_current (struct mpd_song *);
+int lmc_current (struct mpd_song **song_r);
 
 #endif /* LMC_H */

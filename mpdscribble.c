@@ -108,7 +108,7 @@ song_changed(const struct mpd_song *song)
 int
 main (int argc, char** argv)
 {
-  struct mpd_song song;
+  struct mpd_song *song = NULL;
 
   int last_id = -1;
   int elapsed = 0;
@@ -148,6 +148,13 @@ main (int argc, char** argv)
       as_poll ();
       fflush (log);
       as_sleep ();
+
+      if (song != NULL)
+        {
+          mpd_freeSong(song);
+          song = NULL;
+        }
+
       elapsed = lmc_current (&song);
 
       if (now () > next_save)
@@ -172,30 +179,30 @@ main (int argc, char** argv)
 
       if (was_paused)
         {
-          if (song.id == last_id)
+          if (song != NULL && song->id == last_id)
             g_timer_continue(timer);
           was_paused = false;
         }
 
       /* new song. */
-      if (song.id != last_id)
+      if (song != NULL && song->id != last_id)
         {
-          song_changed(&song);
-          last_id = song.id;
+          song_changed(song);
+          last_id = song->id;
         }
 
-      if (!submitted && played_long_enough(song.time))
+      if (!submitted && song != NULL && played_long_enough(song->time))
         {
           /* FIXME:
              libmpdclient doesn't have any way to fetch the musicbrainz id. */
-          int q = as_songchange (song.file, song.artist, song.title,
-                                 song.album, mbid,
-                                 song.time > 0 ? song.time
+          int q = as_songchange (song->file, song->artist, song->title,
+                                 song->album, mbid,
+                                 song->time > 0 ? song->time
                                  : (int)g_timer_elapsed(timer, NULL),
                                  NULL);
           if (q != -1)
             notice ("added (%s - %s) to submit queue at position %i.",
-                    song.artist, song.title, q);
+                    song->artist, song->title, q);
 
           submitted = 1;
         }
