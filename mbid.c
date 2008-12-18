@@ -64,13 +64,13 @@ History/Changes:
 
 
 static int
-toSynchSafe(char bytes[])
+toSynchSafe(const uint8_t *bytes)
 {
     return ((int)bytes[0] << 21) + ((int)bytes[1] << 14) + ((int)bytes[2] << 7) + (int)bytes[3];
 }
 
 static int
-toInteger(char bytes[])
+toInteger(const uint8_t *bytes)
 {
     int size = 0;
 
@@ -81,7 +81,7 @@ toInteger(char bytes[])
 }
 
 static bool
-mfile(size_t length, char ret[], FILE *fp)
+mfile(size_t length, void *ret, FILE *fp)
 {
   return fread(ret, 1, length, fp) == length;
 }
@@ -292,12 +292,12 @@ getMP3_MBID(const char *path, char mbid[MBID_BUFFER_SIZE])
     char head[3];
     char version[2];
     char flag[1];
-    char size[4];
-    char size_extended[4];
+    uint8_t size[4];
+    uint8_t size_extended[4];
     int tag_size = 0;
     int extended_size = 0;
-    char frame[4];
-    char frame_header[4];
+    uint8_t frame[4];
+    uint8_t frame_header[4];
     int frame_size = 0;
 
     if (path == NULL) {
@@ -377,7 +377,7 @@ getMP3_MBID(const char *path, char mbid[MBID_BUFFER_SIZE])
             fseek(fp,2,SEEK_CUR);
             debug("Reading %d bytes from frame %s\n",frame_size,frame);
 
-            if (strncmp(frame,"UFID",4) == 0) {
+            if (memcmp(frame,"UFID",4) == 0) {
                 char frame_data[frame_size];
                 ret = mfile(frame_size, frame_data, fp);
                 if (ret && frame_size >= 59 &&
