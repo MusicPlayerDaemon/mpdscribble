@@ -89,7 +89,7 @@ song_changed(const struct mpd_song *song)
 
   g_timer_start(timer);
 
-  if (file_config.musicdir && chdir (file_config.musicdir) != 0)
+  if (file_config.musicdir && chdir (file_config.musicdir) == 0)
     {
       // yeah, I know i'm being silly, but I can't be arsed to
       // concat the parts :P
