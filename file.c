@@ -306,9 +306,10 @@ load_string(GKeyFile *file, const char *name, char **value_r)
   char *value = g_key_file_get_string(file, PACKAGE, name, &error);
 
   if (error != NULL) {
-    if (error->code == G_KEY_FILE_ERROR_KEY_NOT_FOUND)
-      return;
-    fatal("%s", error->message);
+    if (error->code != G_KEY_FILE_ERROR_KEY_NOT_FOUND)
+      fatal("%s", error->message);
+    g_error_free(error);
+    return;
   }
 
   g_free(*value_r);
@@ -322,9 +323,10 @@ load_integer(GKeyFile *file, const char *name, int *value_r)
   int value = g_key_file_get_integer(file, PACKAGE, name, &error);
 
   if (error != NULL) {
-    if (error->code == G_KEY_FILE_ERROR_KEY_NOT_FOUND)
-      return;
-    fatal("%s", error->message);
+    if (error->code != G_KEY_FILE_ERROR_KEY_NOT_FOUND)
+      fatal("%s", error->message);
+    g_error_free(error);
+    return;
   }
 
   *value_r = value;
