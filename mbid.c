@@ -73,12 +73,7 @@ toSynchSafe(const uint8_t *bytes)
 static unsigned
 toInteger(const uint8_t *bytes)
 {
-    unsigned size = 0;
-
-    for (size_t i = 0; i < sizeof(bytes); i++) {
-        size = size * 256 + ((unsigned)bytes[i] & 0x000000FF);
-    }
-    return size;
+    return GUINT32_FROM_BE(*(const uint32_t*)bytes);
 }
 
 static bool
