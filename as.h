@@ -35,6 +35,7 @@ struct song
   char *mbid;
   char *time;
   int length;
+  const char *source;
   struct song *next;
 };
 

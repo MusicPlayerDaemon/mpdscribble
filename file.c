@@ -476,8 +476,8 @@ file_write_cache (struct song *sng)
   while (tmp)
     {
       fprintf (handle, "# song %i in queue\na = %s\nt = %s\nb = %s\nm = %s\n"
-               "i = %s\nl = %i\n\n", ++count, tmp->artist, tmp->track,
-               tmp->album, tmp->mbid, tmp->time, tmp->length);
+               "i = %s\nl = %i\no = %s\n\n", ++count, tmp->artist, tmp->track,
+               tmp->album, tmp->mbid, tmp->time, tmp->length, tmp->source);
 
       tmp = tmp->next;
     }
@@ -497,6 +497,7 @@ clear_song (struct song *s)
   s->mbid = NULL;
   s->time = NULL;
   s->length = 0;
+  s->source = "P";
 }
 
 int
@@ -537,6 +538,8 @@ file_read_cache (void)
 
               clear_song (&sng);
             }
+          if (strcmp("o", p->key) == 0 && p->val[0] == 'R')
+            sng.source = "R";
 
           p = p->next;
         }

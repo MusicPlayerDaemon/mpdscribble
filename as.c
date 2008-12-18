@@ -528,7 +528,7 @@ as_submit (void)
       add_var_i(post_data, "t", count, queue->track);
       add_var_i(post_data, "l", count, len);
       add_var_i(post_data, "i", count, queue->time);
-      add_var_i(post_data, "o", count, "P");
+      add_var_i(post_data, "o", count, queue->source);
       add_var_i(post_data, "r", count, "");
       add_var_i(post_data, "b", count, queue->album);
       add_var_i(post_data, "n", count, "");
@@ -593,6 +593,7 @@ as_songchange (const char *file, const char *artist, const char *track,
   current->mbid = g_strdup(mbid);
   current->length = length;
   current->time = time2 ? g_strdup(time2) : as_timestamp ();
+  current->source = strstr(file, "://") == NULL ? "P" : "R";
 
   if (!current->artist) current->artist = g_strdup("");
   if (!current->track) current->track = g_strdup("");
