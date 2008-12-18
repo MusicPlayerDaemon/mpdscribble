@@ -121,6 +121,7 @@ lmc_current (struct mpd_song *songptr)
 {
   struct mpd_song *song;
   mpd_Status *status;
+  int state;
 
   if (!g_mpd)
     {
@@ -157,10 +158,13 @@ lmc_current (struct mpd_song *songptr)
       mpd_clearError (g_mpd);
     }
 
-  if (status->state != MPD_STATUS_STATE_PLAY)
+  state = status->state;
+  mpd_freeStatus(status);
+
+  if (state != MPD_STATUS_STATE_PLAY)
     {
       mpd_finishCommand(g_mpd);
-      return status->state;
+      return state;
     }
 
   if (g_mpd->error)
@@ -205,8 +209,6 @@ lmc_current (struct mpd_song *songptr)
       lmc_failure ();
       return MPD_STATUS_STATE_UNKNOWN;
     }
-
-  mpd_freeStatus(status);
 
   return MPD_STATUS_STATE_PLAY;
 }
