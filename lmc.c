@@ -38,14 +38,10 @@ static int g_port;
 static void
 lmc_failure(void)
 {
-  char *ch;
-  for (ch = g_mpd->errorStr; *ch; ++ch) {
-    if (*ch=='\n' || *ch=='\t' || *ch=='\r' || *ch=='\v') {
-      *ch = ' ';
-    }
-  }
+  char *msg = g_strescape(g_mpd->errorStr, NULL);
 
-  warning ("mpd error (%i): %s", g_mpd->error, g_mpd->errorStr);
+  warning ("mpd error (%i): %s", g_mpd->error, msg);
+  g_free(msg);
   mpd_closeConnection (g_mpd);
   g_mpd = 0;
 }
