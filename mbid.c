@@ -373,11 +373,11 @@ getMP3_MBID(const char *path, char mbid[MBID_BUFFER_SIZE])
             fseek(fp,2,SEEK_CUR);
             debug("Reading %d bytes from frame %s\n",frame_size,frame);
 
-            if (memcmp(frame,"UFID",4) == 0) {
+            if (frame_size >= 59 && memcmp(frame, "UFID", 4) == 0) {
                 char frame_data[frame_size + 1];
                 ret = mfile(frame_size, frame_data, fp);
-                if (ret && frame_size >= 59 &&
-                    strncmp(frame_data, "http://musicbrainz.org", 22) == 0) {
+                if (ret &&
+                    memcmp(frame_data, "http://musicbrainz.org", 22) == 0) {
                     char *tmbid = frame_data;
                     tmbid = frame_data + 23;
                     frame_data[frame_size] = 0;
