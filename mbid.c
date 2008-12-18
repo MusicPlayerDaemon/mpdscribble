@@ -63,19 +63,20 @@ History/Changes:
 #endif
 
 
-static int
+static unsigned
 toSynchSafe(const uint8_t *bytes)
 {
-    return ((int)bytes[0] << 21) + ((int)bytes[1] << 14) + ((int)bytes[2] << 7) + (int)bytes[3];
+    return ((unsigned)bytes[0] << 21) + ((unsigned)bytes[1] << 14) +
+      ((unsigned)bytes[2] << 7) + (unsigned)bytes[3];
 }
 
-static int
+static unsigned
 toInteger(const uint8_t *bytes)
 {
-    int size = 0;
+    unsigned size = 0;
 
     for (size_t i = 0; i < sizeof(bytes); i++) {
-        size = size * 256 + ((int)bytes[i] & 0x000000FF);
+        size = size * 256 + ((unsigned)bytes[i] & 0x000000FF);
     }
     return size;
 }
@@ -294,11 +295,11 @@ getMP3_MBID(const char *path, char mbid[MBID_BUFFER_SIZE])
     char flag[1];
     uint8_t size[4];
     uint8_t size_extended[4];
-    int tag_size = 0;
-    int extended_size = 0;
+    unsigned tag_size;
+    unsigned extended_size;
     uint8_t frame[4];
     uint8_t frame_header[4];
-    int frame_size = 0;
+    unsigned frame_size;
 
     if (path == NULL) {
         debug("Received null path\n");
