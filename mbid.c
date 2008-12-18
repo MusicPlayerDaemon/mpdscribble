@@ -181,8 +181,8 @@ getOGG_MBID(const char *path, char mbid[MBID_BUFFER_SIZE])
 
       if (!strncmp (data, "MUSICBRAINZ_TRACKID", strlen ("MUSICBRAINZ_TRACKID")))
         { 
-          strncpy (mbid, data + strlen ("MUSICBRAINZ_TRACKID="), MBID_BUFFER_SIZE);
-          mbid[MBID_BUFFER_SIZE-1] = 0x00;
+          g_strlcpy(mbid, data + strlen("MUSICBRAINZ_TRACKID="),
+                    MBID_BUFFER_SIZE);
           fclose (fp);
           return 0;
         }
@@ -264,8 +264,8 @@ getFLAC_MBID(const char *path, char mbid[MBID_BUFFER_SIZE])
 
           if (!strncmp (data, "MUSICBRAINZ_TRACKID", strlen ("MUSICBRAINZ_TRACKID")))
             { 
-              strncpy (mbid, data + strlen ("MUSICBRAINZ_TRACKID="), MBID_BUFFER_SIZE);
-              mbid[MBID_BUFFER_SIZE-1] = 0x00;
+              g_strlcpy(mbid, data + strlen("MUSICBRAINZ_TRACKID="),
+                        MBID_BUFFER_SIZE);
               fclose (fp);
               return 0;
             }
@@ -380,8 +380,7 @@ getMP3_MBID(const char *path, char mbid[MBID_BUFFER_SIZE])
                     strncmp(frame_data, "http://musicbrainz.org", 22) == 0) {
                     char *tmbid = frame_data;
                     tmbid = frame_data + 23;
-                    strncpy(mbid,tmbid,MBID_BUFFER_SIZE-1);
-                    mbid[MBID_BUFFER_SIZE-1] = 0x00;
+                    g_strlcpy(mbid, tmbid, MBID_BUFFER_SIZE);
                     fclose(fp);
                     return 0;
                 }
