@@ -157,14 +157,14 @@ main (int argc, char** argv)
         }
 
 
-      if (elapsed == LMC_PAUSED)
+      if (elapsed == MPD_STATUS_STATE_PAUSE)
         {
           if (!was_paused)
             g_timer_stop(timer);
           was_paused = 1;
           continue;
         }
-      else if (elapsed == LMC_NOTPLAYING)
+      else if (elapsed != MPD_STATUS_STATE_PLAY)
         {
           last_id = -1;
           continue;

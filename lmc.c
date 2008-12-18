@@ -121,7 +121,6 @@ lmc_current (struct mpd_song *songptr)
 {
   struct mpd_song *song;
   mpd_Status *status;
-  int elapsed;
 
   if (!g_mpd)
     {
@@ -129,7 +128,7 @@ lmc_current (struct mpd_song *songptr)
       sleep (15);
       warning ("attempting to reconnect to mpd... ");
       lmc_reconnect ();
-      return LMC_NOTPLAYING;
+      return MPD_STATUS_STATE_UNKNOWN;
     }
 
   mpd_sendCommandListOkBegin(g_mpd);
@@ -145,7 +144,7 @@ lmc_current (struct mpd_song *songptr)
       sleep (15);
       warning ("attempting to reconnect to mpd... ");
       lmc_reconnect ();
-      return LMC_NOTPLAYING;
+      return MPD_STATUS_STATE_UNKNOWN;
     }
 
   if (status->error)
@@ -158,64 +157,56 @@ lmc_current (struct mpd_song *songptr)
       mpd_clearError (g_mpd);
     }
 
-  if (status->state == MPD_STATUS_STATE_PAUSE)
+  if (status->state != MPD_STATUS_STATE_PLAY)
     {
-      elapsed = LMC_PAUSED;
+      mpd_finishCommand(g_mpd);
+      return status->state;
     }
-  else if (status->state != MPD_STATUS_STATE_PLAY)
+
+  if (g_mpd->error)
     {
-      elapsed = LMC_NOTPLAYING;
+      lmc_failure ();
+      return MPD_STATUS_STATE_UNKNOWN;
     }
-  else
+
+  mpd_nextListOkCommand(g_mpd);
+
+  if (g_entity)
     {
-      elapsed = status->elapsedTime;
+      mpd_freeInfoEntity (g_entity);
+      g_entity = NULL;
+    }
 
-      if (g_mpd->error)
-        {
-          lmc_failure ();
-          return 0;
-        }
+  while ((g_entity = mpd_getNextInfoEntity (g_mpd))
+         && (g_entity->type != MPD_INFO_ENTITY_TYPE_SONG))
+    {
+      mpd_freeInfoEntity (g_entity);
+      g_entity = NULL;
+    }
 
-      mpd_nextListOkCommand(g_mpd);
+  if (!g_entity)
+    {
+      mpd_finishCommand(g_mpd);
+      return MPD_STATUS_STATE_UNKNOWN;
+    }
 
-      if (g_entity)
-        {
-          mpd_freeInfoEntity (g_entity);
-          g_entity = NULL;
-        }
+  song = g_entity->info.song;
+  memcpy (songptr, song, sizeof(*songptr));
 
-      while ((g_entity = mpd_getNextInfoEntity (g_mpd))
-             && (g_entity->type != MPD_INFO_ENTITY_TYPE_SONG))
-        {
-          mpd_freeInfoEntity (g_entity);
-          g_entity = NULL;
-        }
-
-      if (!g_entity)
-        {
-          elapsed = -1;
-        }
-      else
-        {
-          song = g_entity->info.song;
-          memcpy (songptr, song, sizeof(*songptr));
-
-          if (g_mpd->error)
-            {
-              lmc_failure ();
-              return 0;
-            }
-        }
+  if (g_mpd->error)
+    {
+      lmc_failure ();
+      return MPD_STATUS_STATE_UNKNOWN;
     }
 
   mpd_finishCommand(g_mpd);
   if (g_mpd->error)
     {
       lmc_failure ();
-      return 0;
+      return MPD_STATUS_STATE_UNKNOWN;
     }
 
   mpd_freeStatus(status);
 
-  return elapsed;
+  return MPD_STATUS_STATE_PLAY;
 }

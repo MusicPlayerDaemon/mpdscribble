@@ -27,9 +27,6 @@
 #include <libmpdclient.h>
 #include <stdio.h>
 
-#define LMC_PAUSED -2
-#define LMC_NOTPLAYING -1
-
 #define lmc_song struct mpd_song
 
 void lmc_connect (char *host, int port);
