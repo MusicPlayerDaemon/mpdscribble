@@ -46,6 +46,7 @@ History/Changes:
 
 #include <glib.h>
 
+#include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
@@ -79,14 +80,10 @@ toInteger(char bytes[])
     return size;
 }
 
-static void
-mfile(size_t length, char ret[], FILE *fp, int *s)
+static bool
+mfile(size_t length, char ret[], FILE *fp)
 {
-    size_t bytes = fread(ret,1,length,fp);
-    
-    if (bytes != length) {
-        *s = 0;
-    }
+  return fread(ret, 1, length, fp) == length;
 }
 
 /* (yes, the ogg parser is VERY dirty, sorry, I was in a hurry :P). 
@@ -292,7 +289,6 @@ getMP3_MBID(const char *path, char mbid[MBID_BUFFER_SIZE])
 {
 
     FILE *fp;
-    static int s = 1;
     char head[3];
     char version[2];
     char flag[1];
@@ -316,16 +312,17 @@ getMP3_MBID(const char *path, char mbid[MBID_BUFFER_SIZE])
         return -1;
     }
 
-    while (s) {
+    while (true) {
+        bool ret;
         int version_major;
 
-        mfile(3,head,fp,&s);
-        if (!strncmp(head,"ID3",3) == 0) {
+        ret = mfile(3, head, fp) && mfile(2, version, fp) &&
+          mfile(1, flag, fp);
+        if (!ret || !strncmp(head,"ID3",3) == 0) {
             debug("No ID3v2 tag found: %s\n",path);
             break;
         }
 
-        mfile(2,version,fp,&s);
         version_major = (int)version[0];
         if (version_major == 2) {
             debug("ID3v2.2.0 does not support MBIDs: %s\n",path);
@@ -336,38 +333,44 @@ getMP3_MBID(const char *path, char mbid[MBID_BUFFER_SIZE])
             break;
         }
 
-        mfile(1,flag,fp,&s);
         if ((unsigned int)flag[0] & 0x00000040) {
             debug("Extended header found\n");
             if (version[0] == 4) {
-                mfile(4,size_extended,fp,&s);
+                ret = mfile(4, size_extended, fp);
+                if (!ret)
+                    break;
+
                 extended_size = toSynchSafe(size_extended);
             } else {
-                mfile(4,size_extended,fp,&s);
+                ret = mfile(4, size_extended, fp);
+                if (!ret)
+                    break;
+
                 extended_size = toInteger(size_extended);
             }
             debug("Extended header size: %d\n",extended_size);
             fseek(fp,extended_size,SEEK_CUR);
         }
     
-        mfile(4,size,fp,&s);
+        ret = mfile(4, size, fp);
+        if (!ret)
+            break;
+
         tag_size = toSynchSafe(size);
         debug("Tag size: %d\n",tag_size);
 
-        while (s) {
+        while (true) {
             if (ftell(fp) > tag_size || ftell(fp) > 1048576) {
                 break;
             }
 
-            mfile(4,frame,fp,&s);
-            if (frame[0] == 0x00) {
+            ret = mfile(4, frame, fp) && mfile(4, frame_header, fp);
+            if (!ret || frame[0] == 0x00) {
                 break;
             }
             if (version_major == 4) {
-                mfile(4,frame_header,fp,&s);
                 frame_size = toSynchSafe(frame_header);
             } else {
-                mfile(4,frame_header,fp,&s);
                 frame_size = toInteger(frame_header);
             }
 
@@ -376,8 +379,9 @@ getMP3_MBID(const char *path, char mbid[MBID_BUFFER_SIZE])
 
             if (strncmp(frame,"UFID",4) == 0) {
                 char frame_data[frame_size];
-                mfile(frame_size,frame_data,fp,&s);
-                if (frame_size >= 59 && strncmp(frame_data,"http://musicbrainz.org",22) == 0) {
+                ret = mfile(frame_size, frame_data, fp);
+                if (ret && frame_size >= 59 &&
+                    strncmp(frame_data, "http://musicbrainz.org", 22) == 0) {
                     char *tmbid = frame_data;
                     tmbid = frame_data + 23;
                     strncpy(mbid,tmbid,MBID_BUFFER_SIZE-1);
@@ -395,9 +399,8 @@ getMP3_MBID(const char *path, char mbid[MBID_BUFFER_SIZE])
     if (fp) {
         fclose(fp);
     }
-    if (!s) {
-        debug("Failed to read music file: %s\n",path);
-    }                
+
+    debug("Failed to read music file: %s\n",path);
     return -1;
 
 }
