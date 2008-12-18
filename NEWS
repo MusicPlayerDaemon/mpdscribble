@@ -5,6 +5,9 @@ mpdscribble 0.13 - not yet released
     - smaller buffers, less memory usage
   * support the Last.fm Submissions Protocol v1.2
     - including support for 'now playing'
+    - ignore seeking
+    - now really support crossfading
+    - support streaming
   * HTTP proxy support
   * support for libsoup 2.4
   * fixed several crash bugs
