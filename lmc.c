@@ -30,7 +30,7 @@
 #include <unistd.h>
 
 static mpd_Connection *g_mpd = NULL;
-mpd_InfoEntity *g_entity = NULL;
+static mpd_InfoEntity *g_entity = NULL;
 
 static char *g_host;
 static int g_port;
