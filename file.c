@@ -66,7 +66,8 @@ version (void)
 
   printf ("mpdscribble comes with NO WARRANTY, to the extent permitted by law.\n"
           "You may redistribute copies of mpdscribble under the terms of the\n"
-          "GNU General Public License.\n"
+          "GNU General Public License; either version 2 of the License, or\n"
+          "(at your option) any later version.\n"
           "For more information about these matters, see the file named COPYING.\n"
           "\n");
 
