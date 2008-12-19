@@ -34,164 +34,145 @@ static mpd_Connection *g_mpd = NULL;
 static char *g_host;
 static int g_port;
 
-static void
-lmc_failure(void)
+static void lmc_failure(void)
 {
-  char *msg = g_strescape(g_mpd->errorStr, NULL);
+	char *msg = g_strescape(g_mpd->errorStr, NULL);
 
-  warning ("mpd error (%i): %s", g_mpd->error, msg);
-  g_free(msg);
-  mpd_closeConnection (g_mpd);
-  g_mpd = 0;
+	warning("mpd error (%i): %s", g_mpd->error, msg);
+	g_free(msg);
+	mpd_closeConnection(g_mpd);
+	g_mpd = 0;
 }
 
-static int
-lmc_reconnect (void)
+static int lmc_reconnect(void)
 {
-  char *at = strchr (g_host, '@');
-  char *host = g_host;
-  char *password = NULL;
+	char *at = strchr(g_host, '@');
+	char *host = g_host;
+	char *password = NULL;
 
-  if (at)
-    {
-      host = at+1;
-      password = g_strndup(g_host, at-g_host);
-    }
+	if (at) {
+		host = at + 1;
+		password = g_strndup(g_host, at - g_host);
+	}
 
-  g_mpd = mpd_newConnection (host, g_port, 10);
-  if (g_mpd->error)
-    {
-      lmc_failure ();
-      return 0;
-    }
+	g_mpd = mpd_newConnection(host, g_port, 10);
+	if (g_mpd->error) {
+		lmc_failure();
+		return 0;
+	}
 
-  if (password)
-    {
-      notice ("sending password ... ");
+	if (password) {
+		notice("sending password ... ");
 
-      mpd_sendPasswordCommand(g_mpd, password);
-      mpd_finishCommand(g_mpd);
-      free (password);
-    }
+		mpd_sendPasswordCommand(g_mpd, password);
+		mpd_finishCommand(g_mpd);
+		free(password);
+	}
 
-  if (g_mpd->error)
-    {
-      lmc_failure ();
-      return 0;
-    }
+	if (g_mpd->error) {
+		lmc_failure();
+		return 0;
+	}
 
-  notice ("connected to mpd %i.%i.%i at %s:%i.",
-          g_mpd->version[0], g_mpd->version[1], g_mpd->version[2],
-          host, g_port);
+	notice("connected to mpd %i.%i.%i at %s:%i.",
+	       g_mpd->version[0], g_mpd->version[1], g_mpd->version[2],
+	       host, g_port);
 
-  return 1;
+	return 1;
 }
 
-void
-lmc_connect (char *host, int port)
+void lmc_connect(char *host, int port)
 {
-  g_host = host;
-  g_port = port;
-  lmc_reconnect ();
+	g_host = host;
+	g_port = port;
+	lmc_reconnect();
 }
 
-void
-lmc_disconnect (void)
+void lmc_disconnect(void)
 {
-  if (g_mpd)
-    {
-      mpd_closeConnection (g_mpd);
-      g_mpd = 0;
-    }
+	if (g_mpd) {
+		mpd_closeConnection(g_mpd);
+		g_mpd = 0;
+	}
 }
 
-int
-lmc_current (struct mpd_song **song_r)
+int lmc_current(struct mpd_song **song_r)
 {
-  mpd_Status *status;
-  int state;
-  struct mpd_InfoEntity *entity;
+	mpd_Status *status;
+	int state;
+	struct mpd_InfoEntity *entity;
 
-  if (!g_mpd)
-    {
-      warning ("waiting 15 seconds before reconnecting.");
-      sleep (15);
-      warning ("attempting to reconnect to mpd... ");
-      lmc_reconnect ();
-      return MPD_STATUS_STATE_UNKNOWN;
-    }
+	if (!g_mpd) {
+		warning("waiting 15 seconds before reconnecting.");
+		sleep(15);
+		warning("attempting to reconnect to mpd... ");
+		lmc_reconnect();
+		return MPD_STATUS_STATE_UNKNOWN;
+	}
 
-  mpd_sendCommandListOkBegin(g_mpd);
-  mpd_sendStatusCommand(g_mpd);
-  mpd_sendCurrentSongCommand(g_mpd);
-  mpd_sendCommandListEnd(g_mpd);
+	mpd_sendCommandListOkBegin(g_mpd);
+	mpd_sendStatusCommand(g_mpd);
+	mpd_sendCurrentSongCommand(g_mpd);
+	mpd_sendCommandListEnd(g_mpd);
 
-  status = mpd_getStatus (g_mpd);
-  if (!status)
-    {
-      lmc_failure ();
-      warning ("waiting 15 seconds before reconnecting.");
-      sleep (15);
-      warning ("attempting to reconnect to mpd... ");
-      lmc_reconnect ();
-      return MPD_STATUS_STATE_UNKNOWN;
-    }
+	status = mpd_getStatus(g_mpd);
+	if (!status) {
+		lmc_failure();
+		warning("waiting 15 seconds before reconnecting.");
+		sleep(15);
+		warning("attempting to reconnect to mpd... ");
+		lmc_reconnect();
+		return MPD_STATUS_STATE_UNKNOWN;
+	}
 
-  if (status->error)
-    {
-      /* FIXME: clearing stuff doesn't seem to help, it keeps printing the
-         same error over and over, so just let's just ignore these errors
-         for now. */
-      //      warning ("mpd status error: %s\n", status->error);
-      //      mpd_executeCommand(g_mpd, "clearerror");
-      mpd_clearError (g_mpd);
-    }
+	if (status->error) {
+		/* FIXME: clearing stuff doesn't seem to help, it keeps printing the
+		   same error over and over, so just let's just ignore these errors
+		   for now. */
+		//      warning ("mpd status error: %s\n", status->error);
+		//      mpd_executeCommand(g_mpd, "clearerror");
+		mpd_clearError(g_mpd);
+	}
 
-  state = status->state;
-  mpd_freeStatus(status);
+	state = status->state;
+	mpd_freeStatus(status);
 
-  if (state != MPD_STATUS_STATE_PLAY)
-    {
-      mpd_finishCommand(g_mpd);
-      return state;
-    }
+	if (state != MPD_STATUS_STATE_PLAY) {
+		mpd_finishCommand(g_mpd);
+		return state;
+	}
 
-  if (g_mpd->error)
-    {
-      lmc_failure ();
-      return MPD_STATUS_STATE_UNKNOWN;
-    }
+	if (g_mpd->error) {
+		lmc_failure();
+		return MPD_STATUS_STATE_UNKNOWN;
+	}
 
-  mpd_nextListOkCommand(g_mpd);
+	mpd_nextListOkCommand(g_mpd);
 
-  while ((entity = mpd_getNextInfoEntity(g_mpd)) != NULL
-         && entity->type != MPD_INFO_ENTITY_TYPE_SONG)
-    {
-      mpd_freeInfoEntity(entity);
-    }
+	while ((entity = mpd_getNextInfoEntity(g_mpd)) != NULL
+	       && entity->type != MPD_INFO_ENTITY_TYPE_SONG) {
+		mpd_freeInfoEntity(entity);
+	}
 
-  if (entity == NULL)
-    {
-      mpd_finishCommand(g_mpd);
-      return MPD_STATUS_STATE_UNKNOWN;
-    }
+	if (entity == NULL) {
+		mpd_finishCommand(g_mpd);
+		return MPD_STATUS_STATE_UNKNOWN;
+	}
 
-  if (g_mpd->error)
-    {
-      mpd_freeInfoEntity(entity);
-      lmc_failure ();
-      return MPD_STATUS_STATE_UNKNOWN;
-    }
+	if (g_mpd->error) {
+		mpd_freeInfoEntity(entity);
+		lmc_failure();
+		return MPD_STATUS_STATE_UNKNOWN;
+	}
 
-  mpd_finishCommand(g_mpd);
-  if (g_mpd->error)
-    {
-      mpd_freeInfoEntity(entity);
-      lmc_failure ();
-      return MPD_STATUS_STATE_UNKNOWN;
-    }
+	mpd_finishCommand(g_mpd);
+	if (g_mpd->error) {
+		mpd_freeInfoEntity(entity);
+		lmc_failure();
+		return MPD_STATUS_STATE_UNKNOWN;
+	}
 
-  *song_r = mpd_songDup(entity->info.song);
-  mpd_freeInfoEntity(entity);
-  return MPD_STATUS_STATE_PLAY;
+	*song_r = mpd_songDup(entity->info.song);
+	mpd_freeInfoEntity(entity);
+	return MPD_STATUS_STATE_PLAY;
 }

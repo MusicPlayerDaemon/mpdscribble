@@ -33,123 +33,112 @@
 static FILE *g_log;
 static int g_verbose;
 
-
-static const char *
-log_date (void)
+static const char *log_date(void)
 {
-  static char buf[20];
-  time_t t;
-  struct tm *tmp;
+	static char buf[20];
+	time_t t;
+	struct tm *tmp;
 
-  t = time(NULL);
-  tmp = gmtime(&t);
-  if (tmp==NULL) {
-    buf[0] = 0;
-    return buf;
-  }
+	t = time(NULL);
+	tmp = gmtime(&t);
+	if (tmp == NULL) {
+		buf[0] = 0;
+		return buf;
+	}
 
-  if (!strftime(buf, sizeof(buf), "%Y/%m/%d %H:%M:%S", tmp)) {
-    buf[0] = 0;
-    return buf;
-  }
-  return buf;
+	if (!strftime(buf, sizeof(buf), "%Y/%m/%d %H:%M:%S", tmp)) {
+		buf[0] = 0;
+		return buf;
+	}
+	return buf;
 }
 
-long
-now (void)
+long now(void)
 {
-  struct timeval tv;
+	struct timeval tv;
 
-  if (!gettimeofday (&tv, NULL))
-    return tv.tv_sec;
+	if (!gettimeofday(&tv, NULL))
+		return tv.tv_sec;
 
-  warning ("error getting current time, this is probably a bug.\n");
-  return 0;
+	warning("error getting current time, this is probably a bug.\n");
+	return 0;
 }
 
-void
-set_logfile (FILE *log, int verbose)
+void set_logfile(FILE * log, int verbose)
 {
-  g_log = log;
-  g_verbose = verbose;
+	g_log = log;
+	g_verbose = verbose;
 }
 
-void
-fatal (const char *template, ...)
+void fatal(const char *template, ...)
 {
-  va_list ap;
+	va_list ap;
 
-  fprintf (g_log, "[%s] fatal: ", log_date());
+	fprintf(g_log, "[%s] fatal: ", log_date());
 
-  va_start (ap, template);
-  (void) vfprintf (g_log, template, ap);
-  va_end (ap);
-  fprintf (g_log, "\n");
+	va_start(ap, template);
+	(void)vfprintf(g_log, template, ap);
+	va_end(ap);
+	fprintf(g_log, "\n");
 
-  exit (EXIT_FAILURE);
+	exit(EXIT_FAILURE);
 }
 
-void
-fatal_errno (const char *template, ...)
+void fatal_errno(const char *template, ...)
 {
-  va_list ap;
+	va_list ap;
 
-  fprintf (g_log, "[%s] fatal: ", log_date());
+	fprintf(g_log, "[%s] fatal: ", log_date());
 
-  va_start (ap, template);
-  (void) vfprintf (g_log, template, ap);
-  va_end (ap);
-  fprintf (g_log, ": %s\n", strerror (errno));
+	va_start(ap, template);
+	(void)vfprintf(g_log, template, ap);
+	va_end(ap);
+	fprintf(g_log, ": %s\n", strerror(errno));
 
-  exit (EXIT_FAILURE);
+	exit(EXIT_FAILURE);
 }
 
-
-void
-warning (const char *template, ...)
+void warning(const char *template, ...)
 {
-  va_list ap;
+	va_list ap;
 
-  if (g_verbose < 1)
-    return;
+	if (g_verbose < 1)
+		return;
 
-  fprintf (g_log, "[%s] warning: ", log_date());
+	fprintf(g_log, "[%s] warning: ", log_date());
 
-  va_start (ap, template);
-  (void) vfprintf (g_log, template, ap);
-  va_end (ap);
-  fprintf (g_log, "\n");
+	va_start(ap, template);
+	(void)vfprintf(g_log, template, ap);
+	va_end(ap);
+	fprintf(g_log, "\n");
 }
 
-void
-warning_errno (const char *template, ...)
+void warning_errno(const char *template, ...)
 {
-  va_list ap;
+	va_list ap;
 
-  if (g_verbose < 1)
-    return;
+	if (g_verbose < 1)
+		return;
 
-  fprintf (g_log, "[%s] warning: ", log_date());
+	fprintf(g_log, "[%s] warning: ", log_date());
 
-  va_start (ap, template);
-  (void) vfprintf (g_log, template, ap);
-  va_end (ap);
-  fprintf (g_log, ": %s\n", strerror (errno));
+	va_start(ap, template);
+	(void)vfprintf(g_log, template, ap);
+	va_end(ap);
+	fprintf(g_log, ": %s\n", strerror(errno));
 }
 
-
-void
-notice (const char *template, ...)
+void notice(const char *template, ...)
 {
-  va_list ap;
+	va_list ap;
 
-  if (g_verbose < 2)
-    return;
+	if (g_verbose < 2)
+		return;
 
-  fprintf (g_log, "[%s] notice: ", log_date());
+	fprintf(g_log, "[%s] notice: ", log_date());
 
-  va_start (ap, template);
-  (void) vfprintf (g_log, template, ap);
-  va_end (ap);
-  fprintf (g_log, "\n");
+	va_start(ap, template);
+	(void)vfprintf(g_log, template, ap);
+	va_end(ap);
+	fprintf(g_log, "\n");
 }

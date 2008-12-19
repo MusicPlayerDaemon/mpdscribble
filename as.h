@@ -27,33 +27,33 @@
 #define AS_CLIENT_ID "mdc"
 #define AS_CLIENT_VERSION VERSION
 
-struct song
-{
-  char *artist;
-  char *track;
-  char *album;
-  char *mbid;
-  char *time;
-  int length;
-  const char *source;
-  struct song *next;
+struct song {
+	char *artist;
+	char *track;
+	char *album;
+	char *mbid;
+	char *time;
+	int length;
+	const char *source;
+	struct song *next;
 };
 
-void as_init (unsigned int seconds);
-void as_poll (void);
-void as_cleanup (void);
+void as_init(unsigned int seconds);
+void as_poll(void);
+void as_cleanup(void);
 
 void
 as_now_playing(const char *artist, const char *track,
-               const char *album, const char *mbid, const int length);
+	       const char *album, const char *mbid, const int length);
 
-int as_songchange (const char *file, const char *artist, const char *track,
-                   const char *album, const char *mbid, const int length,
-                   const char *time);
+int
+as_songchange(const char *file, const char *artist, const char *track,
+	      const char *album, const char *mbid, const int length,
+	      const char *time);
 
-unsigned int as_sleep (void);
-void as_save_cache (void);
+unsigned int as_sleep(void);
+void as_save_cache(void);
 
-char* as_timestamp (void);
+char *as_timestamp(void);
 
 #endif /* AS_H */

@@ -33,12 +33,12 @@ typedef void callback_t(size_t, const char *);
 #define conn_escape(X) curl_escape(X, 0)
 #define conn_free curl_free
 
-void conn_setup (void);
-void conn_cleanup (void);
+void conn_setup(void);
+void conn_cleanup(void);
 
-int conn_initiate (char *url, callback_t *callback, char *post_data,
-                   unsigned int seconds);
-bool conn_poll (void);
-bool conn_pending (void);
+int conn_initiate(char *url, callback_t * callback, char *post_data,
+		  unsigned int seconds);
+bool conn_poll(void);
+bool conn_pending(void);
 
 #endif /* CONN_H */

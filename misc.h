@@ -25,16 +25,16 @@
 #include <stddef.h>
 #include <stdio.h>
 
-long now (void);
+long now(void);
 
-void set_logfile (FILE *, int verbose);
+void set_logfile(FILE *, int verbose);
 
-void fatal (const char *template, ...);
-void fatal_errno (const char *template, ...);
+void fatal(const char *template, ...);
+void fatal_errno(const char *template, ...);
 
-void warning (const char *template, ...);
-void warning_errno (const char *template, ...);
+void warning(const char *template, ...);
+void warning_errno(const char *template, ...);
 
-void notice (const char *template, ...);
+void notice(const char *template, ...);
 
 #endif /* MISC_H */

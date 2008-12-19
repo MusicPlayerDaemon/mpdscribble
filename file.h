@@ -24,19 +24,19 @@
 
 #include <stdio.h>
 
-/* 
+/*
   default locations for files.
 
   FILE_ETC_* are paths for a system-wide install.
   FILE_USR_* will be used instead if FILE_USR_CONF exists.
 */
 
-#define FILE_CONF       "/etc/mpdscribble.conf"
-#define FILE_CACHE      "/var/cache/mpdscribble/mpdscribble.cache"
-#define FILE_LOG        "/var/log/mpdscribble/mpdscribble.log"
-#define FILE_HOME_CONF  "~/.mpdscribble/mpdscribble.conf"
+#define FILE_CONF "/etc/mpdscribble.conf"
+#define FILE_CACHE "/var/cache/mpdscribble/mpdscribble.cache"
+#define FILE_LOG "/var/log/mpdscribble/mpdscribble.log"
+#define FILE_HOME_CONF "~/.mpdscribble/mpdscribble.conf"
 #define FILE_HOME_CACHE "~/.mpdscribble/mpdscribble.cache"
-#define FILE_HOME_LOG   "~/.mpdscribble/mpdscribble.log"
+#define FILE_HOME_LOG "~/.mpdscribble/mpdscribble.log"
 
 #define FILE_DEFAULT_PORT 6600
 #define FILE_DEFAULT_HOST "localhost"
@@ -45,29 +45,28 @@ struct song;
 
 enum file_location { file_etc, file_home, file_unknown, };
 
-struct config
-{
-  char *username;
-  char *password;
-  char *log;
-  char *cache;
-  char *musicdir;
-  char *conf;
-  char *host;
-  char *proxy;
-  int port;
-  int sleep;
-  int cache_interval;
-  int verbose;
-  enum file_location loc;
+struct config {
+	char *username;
+	char *password;
+	char *log;
+	char *cache;
+	char *musicdir;
+	char *conf;
+	char *host;
+	char *proxy;
+	int port;
+	int sleep;
+	int cache_interval;
+	int verbose;
+	enum file_location loc;
 };
 
 extern struct config file_config;
 
-FILE *file_open_logfile (void);
-int file_read_config (int argc, char **argv);
-int file_write_cache (struct song *sng);
-int file_read_cache (void);
-void file_cleanup (void);
+FILE *file_open_logfile(void);
+int file_read_config(int argc, char **argv);
+int file_write_cache(struct song *sng);
+int file_read_cache(void);
+void file_cleanup(void);
 
 #endif /* FILE_H */

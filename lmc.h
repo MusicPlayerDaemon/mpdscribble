@@ -17,7 +17,6 @@
     along with mpdscribble; if not, write to the Free Software
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-
     in case you're wondering, lmc is short for libmpdclient. :)
 */
 
@@ -27,8 +26,8 @@
 #include <libmpdclient.h>
 #include <stdio.h>
 
-void lmc_connect (char *host, int port);
-void lmc_disconnect (void);
-int lmc_current (struct mpd_song **song_r);
+void lmc_connect(char *host, int port);
+void lmc_disconnect(void);
+int lmc_current(struct mpd_song **song_r);
 
 #endif /* LMC_H */

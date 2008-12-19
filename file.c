@@ -33,525 +33,509 @@
 
 #include <regex.h>
 
-struct pair
-{
-  char *key;
-  char *val;
-  struct pair *next;
+struct pair {
+	char *key;
+	char *val;
+	struct pair *next;
 };
 
 enum file_type { conf_type, cache_type, log_type, };
 
 struct config file_config = {
-  .loc = file_unknown,
+	.loc = file_unknown,
 };
 
 FILE *file_loghandle = NULL;
 int file_saved_count = 0;
 
-static char *file_getname (enum file_type type);
+static char *file_getname(enum file_type type);
 
-static const char *blurb = 
-  "mpdscribble (" AS_CLIENT_ID " " AS_CLIENT_VERSION ").\n"
-  "another audioscrobbler plugin for music player daemon.\n"
-  "Copyright 2005,2006 Kuno Woudt <kuno@frob.nl>.\n"
-  "Copyright 2008 Max Kellermann <max@duempel.org>\n"
-  "\n";
+static const char *blurb =
+    "mpdscribble (" AS_CLIENT_ID " " AS_CLIENT_VERSION ").\n"
+    "another audioscrobbler plugin for music player daemon.\n"
+    "Copyright 2005,2006 Kuno Woudt <kuno@frob.nl>.\n"
+    "Copyright 2008 Max Kellermann <max@duempel.org>\n" "\n";
 
-
-static void
-version (void)
+static void version(void)
 {
-  printf (blurb);
+	printf(blurb);
 
-  printf ("mpdscribble comes with NO WARRANTY, to the extent permitted by law.\n"
-          "You may redistribute copies of mpdscribble under the terms of the\n"
-          "GNU General Public License; either version 2 of the License, or\n"
-          "(at your option) any later version.\n"
-          "For more information about these matters, see the file named COPYING.\n"
-          "\n");
+	printf
+	    ("mpdscribble comes with NO WARRANTY, to the extent permitted by law.\n"
+	     "You may redistribute copies of mpdscribble under the terms of the\n"
+	     "GNU General Public License; either version 2 of the License, or\n"
+	     "(at your option) any later version.\n"
+	     "For more information about these matters, see the file named COPYING.\n"
+	     "\n");
 
-  exit (1);
+	exit(1);
+}
+
+static void help(void)
+{
+	printf(blurb);
+
+	printf("Usage: mpdscribble [OPTIONS]\n"
+	       "\n"
+	       "  --help                      \tthis message\n"
+	       "  --version                   \tthat message\n"
+	       "  --log            <filename> \tlog file\n"
+	       "  --cache          <filename> \tcache file\n"
+	       "  --conf           <filename> \tconfiguration file\n"
+	       "  --host           <host>     \tmpd host\n"
+	       "  --port           <port>     \tmpd port\n"
+	       "  --proxy          <proxy>    \tHTTP proxy URI\n"
+	       "  --sleep          <interval> \tupdate interval (default 1 second)\n"
+	       "  --cache-interval <interval> \twrite cache file every i seconds\n"
+	       "                              \t(default 600 seconds)\n"
+	       "  --verbose <0-2>             \tverbosity (default 2)\n"
+	       "\n" "Report bugs to <kuno@frob.nl>.\n");
+
+	exit(1);
+}
+
+static int file_atoi(const char *s)
+{
+	if (!s)
+		return 0;
+
+	return atoi(s);
+}
+
+static void free_pairs(struct pair *p)
+{
+	struct pair *n;
+
+	if (!p)
+		return;
+
+	do {
+		n = p->next;
+		free(p->key);
+		free(p->val);
+		free(p);
+		p = n;
+	}
+	while (p);
 }
 
 static void
-help (void)
+add_pair(struct pair **stack, const char *ptr, int s0, int e0, int s1, int e1)
 {
-  printf (blurb);
+	struct pair *p = g_new(struct pair, 1);
+	struct pair *last;
 
-  printf ("Usage: mpdscribble [OPTIONS]\n"
-          "\n"
-          "  --help                      \tthis message\n"
-          "  --version                   \tthat message\n"
-          "  --log            <filename> \tlog file\n"
-          "  --cache          <filename> \tcache file\n"
-          "  --conf           <filename> \tconfiguration file\n"
-          "  --host           <host>     \tmpd host\n"
-          "  --port           <port>     \tmpd port\n"
-          "  --proxy          <proxy>    \tHTTP proxy URI\n"
-          "  --sleep          <interval> \tupdate interval (default 1 second)\n"
-          "  --cache-interval <interval> \twrite cache file every i seconds\n"
-          "                              \t(default 600 seconds)\n"
-          "  --verbose <0-2>             \tverbosity (default 2)\n"
-          "\n"
-          "Report bugs to <kuno@frob.nl>.\n");
+	p->key = g_strndup(ptr + s0, e0 - s0);
+	p->val = g_strndup(ptr + s1, e1 - s1);
+	p->next = NULL;
 
-  exit (1);
+	if (!*stack) {
+		*stack = p;
+		return;
+	}
+
+	last = *stack;
+	while (last->next)
+		last = last->next;
+	last->next = p;
 }
 
-static int
-file_atoi (const char *s)
+static struct pair *get_pair(const char *str)
 {
-  if (!s)
-    return 0;
+	struct pair *p = NULL;
+	const char *ptr;
+	regex_t compiled;
+	regmatch_t m[4];
+	int error = 0;
 
-  return atoi (s);
+	if ((error = regcomp(&compiled,
+			     "^(#.*|[ \t]*|([A-Za-z_][A-Za-z0-9_]*) = (.*))$",
+			     REG_NEWLINE | REG_EXTENDED)))
+		fatal("error %i when compiling regexp, this is a bug.\n",
+		      error);
+
+	m[0].rm_eo = 0;
+	ptr = str - 1;
+	do {
+		ptr += m[0].rm_eo + 1;
+		if (*ptr == '\0') {
+			break;
+		}
+		error = regexec(&compiled, ptr, 4, m, 0);
+		if (!error && m[3].rm_eo != -1)
+			add_pair(&p, ptr,
+				 m[2].rm_so, m[2].rm_eo,
+				 m[3].rm_so, m[3].rm_eo);
+	}
+	while (!error);
+
+	regfree(&compiled);
+
+	return p;
 }
 
-static void
-free_pairs (struct pair *p)
+static char *read_file(const char *filename)
 {
-  struct pair *n;
+	bool ret;
+	gchar *contents;
+	GError *error = NULL;
 
-  if (!p)
-    return;
+	ret = g_file_get_contents(filename, &contents, NULL, &error);
+	if (!ret) {
+		warning("%s", error->message);
+		g_error_free(error);
+		return NULL;
+	}
 
-  do
-    {
-      n = p->next;
-      free (p->key);
-      free (p->val);
-      free (p);
-      p = n;
-    }
-  while (p);
+	return contents;
 }
 
-static void
-add_pair (struct pair **stack, const char *ptr,
-          int s0, int e0, int s1, int e1)
+static int file_exists(const char *filename)
 {
-  struct pair *p = g_new(struct pair, 1);
-  struct pair *last;
-
-  p->key = g_strndup(ptr + s0, e0 - s0);
-  p->val = g_strndup(ptr + s1, e1 - s1);
-  p->next = NULL;
-
-  if (!*stack)
-    {
-      *stack = p;
-      return;
-    }
-
-  last = *stack;
-  while (last->next)
-    last = last->next;
-  last->next = p;
+	return g_file_test(filename, G_FILE_TEST_IS_REGULAR);
 }
 
-static struct pair *
-get_pair(const char *str)
+static char *file_expand_tilde(const char *path)
 {
-  struct pair *p = NULL;
-  const char *ptr;
-  regex_t compiled;
-  regmatch_t m[4];
-  int error = 0;
+	const char *home;
 
-  if ((error = regcomp (&compiled,
-                        "^(#.*|[ \t]*|([A-Za-z_][A-Za-z0-9_]*) = (.*))$",
-                        REG_NEWLINE | REG_EXTENDED)))
-    fatal ("error %i when compiling regexp, this is a bug.\n", error);
+	if (path[0] != '~')
+		return g_strdup(path);
 
-  m[0].rm_eo = 0;
-  ptr = str - 1;
-  do
-    {
-      ptr += m[0].rm_eo + 1;
-      if(*ptr == '\0') {
-         break;
-      }
-      error = regexec (&compiled, ptr, 4, m, 0);
-      if (!error && m[3].rm_eo != -1)
-        add_pair (&p, ptr,
-                  m[2].rm_so, m[2].rm_eo,
-                  m[3].rm_so, m[3].rm_eo);
-    }
-  while (!error);
+	home = getenv("HOME");
+	if (!home)
+		home = "./";
 
-  regfree (&compiled);
-
-  return p;
+	return g_strconcat(home, path + 1, NULL);
 }
 
-static char *
-read_file(const char *filename)
+static char *file_getname(enum file_type type)
 {
-  bool ret;
-  gchar *contents;
-  GError *error = NULL;
+	char *file = NULL;
 
-  ret = g_file_get_contents(filename, &contents, NULL, &error);
-  if (!ret) {
-    warning("%s", error->message);
-    g_error_free(error);
-    return NULL;
-  }
+	switch (type) {
+	case conf_type:
+		file = file_expand_tilde(FILE_HOME_CONF);
+		if (file_exists(file)) {
+			file_config.loc = file_home;
+		} else {
+			free(file);
+			file = file_expand_tilde(FILE_CONF);
+			if (!file_exists(file)) {
+				free(file);
+				return NULL;
+			}
+			file_config.loc = file_etc;
+		}
+		break;
 
-  return contents;
+	case cache_type:
+		if (file_config.loc == file_home)
+			file = file_expand_tilde(FILE_HOME_CACHE);
+		else if (file_config.loc == file_etc)
+			file = file_expand_tilde(FILE_CACHE);
+		break;
+	case log_type:
+		if (file_config.loc == file_home)
+			file = file_expand_tilde(FILE_HOME_LOG);
+		else if (file_config.loc == file_etc)
+			file = file_expand_tilde(FILE_LOG);
+		break;
+	}
+
+	if (!file) {
+		switch (type) {
+		case conf_type:
+			fatal("internal error. this is a bug.");
+		case cache_type:
+			fatal("please specify where to put the cache file.");
+		case log_type:
+			fatal("please specify where to put the log file.");
+		}
+	}
+
+	return file;
 }
 
-static int
-file_exists(const char *filename)
+FILE *file_open_logfile(void)
 {
-  return g_file_test(filename, G_FILE_TEST_IS_REGULAR);
+	char *log = file_config.log;
+
+	file_loghandle = fopen(log, "ab");
+	if (!file_loghandle)
+		fatal_errno("cannot open %s", log);
+
+	return file_loghandle;
 }
 
-static char *
-file_expand_tilde(const char *path)
+static void replace(char **dst, char *src)
 {
-  const char *home;
-
-  if (path[0] != '~')
-    return g_strdup(path);
-    
-  home = getenv ("HOME");
-  if (!home)
-    home = "./";
-
-  return g_strconcat(home, path + 1, NULL);
+	if (*dst)
+		free(*dst);
+	*dst = src;
 }
 
-
-static char *
-file_getname (enum file_type type)
+static void load_string(GKeyFile * file, const char *name, char **value_r)
 {
-  char *file = NULL;
+	GError *error = NULL;
+	char *value = g_key_file_get_string(file, PACKAGE, name, &error);
 
-  switch (type)
-    {
-    case conf_type:
-      file = file_expand_tilde (FILE_HOME_CONF);
-      if (file_exists (file))
-        {
-          file_config.loc = file_home;
-        }
-      else
-        {
-          free (file);
-          file = file_expand_tilde (FILE_CONF);
-          if (!file_exists (file))
-            {
-              free (file);
-              return NULL;
-            }
-          file_config.loc = file_etc;
-        }
-      break;
+	if (error != NULL) {
+		if (error->code != G_KEY_FILE_ERROR_KEY_NOT_FOUND)
+			fatal("%s", error->message);
+		g_error_free(error);
+		return;
+	}
 
-    case cache_type:
-      if (file_config.loc == file_home)
-        file = file_expand_tilde (FILE_HOME_CACHE);
-      else if (file_config.loc == file_etc)
-        file = file_expand_tilde (FILE_CACHE);
-      break;
-    case log_type:
-      if (file_config.loc == file_home)
-        file = file_expand_tilde (FILE_HOME_LOG);
-      else if (file_config.loc == file_etc)
-        file = file_expand_tilde (FILE_LOG);
-      break;
-    }
-
-  if (!file)
-    {
-      switch (type)
-        {
-        case conf_type:
-          fatal ("internal error. this is a bug.");
-        case cache_type:
-          fatal ("please specify where to put the cache file.");
-        case log_type:
-          fatal ("please specify where to put the log file.");
-        }
-    }
-
-  return file;
+	g_free(*value_r);
+	*value_r = value;
 }
 
-FILE *
-file_open_logfile (void)
+static void load_integer(GKeyFile * file, const char *name, int *value_r)
 {
-  char *log = file_config.log;
+	GError *error = NULL;
+	int value = g_key_file_get_integer(file, PACKAGE, name, &error);
 
-  file_loghandle = fopen (log, "ab");
-  if (!file_loghandle)
-    fatal_errno ("cannot open %s", log);
+	if (error != NULL) {
+		if (error->code != G_KEY_FILE_ERROR_KEY_NOT_FOUND)
+			fatal("%s", error->message);
+		g_error_free(error);
+		return;
+	}
 
-  return file_loghandle;
+	*value_r = value;
 }
 
-static void
-replace (char **dst, char *src)
+int file_read_config(int argc, char **argv)
 {
-  if (*dst)
-    free (*dst);
-  *dst = src;
+	char *mpd_host = getenv("MPD_HOST");
+	char *mpd_port = getenv("MPD_PORT");
+	char *http_proxy = getenv("http_proxy");
+	char *data = NULL;
+	int i;
+
+	file_config.verbose = -1;
+
+	/* look for config path in command-line options. */
+	for (i = 0; i < argc; i++) {
+		if (!strcmp("--conf", argv[i]))
+			replace(&file_config.conf, g_strdup(argv[++i]));
+	}
+
+	if (!file_config.conf || !file_exists(file_config.conf)) {
+		file_config.conf = file_getname(conf_type);
+	}
+
+	/* parse config file options. */
+	if (file_config.conf && (data = read_file(file_config.conf))) {
+		/* GKeyFile does not allow values without a section.  Apply a
+		   hack here: prepend the string "[mpdscribble]" to have all
+		   values in the "mpdscribble" section */
+		char *data2 = g_strconcat("[" PACKAGE "]\n", data, NULL);
+		GKeyFile *file = g_key_file_new();
+		GError *error = NULL;
+
+		g_free(data);
+		g_key_file_load_from_data(file, data2, strlen(data2),
+					  G_KEY_FILE_NONE, &error);
+		g_free(data2);
+		if (error != NULL)
+			fatal("%s", error->message);
+
+		load_string(file, "username", &file_config.username);
+		load_string(file, "password", &file_config.password);
+		load_string(file, "log", &file_config.log);
+		load_string(file, "cache", &file_config.cache);
+		load_string(file, "musicdir", &file_config.musicdir);
+		load_string(file, "host", &file_config.host);
+		load_integer(file, "port", &file_config.port);
+		load_string(file, "proxy", &file_config.proxy);
+		load_integer(file, "sleep", &file_config.sleep);
+		load_integer(file, "cache_interval",
+			     &file_config.cache_interval);
+		load_integer(file, "verbose", &file_config.verbose);
+
+		g_key_file_free(file);
+	}
+
+	/* parse command-line options. */
+	for (i = 0; i < argc; i++) {
+		if (!strcmp("--help", argv[i]))
+			help();
+		else if (!strcmp("--version", argv[i]))
+			version();
+		else if (!strcmp("--host", argv[i]))
+			replace(&file_config.host, g_strdup(argv[++i]));
+		else if (!strcmp("--log", argv[i]))
+			replace(&file_config.log, g_strdup(argv[++i]));
+		else if (!strcmp("--cache", argv[i]))
+			replace(&file_config.cache, g_strdup(argv[++i]));
+		else if (!strcmp("--port", argv[i]))
+			file_config.port = file_atoi(argv[++i]);
+		else if (!strcmp("--sleep", argv[i]))
+			file_config.sleep = file_atoi(argv[++i]);
+		else if (!strcmp("--cache-interval", argv[i]))
+			file_config.cache_interval = file_atoi(argv[++i]);
+		else if (!strcmp("--verbose", argv[i]))
+			file_config.verbose = file_atoi(argv[++i]);
+		else if (!strcmp("--proxy", argv[i]))
+			file_config.proxy = g_strdup(argv[++i]);
+	}
+
+	if (!file_config.conf)
+		fatal("cannot find configuration file");
+
+	if (!file_config.username)
+		fatal("no audioscrobbler username specified in %s",
+		      file_config.conf);
+	if (!file_config.password)
+		fatal("no audioscrobbler password specified in %s",
+		      file_config.conf);
+	if (!file_config.host)
+		file_config.host = g_strdup(mpd_host);
+	if (!file_config.host)
+		file_config.host = g_strdup(FILE_DEFAULT_HOST);
+	if (!file_config.log)
+		file_config.log = file_getname(log_type);
+	if (!file_config.cache)
+		file_config.cache = file_getname(cache_type);
+	if (!file_config.port && mpd_port)
+		file_config.port = file_atoi(mpd_port);
+	if (!file_config.port)
+		file_config.port = FILE_DEFAULT_PORT;
+	if (!file_config.proxy)
+		file_config.proxy = http_proxy;
+	if (!file_config.sleep)
+		file_config.sleep = 1;
+	if (!file_config.cache_interval)
+		file_config.cache_interval = 600;
+	if (file_config.verbose == -1)
+		file_config.verbose = 2;
+
+	return 1;
 }
 
-static void
-load_string(GKeyFile *file, const char *name, char **value_r)
+void file_cleanup(void)
 {
-  GError *error = NULL;
-  char *value = g_key_file_get_string(file, PACKAGE, name, &error);
+	g_free(file_config.username);
+	g_free(file_config.password);
+	g_free(file_config.host);
+	g_free(file_config.log);
+	g_free(file_config.conf);
+	g_free(file_config.cache);
 
-  if (error != NULL) {
-    if (error->code != G_KEY_FILE_ERROR_KEY_NOT_FOUND)
-      fatal("%s", error->message);
-    g_error_free(error);
-    return;
-  }
-
-  g_free(*value_r);
-  *value_r = value;
+	if (file_loghandle)
+		fclose(file_loghandle);
 }
 
-static void
-load_integer(GKeyFile *file, const char *name, int *value_r)
+int file_write_cache(struct song *sng)
 {
-  GError *error = NULL;
-  int value = g_key_file_get_integer(file, PACKAGE, name, &error);
+	struct song *tmp = sng;
+	int count = 0;
+	FILE *handle;
 
-  if (error != NULL) {
-    if (error->code != G_KEY_FILE_ERROR_KEY_NOT_FOUND)
-      fatal("%s", error->message);
-    g_error_free(error);
-    return;
-  }
+	if (!tmp && file_saved_count == 0)
+		return -1;
 
-  *value_r = value;
+	handle = fopen(file_config.cache, "wb");
+	if (!handle) {
+		warning_errno("error opening %s", file_config.cache);
+		return 0;
+	}
+
+	while (tmp) {
+		fprintf(handle,
+			"# song %i in queue\na = %s\nt = %s\nb = %s\nm = %s\n"
+			"i = %s\nl = %i\no = %s\n\n", ++count, tmp->artist,
+			tmp->track, tmp->album, tmp->mbid, tmp->time,
+			tmp->length, tmp->source);
+
+		tmp = tmp->next;
+	}
+
+	fclose(handle);
+
+	file_saved_count = count;
+	return count;
 }
 
-int
-file_read_config (int argc, char **argv)
+static void clear_song(struct song *s)
 {
-  char *mpd_host = getenv ("MPD_HOST");
-  char *mpd_port = getenv ("MPD_PORT");
-  char *http_proxy = getenv ("http_proxy");
-  char *data = NULL;
-  int i;
-
-  file_config.verbose = -1;
-
-  /* look for config path in command-line options. */
-  for (i = 0; i < argc; i++)
-    {
-      if (!strcmp ("--conf", argv[i]))
-        replace (&file_config.conf, g_strdup(argv[++i]));
-    }
-
-  if (!file_config.conf
-      || !file_exists (file_config.conf))
-    {
-      file_config.conf = file_getname (conf_type);
-    }
-
-  /* parse config file options. */
-  if (file_config.conf && (data = read_file (file_config.conf)))
-    {
-      /* GKeyFile does not allow values without a section.  Apply a
-         hack here: prepend the string "[mpdscribble]" to have all
-         values in the "mpdscribble" section */
-      char *data2 = g_strconcat("[" PACKAGE "]\n", data, NULL);
-      GKeyFile *file = g_key_file_new();
-      GError *error = NULL;
-
-      g_free(data);
-      g_key_file_load_from_data(file, data2, strlen(data2),
-                                G_KEY_FILE_NONE, &error);
-      g_free(data2);
-      if (error != NULL)
-        fatal("%s", error->message);
-
-      load_string(file, "username", &file_config.username);
-      load_string(file, "password", &file_config.password);
-      load_string(file, "log", &file_config.log);
-      load_string(file, "cache", &file_config.cache);
-      load_string(file, "musicdir", &file_config.musicdir);
-      load_string(file, "host", &file_config.host);
-      load_integer(file, "port", &file_config.port);
-      load_string(file, "proxy", &file_config.proxy);
-      load_integer(file, "sleep", &file_config.sleep);
-      load_integer(file, "cache_interval", &file_config.cache_interval);
-      load_integer(file, "verbose", &file_config.verbose);
-
-      g_key_file_free(file);
-    }
-
-  /* parse command-line options. */
-  for (i = 0; i < argc; i++)
-    {
-      if (!strcmp ("--help", argv[i]))
-        help ();
-      else if (!strcmp ("--version", argv[i]))
-        version ();
-      else if (!strcmp ("--host", argv[i]))
-        replace (&file_config.host, g_strdup(argv[++i]));
-      else if (!strcmp ("--log", argv[i]))
-        replace (&file_config.log, g_strdup(argv[++i]));
-      else if (!strcmp ("--cache", argv[i]))
-        replace (&file_config.cache, g_strdup(argv[++i]));
-      else if (!strcmp ("--port", argv[i]))
-        file_config.port = file_atoi (argv[++i]);
-      else if (!strcmp ("--sleep", argv[i]))
-        file_config.sleep = file_atoi (argv[++i]);
-      else if (!strcmp ("--cache-interval", argv[i]))
-        file_config.cache_interval = file_atoi (argv[++i]);
-      else if (!strcmp ("--verbose", argv[i]))
-        file_config.verbose = file_atoi (argv[++i]);
-      else if (!strcmp ("--proxy", argv[i]))
-        file_config.proxy = g_strdup(argv[++i]);
-    }
-
-  if (!file_config.conf)
-    fatal ("cannot find configuration file");
-
-  if (!file_config.username)
-    fatal ("no audioscrobbler username specified in %s", file_config.conf);
-  if (!file_config.password)
-    fatal ("no audioscrobbler password specified in %s", file_config.conf);
-  if (!file_config.host)
-    file_config.host = g_strdup(mpd_host);
-  if (!file_config.host)
-    file_config.host = g_strdup(FILE_DEFAULT_HOST);
-  if (!file_config.log)
-    file_config.log = file_getname (log_type);
-  if (!file_config.cache)
-    file_config.cache = file_getname (cache_type);
-  if (!file_config.port && mpd_port)
-    file_config.port = file_atoi (mpd_port);
-  if (!file_config.port)
-    file_config.port = FILE_DEFAULT_PORT;
-  if (!file_config.proxy)
-    file_config.proxy = http_proxy;
-  if (!file_config.sleep)
-    file_config.sleep = 1;
-  if (!file_config.cache_interval)
-    file_config.cache_interval = 600;
-  if (file_config.verbose == -1)
-    file_config.verbose = 2;
-
-  return 1;
+	s->artist = NULL;
+	s->track = NULL;
+	s->album = NULL;
+	s->mbid = NULL;
+	s->time = NULL;
+	s->length = 0;
+	s->source = "P";
 }
 
-void
-file_cleanup (void)
+int file_read_cache(void)
 {
-  g_free(file_config.username);
-  g_free(file_config.password);
-  g_free(file_config.host);
-  g_free(file_config.log);
-  g_free(file_config.conf);
-  g_free(file_config.cache);
+	char *data;
+	int count = 0;
 
-  if (file_loghandle)
-    fclose (file_loghandle);
-}
+	if ((data = read_file(file_config.cache))) {
+		struct pair *root = get_pair(data);
+		struct pair *p = root;
+		struct song sng;
 
-int
-file_write_cache (struct song *sng)
-{
-  struct song *tmp = sng;
-  int count = 0;
-  FILE *handle;
+		clear_song(&sng);
 
-  if (!tmp && file_saved_count == 0)
-    return -1;
+		while (p) {
+			if (!strcmp("a", p->key))
+				sng.artist = g_strdup(p->val);
+			if (!strcmp("t", p->key))
+				sng.track = g_strdup(p->val);
+			if (!strcmp("b", p->key))
+				sng.album = g_strdup(p->val);
+			if (!strcmp("m", p->key))
+				sng.mbid = g_strdup(p->val);
+			if (!strcmp("i", p->key))
+				sng.time = g_strdup(p->val);
+			if (!strcmp("l", p->key)) {
+				sng.length = file_atoi(p->val);
 
-  handle = fopen (file_config.cache, "wb");
-  if (!handle)
-    {
-      warning_errno ("error opening %s", file_config.cache);
-      return 0;
-    }
+				as_songchange("", sng.artist, sng.track,
+					      sng.album, sng.mbid, sng.length,
+					      sng.time);
 
-  while (tmp)
-    {
-      fprintf (handle, "# song %i in queue\na = %s\nt = %s\nb = %s\nm = %s\n"
-               "i = %s\nl = %i\no = %s\n\n", ++count, tmp->artist, tmp->track,
-               tmp->album, tmp->mbid, tmp->time, tmp->length, tmp->source);
+				count++;
 
-      tmp = tmp->next;
-    }
+				if (sng.artist) {
+					free(sng.artist);
+					sng.artist = NULL;
+				}
+				if (sng.track) {
+					free(sng.track);
+					sng.track = NULL;
+				}
+				if (sng.album) {
+					free(sng.album);
+					sng.album = NULL;
+				}
+				if (sng.mbid) {
+					free(sng.mbid);
+					sng.mbid = NULL;
+				}
+				if (sng.time) {
+					free(sng.time);
+					sng.time = NULL;
+				}
 
-  fclose (handle);
+				clear_song(&sng);
+			}
+			if (strcmp("o", p->key) == 0 && p->val[0] == 'R')
+				sng.source = "R";
 
-  file_saved_count = count;
-  return count;
-}
+			p = p->next;
+		}
 
-static void
-clear_song (struct song *s)
-{
-  s->artist = NULL;
-  s->track = NULL;
-  s->album = NULL;
-  s->mbid = NULL;
-  s->time = NULL;
-  s->length = 0;
-  s->source = "P";
-}
+		free_pairs(p);
+	}
 
-int
-file_read_cache (void)
-{
-  char *data;
-  int count = 0;
+	file_saved_count = count;
 
-  if ((data = read_file (file_config.cache)))
-    {
-      struct pair *root = get_pair (data);
-      struct pair *p = root;
-      struct song sng;
-
-      clear_song (&sng);
-
-      while (p)
-        {
-          if (!strcmp ("a", p->key)) sng.artist = g_strdup(p->val);
-          if (!strcmp ("t", p->key)) sng.track = g_strdup(p->val);
-          if (!strcmp ("b", p->key)) sng.album = g_strdup(p->val);
-          if (!strcmp ("m", p->key)) sng.mbid = g_strdup(p->val);
-          if (!strcmp ("i", p->key)) sng.time = g_strdup(p->val);
-          if (!strcmp ("l", p->key))
-            {
-              sng.length = file_atoi (p->val);
-
-              as_songchange ("", sng.artist, sng.track, sng.album,
-                             sng.mbid, sng.length, sng.time);
-
-              count++;
-
-              if (sng.artist) { free (sng.artist); sng.artist = NULL; }
-              if (sng.track)  { free (sng.track);  sng.track  = NULL; }
-              if (sng.album)  { free (sng.album);  sng.album  = NULL; }
-              if (sng.mbid)   { free (sng.mbid);   sng.mbid   = NULL; }
-              if (sng.time)   { free (sng.time);   sng.time   = NULL; }
-
-              clear_song (&sng);
-            }
-          if (strcmp("o", p->key) == 0 && p->val[0] == 'R')
-            sng.source = "R";
-
-          p = p->next;
-        }
-
-      free_pairs (p);
-    }
-
-  file_saved_count = count;
-
-  free (data);
-  return count;
+	free(data);
+	return count;
 }
