@@ -9,3 +9,10 @@ configure
 build
 .stgitmsg.txt*
 *.tar.*
+*~
+*.o
+stamp-*
+.stgit-edit.txt
+config.h
+config.h.in
+mpdscribble
