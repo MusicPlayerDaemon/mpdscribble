@@ -1,4 +1,4 @@
-mpdscribble 0.13 - not yet released
+mpdscribble 0.13 - 2008-12-19
   * libmpdclient update from upstream:
     - suport for Unix domain sockets
     - try all IP addresses from the resolver, resulting in better IPv6 support
