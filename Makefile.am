@@ -1,6 +1,10 @@
 ACLOCAL_AMFLAGS = -I m4
 AUTOMAKE_OPTIONS = foreign 1.9 dist-bzip2
 
+man_MANS = mpdscribble.1
+doc_DATA = README AUTHORS NEWS
+EXTRA_DIST = $(man_MANS)
+
 bin_PROGRAMS = mpdscribble
 mpdscribble_SOURCES = mpdscribble.c as.c conn.c file.c lmc.c \
   misc.c mbid.c as.h conn.h file.h lmc.h misc.h mbid.h
