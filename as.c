@@ -79,6 +79,7 @@ static int g_interval = 1;
 static long g_lastattempt = 0;
 static as_state g_state = AS_NOTHING;
 
+static struct song g_now_playing;
 static struct song *g_queue = NULL;
 static struct song *g_queuep = NULL;
 static int g_queue_size = 0;
@@ -464,9 +465,9 @@ as_now_playing_callback(size_t length, const char *response)
   g_state = AS_READY;
 }
 
-void
-as_now_playing(const char *artist, const char *track,
-               const char *album, const char *mbid, const int length)
+static void
+as_send_now_playing(const char *artist, const char *track,
+                    const char *album, const char *mbid, const int length)
 {
   GString *post_data;
   char len[MAX_VAR_SIZE];
@@ -501,6 +502,19 @@ as_now_playing(const char *artist, const char *track,
   g_string_free(post_data, true);
 }
 
+void
+as_now_playing(const char *artist, const char *track,
+               const char *album, const char *mbid, const int length)
+{
+  as_song_cleanup(&g_now_playing, false);
+
+  g_now_playing.artist = g_strdup(artist);
+  g_now_playing.track = g_strdup(track);
+  g_now_playing.album = g_strdup(album);
+  g_now_playing.mbid = g_strdup(mbid);
+  g_now_playing.length = length;
+}
+
 static void
 as_submit (void)
 {
@@ -511,8 +525,19 @@ as_submit (void)
   GString *post_data;
   char len[MAX_VAR_SIZE];
 
-  if (!g_queue_size)
+  if (g_queue_size == 0) {
+    /* the submission queue is empty.  See if a "now playing" song is
+       scheduled - these should be sent after song submissions */
+    if (g_now_playing.artist != NULL && g_now_playing.track != NULL) {
+      as_send_now_playing(g_now_playing.artist, g_now_playing.track,
+                          g_now_playing.album, g_now_playing.mbid,
+                          g_now_playing.length);
+      as_song_cleanup(&g_now_playing, false);
+      memset(&g_now_playing, 0, sizeof(g_now_playing));
+    }
+
     return;
+  }
 
   g_state = AS_SUBMITTING;
 
@@ -675,6 +700,8 @@ as_cleanup (void)
   struct song *sng = g_queue;
 
   as_save_cache ();
+
+  as_song_cleanup(&g_now_playing, false);
 
   while (sng)
     {
