@@ -294,7 +294,6 @@ static void as_queue_remove_oldest(unsigned count)
 static void as_submit_callback(size_t length, const char *response)
 {
 	char *newline;
-	int failed = 0;
 
 	assert(g_state == AS_SUBMITTING);
 	g_state = AS_READY;
@@ -306,30 +305,25 @@ static void as_submit_callback(size_t length, const char *response)
 		return;
 	}
 
-	while ((newline = memchr(response, '\n', length)) != NULL) {
-		switch (as_parse_submit_response(response,
-						 newline - response)) {
-		case AS_SUBMIT_OK:
-			g_interval = 1;
+	newline = memchr(response, '\n', length);
+	if (newline != NULL)
+		length = newline - response;
 
-			/* submission was accepted, so clean up the cache. */
-			as_queue_remove_oldest(g_submit_pending);
-			g_submit_pending = 0;
-			break;
-		case AS_SUBMIT_FAILED:
-			failed = 1;
-			break;
-		case AS_SUBMIT_HANDSHAKE:
-			g_state = AS_NOTHING;
-			break;
-		}
+	switch (as_parse_submit_response(response, length)) {
+	case AS_SUBMIT_OK:
+		g_interval = 1;
 
-		length = response + length - (newline + 1);
-		response = newline + 1;
-	}
-
-	if (failed)
+		/* submission was accepted, so clean up the cache. */
+		as_queue_remove_oldest(g_submit_pending);
+		g_submit_pending = 0;
+		break;
+	case AS_SUBMIT_FAILED:
 		as_increase_interval();
+		break;
+	case AS_SUBMIT_HANDSHAKE:
+		g_state = AS_NOTHING;
+		break;
+	}
 }
 
 char *as_timestamp(void)
