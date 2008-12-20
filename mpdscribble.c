@@ -35,11 +35,8 @@
 #include <string.h>
 
 static GMainLoop *main_loop;
-static guint update_source_id, save_source_id;
+static guint save_source_id;
 
-static int last_id = -1;
-static struct mpd_song *current_song;
-static bool was_paused;
 static GTimer *timer;
 static char mbid[MBID_BUFFER_SIZE];
 
@@ -99,7 +96,7 @@ timer_save_cache(G_GNUC_UNUSED gpointer data)
 /**
  * Pause mode on the current song was activated.
  */
-static void
+void
 song_paused(void)
 {
 	g_timer_stop(timer);
@@ -108,7 +105,7 @@ song_paused(void)
 /**
  * The current song continues to play (after pause).
  */
-static void
+void
 song_continued(void)
 {
 	g_timer_continue(timer);
@@ -117,7 +114,7 @@ song_continued(void)
 /**
  * MPD started playing this song.
  */
-static void
+void
 song_started(const struct mpd_song *song)
 {
 	song_changed(song);
@@ -126,7 +123,7 @@ song_started(const struct mpd_song *song)
 /**
  * MPD stopped playing this song.
  */
-static void
+void
 song_ended(const struct mpd_song *song)
 {
 	int q;
@@ -148,61 +145,6 @@ song_ended(const struct mpd_song *song)
 		notice
 			("added (%s - %s) to submit queue at position %i.",
 			 song->artist, song->title, q);
-}
-
-/**
- * Update: determine MPD's current song and enqueue submissions.
- */
-static gboolean
-timer_mpd_update(G_GNUC_UNUSED gpointer data)
-{
-	struct mpd_song *prev;
-	int elapsed;
-
-	prev = current_song;
-	elapsed = lmc_current(&current_song);
-
-	if (elapsed == MPD_STATUS_STATE_PAUSE) {
-		if (!was_paused)
-			song_paused();
-		was_paused = 1;
-		return true;
-	} else if (elapsed != MPD_STATUS_STATE_PLAY) {
-		current_song = NULL;
-		last_id = -1;
-	} else if (current_song->artist == NULL ||
-		   current_song->title == NULL) {
-		if (current_song->id != last_id) {
-			notice("new song detected with tags missing (%s)",
-			       current_song->file);
-			last_id = current_song->id;
-		}
-
-		mpd_freeSong(current_song);
-		current_song = NULL;
-	}
-
-	if (was_paused) {
-		if (current_song != NULL && current_song->id == last_id)
-			song_continued();
-		was_paused = false;
-	}
-
-	/* submit the previous song */
-	if (prev != NULL &&
-	    (current_song == NULL || prev->id != current_song->id))
-		song_ended(prev);
-
-	/* new song. */
-	if (current_song != NULL && current_song->id != last_id) {
-		song_started(current_song);
-		last_id = current_song->id;
-	}
-
-	if (prev != NULL)
-		mpd_freeSong(prev);
-
-	return true;
 }
 
 int main(int argc, char **argv)
@@ -236,8 +178,6 @@ int main(int argc, char **argv)
 
 	/* set up timeouts */
 
-	update_source_id = g_timeout_add(file_config.sleep * 1000,
-					 timer_mpd_update, NULL);
 	save_source_id = g_timeout_add(file_config.cache_interval * 1000,
 				       timer_save_cache, NULL);
 

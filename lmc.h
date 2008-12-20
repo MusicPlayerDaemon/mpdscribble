@@ -30,4 +30,17 @@ void lmc_connect(char *host, int port);
 void lmc_disconnect(void);
 int lmc_current(struct mpd_song **song_r);
 
+
+void
+song_paused(void);
+
+void
+song_continued(void);
+
+void
+song_started(const struct mpd_song *song);
+
+void
+song_ended(const struct mpd_song *song);
+
 #endif /* LMC_H */
