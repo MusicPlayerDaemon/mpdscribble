@@ -46,6 +46,10 @@
 /* don't submit more than this amount of songs in a batch. */
 #define MAX_SUBMIT_COUNT 10
 
+static const char OK[] = "OK";
+static const char BADSESSION[] = "BADSESSION";
+static const char FAILED[] = "FAILED";
+
 typedef enum {
 	AS_NOTHING,
 	AS_HANDSHAKING,
@@ -151,20 +155,18 @@ static int as_throttle(void)
 	return 0;
 }
 
-static int as_parse_submit_response(const char *line)
+static int as_parse_submit_response(const char *line, size_t length)
 {
-	static const char *OK = "OK";
-	static const char *BADSESSION = "BADSESSION";
-	static const char *FAILED = "FAILED";
-
-	if (!strncmp(line, OK, strlen(OK))) {
+	if (length == sizeof(OK) - 1 && memcmp(line, OK, length) == 0) {
 		notice("OK");
 		return AS_SUBMIT_OK;
-	} else if (!strncmp(line, BADSESSION, strlen(BADSESSION))) {
+	} else if (length == sizeof(BADSESSION) - 1 &&
+		   memcmp(line, BADSESSION, length) == 0) {
 		warning("invalid session");
 
 		return AS_SUBMIT_HANDSHAKE;
-	} else if (!strncmp(line, FAILED, strlen(FAILED))) {
+	} else if (length == sizeof(FAILED) - 1 &&
+		   memcmp(line, FAILED, length) == 0) {
 		const char *start = line + strlen(FAILED);
 		if (*start)
 			warning("submission rejected: %s", start);
@@ -180,11 +182,9 @@ static int as_parse_submit_response(const char *line)
 static bool
 as_parse_handshake_response(const char *line)
 {
-	static const char *OK = "OK";
 	static const char *BANNED = "BANNED";
 	static const char *BADAUTH = "BADAUTH";
 	static const char *BADTIME = "BADTIME";
-	static const char *FAILED = "FAILED";
 
 	/* FIXME: some code duplication between this
 	   and as_parse_submit_response. */
@@ -294,7 +294,6 @@ static void as_queue_remove_oldest(unsigned count)
 static void as_submit_callback(size_t length, const char *response)
 {
 	char *newline;
-	char *next;
 	int failed = 0;
 
 	assert(g_state == AS_SUBMITTING);
@@ -308,8 +307,8 @@ static void as_submit_callback(size_t length, const char *response)
 	}
 
 	while ((newline = memchr(response, '\n', length)) != NULL) {
-		next = g_strndup(response, newline - response);
-		switch (as_parse_submit_response(next)) {
+		switch (as_parse_submit_response(response,
+						 newline - response)) {
 		case AS_SUBMIT_OK:
 			g_interval = 1;
 
@@ -325,7 +324,6 @@ static void as_submit_callback(size_t length, const char *response)
 			break;
 		}
 
-		g_free(next);
 		length = response + length - (newline + 1);
 		response = newline + 1;
 	}
