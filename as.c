@@ -79,9 +79,9 @@ static as_state g_state = AS_NOTHING;
 static struct song g_now_playing;
 static struct song *g_queue = NULL;
 static struct song *g_queuep = NULL;
-static int g_queue_size = 0;
-static int g_submit_pending = 0;
-static int g_sleep = 0;
+static unsigned g_queue_size;
+static unsigned g_submit_pending;
+static unsigned g_sleep;
 
 static void
 add_var_internal(GString * s, char sep, const char *key,
@@ -279,7 +279,7 @@ static void as_handshake_callback(size_t length, const char *response)
 	}
 }
 
-static void as_queue_remove_oldest(int count)
+static void as_queue_remove_oldest(unsigned count)
 {
 	assert(count > 0);
 	assert(g_queue_size >= count);
@@ -469,8 +469,8 @@ as_now_playing(const char *artist, const char *track,
 static void as_submit(void)
 {
 	//MAX_SUBMIT_COUNT
-	int count = 0;
-	int queue_size = g_queue_size;
+	unsigned count = 0;
+	unsigned queue_size = g_queue_size;
 	struct song *queue = g_queue;
 	GString *post_data;
 	char len[MAX_VAR_SIZE];
