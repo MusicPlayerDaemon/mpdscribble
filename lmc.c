@@ -33,6 +33,7 @@
 #include <unistd.h>
 
 static mpd_Connection *g_mpd = NULL;
+static bool idle_supported, idle_notified;
 static int last_id = -1;
 static struct mpd_song *current_song;
 static bool was_paused;
@@ -40,13 +41,16 @@ static bool was_paused;
 static char *g_host;
 static int g_port;
 
-static guint reconnect_source_id, update_source_id;
+static guint reconnect_source_id, update_source_id, idle_source_id;
 
 static void
 lmc_schedule_reconnect(void);
 
 static void
 lmc_schedule_update(void);
+
+static void
+lmc_schedule_idle(void);
 
 static void lmc_failure(void)
 {
@@ -75,6 +79,8 @@ lmc_reconnect(G_GNUC_UNUSED gpointer data)
 		lmc_failure();
 		return true;
 	}
+
+	idle_supported = true;
 
 	if (password) {
 		notice("sending password ... ");
@@ -255,6 +261,12 @@ lmc_update(G_GNUC_UNUSED gpointer data)
 		return false;
 	}
 
+	if (idle_supported) {
+		lmc_schedule_idle();
+		update_source_id = 0;
+		return false;
+	}
+
 	return true;
 }
 
@@ -263,6 +275,97 @@ lmc_schedule_update(void)
 {
 	assert(update_source_id == 0);
 
-	update_source_id = g_timeout_add_seconds(file_config.sleep,
+	update_source_id = g_timeout_add_seconds(idle_supported ? 0 : file_config.sleep,
 						 lmc_update, NULL);
+}
+
+static void
+lmc_idle_callback(G_GNUC_UNUSED struct _mpd_Connection *connection,
+		  unsigned flags, G_GNUC_UNUSED void *userdata)
+{
+	assert(g_mpd == connection);
+
+	/* we only care about the "player" event */
+
+	if (flags & IDLE_PLAYER)
+		idle_notified = true;
+}
+
+static gboolean
+lmc_idle(G_GNUC_UNUSED GIOChannel *source,
+	 G_GNUC_UNUSED GIOCondition condition,
+	 G_GNUC_UNUSED gpointer data)
+{
+	assert(idle_source_id != 0);
+	assert(g_mpd != NULL);
+	assert(g_mpd->error == MPD_ERROR_SUCCESS);
+
+	idle_source_id = 0;
+
+	/* an even on the MPD connection socket: end idle mode and
+	   query result */
+	mpd_stopIdle(g_mpd);
+
+	if (g_mpd->error == MPD_ERROR_ACK ||
+	    g_mpd->errorCode == MPD_ACK_ERROR_UNKNOWN_CMD) {
+		/* MPD does not recognize the "idle" command - disable
+		   it for this connection */
+
+		notice("MPD does not support the 'idle' command - falling back to polling");
+
+		idle_supported = false;
+		lmc_schedule_update();
+		return false;
+	}
+
+	if (g_mpd->error != MPD_ERROR_SUCCESS) {
+		lmc_failure();
+		lmc_schedule_reconnect();
+		return false;
+	}
+
+	if (idle_notified)
+		/* there was a change: query MPD */
+		lmc_schedule_update();
+	else
+		/* nothing interesting: re-enter idle */
+		lmc_schedule_idle();
+
+	return false;
+}
+
+static void
+lmc_schedule_idle(void)
+{
+	GIOChannel *channel;
+
+	assert(idle_source_id == 0);
+	assert(g_mpd != NULL);
+
+	idle_notified = false;
+
+	mpd_startIdle(g_mpd, lmc_idle_callback, NULL);
+	if (g_mpd->error == MPD_ERROR_ACK ||
+	    g_mpd->errorCode == MPD_ACK_ERROR_UNKNOWN_CMD) {
+		/* MPD does not recognize the "idle" command - disable
+		   it for this connection */
+
+		notice("MPD does not support the 'idle' command - falling back to polling");
+
+		idle_supported = false;
+		lmc_schedule_update();
+		return;
+	}
+
+	if (g_mpd->error != MPD_ERROR_SUCCESS) {
+		lmc_failure();
+		lmc_schedule_reconnect();
+		return;
+	}
+
+	/* add a GLib watch on the libmpdclient socket */
+
+	channel = g_io_channel_unix_new(g_mpd->sock);
+	idle_source_id = g_io_add_watch(channel, G_IO_IN, lmc_idle, NULL);
+	g_io_channel_unref(channel);
 }
