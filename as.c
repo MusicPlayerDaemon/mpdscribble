@@ -240,9 +240,7 @@ static void as_handshake_callback(size_t length, const char *response)
 	char *newline;
 	char *next;
 
-	if (g_state != AS_HANDSHAKING)
-		warning("as_handshake_callback called when not handshaking,"
-			" this is probably a bug.");
+	assert(g_state == AS_HANDSHAKING);
 
 	if (!length) {
 		g_state = AS_NOTHING;
@@ -283,8 +281,8 @@ static void as_handshake_callback(size_t length, const char *response)
 
 static void as_queue_remove_oldest(int count)
 {
-	if (!count || !g_queue_size)
-		return;
+	assert(count > 0);
+	assert(g_queue_size >= count);
 
 	while (count--) {
 		struct song *tmp = g_queue;
@@ -300,6 +298,8 @@ static void as_submit_callback(size_t length, const char *response)
 	char *next;
 	int failed = 0;
 
+	assert(g_state == AS_SUBMITTING);
+
 	if (!length) {
 		g_state = AS_READY;
 		g_submit_pending = 0;
@@ -307,10 +307,6 @@ static void as_submit_callback(size_t length, const char *response)
 		as_increase_interval();
 		return;
 	}
-
-	if (g_state != AS_SUBMITTING)
-		warning("as_submit_callback called when not submitting,"
-			" this is probably a bug.");
 
 	while ((newline = memchr(response, '\n', length)) != NULL) {
 		next = g_strndup(response, newline - response);
@@ -603,8 +599,7 @@ void as_init(unsigned int seconds)
 	int saved;
 	g_sleep = seconds;
 
-	if (g_state != AS_NOTHING)
-		fatal("as_init called twice, this is probably a bug.");
+	assert(g_state == AS_NOTHING);
 
 	notice("starting mpdscribble (" AS_CLIENT_ID " " AS_CLIENT_VERSION
 	       ").");
