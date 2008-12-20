@@ -568,17 +568,8 @@ as_songchange(const char *file, const char *artist, const char *track,
 	current->time = time2 ? g_strdup(time2) : as_timestamp();
 	current->source = strstr(file, "://") == NULL ? "P" : "R";
 
-	if (!current->artist)
-		current->artist = g_strdup("");
-	if (!current->track)
-		current->track = g_strdup("");
-	if (!current->album)
-		current->album = g_strdup("");
-	if (!current->mbid)
-		current->mbid = g_strdup("");
-
-	notice("%s, songchange: %s - %s / %s (%i)",
-	       current->time, current->artist, current->album,
+	notice("%s, songchange: %s - %s (%i)",
+	       current->time, current->artist,
 	       current->track, current->length);
 
 	g_queue_size++;
