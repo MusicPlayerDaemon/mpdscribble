@@ -1756,10 +1756,11 @@ void mpd_stopIdle(mpd_Connection *connection)
 		connection->stopIdle(connection);
 
 	connection->idle = 0;
-	connection->notify_cb = NULL;
 	connection->doneProcessing = 1;
 	mpd_executeCommand(connection, "noidle\n");
+	connection->doneProcessing = 0;
 	mpd_readChanges(connection);
+	connection->notify_cb = NULL;
 }
 
 #ifdef MPD_GLIB
