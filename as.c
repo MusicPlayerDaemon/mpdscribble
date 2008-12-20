@@ -212,11 +212,6 @@ static as_handshaking as_parse_handshake_response(const char *line)
 
 	as_increase_interval();
 
-	/* only change to NOTHING if the state wasn't changed to
-	   something else already. */
-	if (g_state == AS_HANDSHAKING)
-		g_state = AS_NOTHING;
-
 	return AS_COMMAND;
 }
 
@@ -238,9 +233,9 @@ static void as_handshake_callback(size_t length, const char *response)
 	char *next;
 
 	assert(g_state == AS_HANDSHAKING);
+	g_state = AS_NOTHING;
 
 	if (!length) {
-		g_state = AS_NOTHING;
 		warning("handshake timed out, ");
 		as_increase_interval();
 		return;
@@ -298,9 +293,9 @@ static void as_submit_callback(size_t length, const char *response)
 	int failed = 0;
 
 	assert(g_state == AS_SUBMITTING);
+	g_state = AS_READY;
 
 	if (!length) {
-		g_state = AS_READY;
 		g_submit_pending = 0;
 		warning("submit timed out, ");
 		as_increase_interval();
@@ -332,11 +327,6 @@ static void as_submit_callback(size_t length, const char *response)
 
 	if (failed)
 		as_increase_interval();
-
-	/* only change to READY if the state wasn't changed to
-	   something else already. */
-	if (g_state == AS_SUBMITTING)
-		g_state = AS_READY;
 }
 
 char *as_timestamp(void)
