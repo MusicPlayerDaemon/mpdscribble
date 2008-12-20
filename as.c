@@ -191,7 +191,6 @@ static as_handshaking as_parse_handshake_response(const char *line)
 	   and as_parse_submit_response. */
 	if (!strncmp(line, OK, strlen(OK))) {
 		notice("handshake ok.");
-		g_interval = 1;
 		return AS_SESSION;
 	} else if (!strncmp(line, BANNED, strlen(BANNED))) {
 		warning("handshake failed, we're banned (%s).", line);
@@ -271,6 +270,7 @@ static void as_handshake_callback(size_t length, const char *response)
 			g_submit_url = next;
 			notice("submit url: %s", g_submit_url);
 			g_state = AS_READY;
+			g_interval = 1;
 			return;
 		}
 
