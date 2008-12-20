@@ -312,6 +312,8 @@ static void as_submit_callback(size_t length, const char *response)
 		next = g_strndup(response, newline - response);
 		switch (as_parse_submit_response(next)) {
 		case AS_SUBMIT_OK:
+			g_interval = 1;
+
 			/* submission was accepted, so clean up the cache. */
 			as_queue_remove_oldest(g_submit_pending);
 			g_submit_pending = 0;
