@@ -249,6 +249,6 @@ lmc_schedule_update(void)
 {
 	assert(update_source_id == 0);
 
-	update_source_id = g_timeout_add(file_config.sleep * 1000,
-					 lmc_update, NULL);
+	update_source_id = g_timeout_add_seconds(file_config.sleep,
+						 lmc_update, NULL);
 }
