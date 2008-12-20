@@ -63,7 +63,6 @@ typedef enum {
 
 typedef enum {
 	AS_SUBMIT_OK,
-	AS_SUBMIT_NOP,
 	AS_SUBMIT_FAILED,
 	AS_SUBMIT_HANDSHAKE,
 } as_submitting;
@@ -322,7 +321,6 @@ static void as_submit_callback(size_t length, const char *response)
 		case AS_SUBMIT_FAILED:
 			failed = 1;
 			break;
-		case AS_SUBMIT_NOP:
 		case AS_SUBMIT_HANDSHAKE:
 			break;
 		}
