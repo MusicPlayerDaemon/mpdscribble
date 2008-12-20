@@ -34,22 +34,19 @@
 #include <unistd.h>
 #include <string.h>
 
+static GMainLoop *main_loop;
+static guint update_source_id, save_source_id;
+
+static int last_id = -1;
+static struct mpd_song *current_song;
+static bool was_paused;
 static bool submitted = true;
 static GTimer *timer;
 static char mbid[MBID_BUFFER_SIZE];
 
-static void cleanup(void)
-{
-	notice("shutting down...");
-
-	as_cleanup();
-	lmc_disconnect();
-	file_cleanup();
-}
-
 static void signal_handler(G_GNUC_UNUSED int signum)
 {
-	exit(23);
+	g_main_loop_quit(main_loop);
 }
 
 static void sigpipe_handler(G_GNUC_UNUSED int signum)
@@ -98,14 +95,78 @@ static void song_changed(const struct mpd_song *song)
 		       song->time);
 }
 
+/**
+ * Regularly save the cache.
+ */
+static gboolean
+timer_save_cache(G_GNUC_UNUSED gpointer data)
+{
+	as_save_cache();
+	return true;
+}
+
+/**
+ * Update: determine MPD's current song and enqueue submissions.
+ */
+static gboolean
+timer_mpd_update(G_GNUC_UNUSED gpointer data)
+{
+	struct mpd_song *prev;
+	int elapsed;
+
+	prev = current_song;
+	elapsed = lmc_current(&current_song);
+
+	if (elapsed == MPD_STATUS_STATE_PAUSE) {
+		if (!was_paused)
+			g_timer_stop(timer);
+		was_paused = 1;
+		return true;
+	} else if (elapsed != MPD_STATUS_STATE_PLAY) {
+		last_id = -1;
+		return true;
+	}
+
+	if (was_paused) {
+		if (current_song != NULL && current_song->id == last_id)
+			g_timer_continue(timer);
+		was_paused = false;
+	}
+
+	/* submit the previous song */
+	if (!submitted && prev != NULL &&
+	    (current_song == NULL || prev->id != current_song->id) &&
+	    played_long_enough(prev->time)) {
+		/* FIXME:
+		   libmpdclient doesn't have any way to fetch the musicbrainz id. */
+		int q = as_songchange(prev->file, prev->artist,
+				      prev->title,
+				      prev->album, mbid,
+				      prev->time >
+				      0 ? prev->time : (int)
+				      g_timer_elapsed(timer,
+						      NULL),
+				      NULL);
+		if (q != -1)
+			notice
+				("added (%s - %s) to submit queue at position %i.",
+				 prev->artist, prev->title, q);
+	}
+
+	/* new song. */
+	if (current_song != NULL && current_song->id != last_id) {
+		song_changed(current_song);
+		last_id = current_song->id;
+	}
+
+	if (prev != NULL)
+		mpd_freeSong(prev);
+
+	return true;
+}
+
 int main(int argc, char **argv)
 {
-	struct mpd_song *song = NULL, *prev;
-
-	int last_id = -1;
-	int elapsed = 0;
-	int was_paused = 0;
-	int next_save = 0;
 	FILE *log;
 
 	/* apparantly required for regex.h, which
@@ -117,10 +178,10 @@ int main(int argc, char **argv)
 	log = file_open_logfile();
 	set_logfile(log, file_config.verbose);
 
-	lmc_connect(file_config.host, file_config.port);
-	as_init(file_config.sleep);
+	main_loop = g_main_loop_new(NULL, FALSE);
 
-	atexit(cleanup);
+	lmc_connect(file_config.host, file_config.port);
+	as_init();
 
 	if (signal(SIGINT, signal_handler) == SIG_IGN)
 		signal(SIGINT, SIG_IGN);
@@ -131,70 +192,30 @@ int main(int argc, char **argv)
 	if (signal(SIGPIPE, sigpipe_handler) == SIG_IGN)
 		signal(SIGPIPE, SIG_IGN);
 
-	next_save = now() + file_config.cache_interval;
-
 	timer = g_timer_new();
 
-	while (1) {
-		as_poll();
-		fflush(log);
-		as_sleep();
+	/* set up timeouts */
 
-		prev = song;
-		elapsed = lmc_current(&song);
+	update_source_id = g_timeout_add(file_config.sleep * 1000,
+					 timer_mpd_update, NULL);
+	save_source_id = g_timeout_add(file_config.cache_interval * 1000,
+				       timer_save_cache, NULL);
 
-		if (now() > next_save) {
-			as_save_cache();
-			next_save = now() + file_config.cache_interval;
-		}
+	/* run the main loop */
 
-		if (elapsed == MPD_STATUS_STATE_PAUSE) {
-			if (!was_paused)
-				g_timer_stop(timer);
-			was_paused = 1;
-			continue;
-		} else if (elapsed != MPD_STATUS_STATE_PLAY) {
-			last_id = -1;
-			continue;
-		}
+	g_main_loop_run(main_loop);
 
-		if (was_paused) {
-			if (song != NULL && song->id == last_id)
-				g_timer_continue(timer);
-			was_paused = false;
-		}
+	/* cleanup */
 
-		/* submit the previous song */
-		if (!submitted && prev != NULL &&
-		    (song == NULL || prev->id != song->id) &&
-		    played_long_enough(prev->time)) {
-			/* FIXME:
-			   libmpdclient doesn't have any way to fetch the musicbrainz id. */
-			int q = as_songchange(prev->file, prev->artist,
-					      prev->title,
-					      prev->album, mbid,
-					      prev->time >
-					      0 ? prev->time : (int)
-					      g_timer_elapsed(timer,
-							      NULL),
-					      NULL);
-			if (q != -1)
-				notice
-				    ("added (%s - %s) to submit queue at position %i.",
-				     prev->artist, prev->title, q);
-		}
+	notice("shutting down...");
 
-		/* new song. */
-		if (song != NULL && song->id != last_id) {
-			song_changed(song);
-			last_id = song->id;
-		}
-
-		if (prev != NULL)
-			mpd_freeSong(prev);
-	}
+	g_main_loop_unref(main_loop);
 
 	g_timer_destroy(timer);
+
+	as_cleanup();
+	lmc_disconnect();
+	file_cleanup();
 
 	return 0;
 }

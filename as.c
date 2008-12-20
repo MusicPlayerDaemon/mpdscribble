@@ -76,7 +76,6 @@ static char *g_nowplay_url = NULL;
 static char *g_submit_url = NULL;
 static char *g_md5_response = NULL;
 static int g_interval = 1;
-static long g_lastattempt = 0;
 static as_state g_state = AS_NOTHING;
 
 static struct song g_now_playing;
@@ -84,7 +83,8 @@ static struct song *g_queue = NULL;
 static struct song *g_queuep = NULL;
 static unsigned g_queue_size;
 static unsigned g_submit_pending;
-static unsigned g_sleep;
+
+static guint as_handshake_id, as_submit_id;
 
 static void
 add_var_internal(GString * s, char sep, const char *key,
@@ -121,10 +121,14 @@ add_var_i(GString * s, const char *key, signed char idx, const char *val)
 	add_var_internal(s, '&', key, idx, val);
 }
 
-static void as_reset_timeout(void)
-{
-	g_lastattempt = now();
-}
+static void
+as_schedule_handshake(void);
+
+static void
+as_submit(void);
+
+static void
+as_schedule_submit(void);
 
 static void as_increase_interval(void)
 {
@@ -137,22 +141,6 @@ static void as_increase_interval(void)
 		g_interval = 60 * 60 * 2;
 
 	warning("waiting %i seconds before trying again.", g_interval);
-
-	as_reset_timeout();
-}
-
-static int as_throttle(void)
-{
-	long t = now();
-
-	long left = g_lastattempt + g_interval - t;
-
-	if (left < 0) {
-		as_reset_timeout();
-		return 1;
-	}
-
-	return 0;
 }
 
 static int as_parse_submit_response(const char *line, size_t length)
@@ -235,6 +223,7 @@ static void as_handshake_callback(size_t length, const char *response)
 	if (!length) {
 		warning("handshake timed out, ");
 		as_increase_interval();
+		as_schedule_handshake();
 		return;
 	}
 
@@ -246,6 +235,7 @@ static void as_handshake_callback(size_t length, const char *response)
 			if (!ret) {
 				g_free(next);
 				as_increase_interval();
+				as_schedule_handshake();
 				return;
 			}
 
@@ -268,6 +258,10 @@ static void as_handshake_callback(size_t length, const char *response)
 			notice("submit url: %s", g_submit_url);
 			g_state = AS_READY;
 			g_interval = 1;
+
+			/* handshake was successful: see if we have
+			   songs to submit */
+			as_submit();
 			return;
 		}
 
@@ -276,6 +270,9 @@ static void as_handshake_callback(size_t length, const char *response)
 		response = newline + 1;
 
 	}
+
+	as_increase_interval();
+	as_schedule_handshake();
 }
 
 static void as_queue_remove_oldest(unsigned count)
@@ -302,6 +299,7 @@ static void as_submit_callback(size_t length, const char *response)
 		g_submit_pending = 0;
 		warning("submit timed out, ");
 		as_increase_interval();
+		as_schedule_submit();
 		return;
 	}
 
@@ -316,12 +314,17 @@ static void as_submit_callback(size_t length, const char *response)
 		/* submission was accepted, so clean up the cache. */
 		as_queue_remove_oldest(g_submit_pending);
 		g_submit_pending = 0;
+
+		/* submit the next chunk (if there is some left) */
+		as_submit();
 		break;
 	case AS_SUBMIT_FAILED:
 		as_increase_interval();
+		as_schedule_submit();
 		break;
 	case AS_SUBMIT_HANDSHAKE:
 		g_state = AS_NOTHING;
+		as_schedule_handshake();
 		break;
 	}
 }
@@ -372,15 +375,37 @@ static void as_handshake(void)
 
 	//  notice ("handshake url:\n%s", url);
 
-	if (!conn_initiate(url->str, &as_handshake_callback, NULL, g_sleep)) {
+	if (!conn_initiate(url->str, &as_handshake_callback, NULL)) {
 		warning("something went wrong when trying to connect,"
 			" probably a bug.");
 
 		g_state = AS_NOTHING;
 		as_increase_interval();
+		as_schedule_handshake();
 	}
 
 	g_string_free(url, true);
+}
+
+static gboolean
+as_handshake_timer(G_GNUC_UNUSED gpointer data)
+{
+	assert(g_state == AS_NOTHING);
+
+	as_handshake_id = 0;
+
+	as_handshake();
+	return false;
+}
+
+static void
+as_schedule_handshake(void)
+{
+	assert(g_state == AS_NOTHING);
+	assert(as_handshake_id == 0);
+
+	as_handshake_id = g_timeout_add(g_interval * 1000,
+					as_handshake_timer, NULL);
 }
 
 static void as_now_playing_callback(size_t length, const char *response)
@@ -390,6 +415,9 @@ static void as_now_playing_callback(size_t length, const char *response)
 	if (length == 0) {
 		g_state = AS_READY;
 		warning("the 'now playing' submit has failed");
+
+		as_increase_interval();
+		as_schedule_submit();
 		return;
 	}
 
@@ -412,8 +440,8 @@ as_send_now_playing(const char *artist, const char *track,
 	GString *post_data;
 	char len[MAX_VAR_SIZE];
 
-	if (g_state != AS_READY)
-		return;	/* XXX postpone if busy? */
+	assert(g_state == AS_READY);
+	assert(as_submit_id == 0);
 
 	g_state = AS_SUBMITTING;
 
@@ -431,11 +459,12 @@ as_send_now_playing(const char *artist, const char *track,
 	notice("sending 'now playing' notification");
 
 	if (!conn_initiate(g_nowplay_url, as_now_playing_callback,
-			   post_data->str, g_sleep)) {
+			   post_data->str)) {
 		warning("failed to POST to %s", g_nowplay_url);
 
 		g_state = AS_READY;
 		as_increase_interval();
+		as_schedule_submit();
 	}
 
 	g_string_free(post_data, true);
@@ -452,6 +481,9 @@ as_now_playing(const char *artist, const char *track,
 	g_now_playing.album = g_strdup(album);
 	g_now_playing.mbid = g_strdup(mbid);
 	g_now_playing.length = length;
+
+	if (g_state == AS_READY && as_submit_id == 0)
+		as_schedule_submit();
 }
 
 static void as_submit(void)
@@ -462,6 +494,9 @@ static void as_submit(void)
 	struct song *queue = g_queue;
 	GString *post_data;
 	char len[MAX_VAR_SIZE];
+
+	assert(g_state == AS_READY);
+	assert(as_submit_id == 0);
 
 	if (g_queue_size == 0) {
 		/* the submission queue is empty.  See if a "now playing" song is
@@ -508,13 +543,14 @@ static void as_submit(void)
 	notice("url: %s", g_submit_url);
 
 	g_submit_pending = count;
-	if (!conn_initiate(g_submit_url, &as_submit_callback, post_data->str,
-			   g_sleep)) {
+	if (!conn_initiate(g_submit_url, &as_submit_callback,
+			   post_data->str)) {
 		warning("something went wrong when trying to connect,"
 			" probably a bug.");
 
 		g_state = AS_READY;
 		as_increase_interval();
+		as_schedule_submit();
 	}
 
 	g_string_free(post_data, true);
@@ -570,13 +606,15 @@ as_songchange(const char *file, const char *artist, const char *track,
 		g_queuep = current;
 	}
 
+	if (g_state == AS_READY && as_submit_id == 0)
+		as_schedule_submit();
+
 	return g_queue_size;
 }
 
-void as_init(unsigned int seconds)
+void as_init(void)
 {
 	int saved;
-	g_sleep = seconds;
 
 	assert(g_state == AS_NOTHING);
 
@@ -587,27 +625,30 @@ void as_init(unsigned int seconds)
 	notice("(loaded %i song%s from cache)", saved, saved == 1 ? "" : "s");
 
 	conn_setup();
+
+	as_schedule_handshake();
 }
 
-void as_poll(void)
+static gboolean
+as_submit_timer(G_GNUC_UNUSED gpointer data)
 {
-	switch (g_state) {
-	case AS_NOTHING:
-		if (as_throttle())
-			as_handshake();
-		break;
-	case AS_SUBMITTING:
-	case AS_HANDSHAKING:
-		conn_poll();
-		break;
-	case AS_READY:
-		if (as_throttle())
-			as_submit();
-		break;
-	case AS_BADAUTH:
-	default:
-		break;
-	}
+	assert(g_state == AS_READY);
+
+	as_submit_id = 0;
+
+	as_submit();
+	return false;
+}
+
+static void
+as_schedule_submit(void)
+{
+	assert(as_submit_id == 0);
+	assert(g_queue_size > 0 ||
+	       (g_now_playing.artist != NULL && g_now_playing.track != NULL));
+
+	as_submit_id = g_timeout_add(g_interval * 1000,
+				     as_submit_timer, NULL);
 }
 
 void as_save_cache(void)
@@ -635,22 +676,4 @@ void as_cleanup(void)
 	g_free(g_md5_response);
 
 	conn_cleanup();
-}
-
-unsigned int as_sleep(void)
-{
-	/*
-	   long end;
-	 */
-
-	if (!conn_pending())
-		return sleep(g_sleep);
-
-	/*
-	   end = now () + seconds;
-	   while (now () < end)
-	 */
-	as_poll();
-
-	return 0;
 }

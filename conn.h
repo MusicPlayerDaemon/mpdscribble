@@ -36,9 +36,7 @@ typedef void callback_t(size_t, const char *);
 void conn_setup(void);
 void conn_cleanup(void);
 
-int conn_initiate(char *url, callback_t * callback, char *post_data,
-		  unsigned int seconds);
-bool conn_poll(void);
+int conn_initiate(char *url, callback_t * callback, char *post_data);
 bool conn_pending(void);
 
 #endif /* CONN_H */

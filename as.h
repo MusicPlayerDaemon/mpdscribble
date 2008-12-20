@@ -38,8 +38,7 @@ struct song {
 	struct song *next;
 };
 
-void as_init(unsigned int seconds);
-void as_poll(void);
+void as_init(void);
 void as_cleanup(void);
 
 void
@@ -51,7 +50,6 @@ as_songchange(const char *file, const char *artist, const char *track,
 	      const char *album, const char *mbid, const int length,
 	      const char *time);
 
-unsigned int as_sleep(void);
 void as_save_cache(void);
 
 char *as_timestamp(void);

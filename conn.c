@@ -42,7 +42,6 @@ struct global {
 	char *base;
 	bool pending;
 	callback_t *callback;
-	GMainLoop *mainloop;
 #ifdef HAVE_SOUP_24
 	SoupURI *proxy;
 #else
@@ -77,8 +76,8 @@ conn_callback(SoupMessage * msg, gpointer uri)
 	} else
 		g.callback(0, NULL);
 
-	g_main_loop_quit(g.mainloop);
-	g_main_loop_unref(g.mainloop);
+	soup_uri_free(g.base_uri);
+	g.base_uri = NULL;
 }
 
 void conn_setup(void)
@@ -94,15 +93,8 @@ void conn_setup(void)
 		g.proxy = NULL;
 }
 
-static int conn_mainloop_quit(G_GNUC_UNUSED void *data)
-{
-	g_main_loop_quit(g.mainloop);
-	return 0;
-}
-
 int
-conn_initiate(char *url, callback_t * callback, char *post_data,
-	      unsigned int seconds)
+conn_initiate(char *url, callback_t * callback, char *post_data)
 {
 	SoupMessage *msg;
 
@@ -152,31 +144,11 @@ conn_initiate(char *url, callback_t * callback, char *post_data,
 	soup_session_queue_message(g.session, msg,
 				   conn_callback, soup_uri_new(g.base));
 
-	g.mainloop = g_main_loop_new(g_main_context_default(), FALSE);
-	g_timeout_add(seconds * 1000, &conn_mainloop_quit, NULL);
-
 	return CONN_OK;
 }
 
 bool conn_pending(void)
 {
-	return g.pending;
-}
-
-bool conn_poll(void)
-{
-	g_main_loop_run(g.mainloop);
-
-	/*
-	   while (g_main_context_pending (NULL))
-	   g_main_context_iteration(NULL, FALSE);
-	 */
-
-	if (!g.pending && g.base_uri) {
-		soup_uri_free(g.base_uri);
-		g.base_uri = NULL;
-	}
-
 	return g.pending;
 }
 
