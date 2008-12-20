@@ -163,7 +163,6 @@ static int as_parse_submit_response(const char *line)
 	} else if (!strncmp(line, BADSESSION, strlen(BADSESSION))) {
 		warning("invalid session");
 
-		g_state = AS_NOTHING;
 		return AS_SUBMIT_HANDSHAKE;
 	} else if (!strncmp(line, FAILED, strlen(FAILED))) {
 		const char *start = line + strlen(FAILED);
@@ -322,6 +321,7 @@ static void as_submit_callback(size_t length, const char *response)
 			failed = 1;
 			break;
 		case AS_SUBMIT_HANDSHAKE:
+			g_state = AS_NOTHING;
 			break;
 		}
 
