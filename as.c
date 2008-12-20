@@ -256,17 +256,20 @@ static void as_handshake_callback(size_t length, const char *response)
 			state = as_parse_handshake_response(next);
 			break;
 		case AS_SESSION:
-			g_session = g_strdup(next);
+			g_session = next;
+			next = NULL;
 			notice("session: %s", g_session);
 			state = AS_NOWPLAY;
 			break;
 		case AS_NOWPLAY:
-			g_nowplay_url = g_strdup(next);
+			g_nowplay_url = next;
+			next = NULL;
 			notice("now playing url: %s", g_nowplay_url);
 			state = AS_SUBMIT;
 			break;
 		case AS_SUBMIT:
-			g_submit_url = g_strdup(next);
+			g_submit_url = next;
+			next = NULL;
 			notice("submit url: %s", g_submit_url);
 			state = AS_COMMAND;
 			g_state = AS_READY;
