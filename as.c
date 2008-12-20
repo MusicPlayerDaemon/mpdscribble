@@ -269,11 +269,9 @@ static void as_handshake_callback(size_t length, const char *response)
 			break;
 		case AS_SUBMIT:
 			g_submit_url = next;
-			next = NULL;
 			notice("submit url: %s", g_submit_url);
-			state = AS_COMMAND;
 			g_state = AS_READY;
-			break;
+			return;
 		}
 
 		g_free(next);
