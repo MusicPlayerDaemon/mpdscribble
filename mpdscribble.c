@@ -97,6 +97,60 @@ timer_save_cache(G_GNUC_UNUSED gpointer data)
 }
 
 /**
+ * Pause mode on the current song was activated.
+ */
+static void
+song_paused(void)
+{
+	g_timer_stop(timer);
+}
+
+/**
+ * The current song continues to play (after pause).
+ */
+static void
+song_continued(void)
+{
+	g_timer_continue(timer);
+}
+
+/**
+ * MPD started playing this song.
+ */
+static void
+song_started(const struct mpd_song *song)
+{
+	song_changed(song);
+}
+
+/**
+ * MPD stopped playing this song.
+ */
+static void
+song_ended(const struct mpd_song *song)
+{
+	int q;
+
+	if (!played_long_enough(song->time))
+		return;
+
+	/* FIXME:
+	   libmpdclient doesn't have any way to fetch the musicbrainz id. */
+	q = as_songchange(song->file, song->artist,
+			  song->title,
+			  song->album, mbid,
+			  song->time >
+			  0 ? song->time : (int)
+			  g_timer_elapsed(timer,
+					  NULL),
+			  NULL);
+	if (q != -1)
+		notice
+			("added (%s - %s) to submit queue at position %i.",
+			 song->artist, song->title, q);
+}
+
+/**
  * Update: determine MPD's current song and enqueue submissions.
  */
 static gboolean
@@ -110,7 +164,7 @@ timer_mpd_update(G_GNUC_UNUSED gpointer data)
 
 	if (elapsed == MPD_STATUS_STATE_PAUSE) {
 		if (!was_paused)
-			g_timer_stop(timer);
+			song_paused();
 		was_paused = 1;
 		return true;
 	} else if (elapsed != MPD_STATUS_STATE_PLAY) {
@@ -130,33 +184,18 @@ timer_mpd_update(G_GNUC_UNUSED gpointer data)
 
 	if (was_paused) {
 		if (current_song != NULL && current_song->id == last_id)
-			g_timer_continue(timer);
+			song_continued();
 		was_paused = false;
 	}
 
 	/* submit the previous song */
 	if (prev != NULL &&
-	    (current_song == NULL || prev->id != current_song->id) &&
-	    played_long_enough(prev->time)) {
-		/* FIXME:
-		   libmpdclient doesn't have any way to fetch the musicbrainz id. */
-		int q = as_songchange(prev->file, prev->artist,
-				      prev->title,
-				      prev->album, mbid,
-				      prev->time >
-				      0 ? prev->time : (int)
-				      g_timer_elapsed(timer,
-						      NULL),
-				      NULL);
-		if (q != -1)
-			notice
-				("added (%s - %s) to submit queue at position %i.",
-				 prev->artist, prev->title, q);
-	}
+	    (current_song == NULL || prev->id != current_song->id))
+		song_ended(prev);
 
 	/* new song. */
 	if (current_song != NULL && current_song->id != last_id) {
-		song_changed(current_song);
+		song_started(current_song);
 		last_id = current_song->id;
 	}
 
