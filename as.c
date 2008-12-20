@@ -177,7 +177,8 @@ static int as_parse_submit_response(const char *line)
 	return AS_SUBMIT_FAILED;
 }
 
-static as_handshaking as_parse_handshake_response(const char *line)
+static bool
+as_parse_handshake_response(const char *line)
 {
 	static const char *OK = "OK";
 	static const char *BANNED = "BANNED";
@@ -189,30 +190,25 @@ static as_handshaking as_parse_handshake_response(const char *line)
 	   and as_parse_submit_response. */
 	if (!strncmp(line, OK, strlen(OK))) {
 		notice("handshake ok.");
-		return AS_SESSION;
+		return true;
 	} else if (!strncmp(line, BANNED, strlen(BANNED))) {
 		warning("handshake failed, we're banned (%s).", line);
 		g_state = AS_BADAUTH;
-		return AS_COMMAND;
 	} else if (!strncmp(line, BADAUTH, strlen(BADAUTH))) {
 		warning
 		    ("handshake failed, username or password incorrect (%s).",
 		     line);
 		g_state = AS_BADAUTH;
-		return AS_COMMAND;
 	} else if (!strncmp(line, BADTIME, strlen(BADTIME))) {
 		warning("handshake failed, clock not synchronized (%s).", line);
 		g_state = AS_BADAUTH;
-		return AS_COMMAND;
 	} else if (!strncmp(line, FAILED, strlen(FAILED))) {
 		warning("handshake failed (%s).", line);
 	} else {
 		warning("error parsing handshake response (%s).", line);
 	}
 
-	as_increase_interval();
-
-	return AS_COMMAND;
+	return false;
 }
 
 static void as_song_cleanup(struct song *s, int free_struct)
@@ -231,6 +227,7 @@ static void as_handshake_callback(size_t length, const char *response)
 	as_handshaking state = AS_COMMAND;
 	char *newline;
 	char *next;
+	bool ret;
 
 	assert(g_state == AS_HANDSHAKING);
 	g_state = AS_NOTHING;
@@ -245,7 +242,12 @@ static void as_handshake_callback(size_t length, const char *response)
 		next = g_strndup(response, newline - response);
 		switch (state) {
 		case AS_COMMAND:
-			state = as_parse_handshake_response(next);
+			ret = as_parse_handshake_response(next);
+			if (!ret) {
+				as_increase_interval();
+			} else
+				state = AS_SESSION;
+
 			break;
 		case AS_SESSION:
 			g_session = next;
