@@ -34,11 +34,6 @@
 
 struct global {
 	SoupSession *session;
-#ifdef HAVE_SOUP_24
-	SoupURI *base_uri;
-#else
-	SoupUri *base_uri;
-#endif
 	char *base;
 	bool pending;
 	callback_t *callback;
@@ -54,15 +49,12 @@ static struct global g;
 static void
 #ifdef HAVE_SOUP_24
 conn_callback(G_GNUC_UNUSED SoupSession * session,
-	      SoupMessage * msg, gpointer uri)
+	      SoupMessage * msg, G_GNUC_UNUSED gpointer data)
 #else
-conn_callback(SoupMessage * msg, gpointer uri)
+conn_callback(SoupMessage * msg, G_GNUC_UNUSED gpointer data)
 #endif
 {
 	assert(g.pending);
-
-	if (uri)
-		soup_uri_free(uri);
 
 	g.pending = false;
 
@@ -75,9 +67,6 @@ conn_callback(SoupMessage * msg, gpointer uri)
 #endif
 	} else
 		g.callback(0, NULL);
-
-	soup_uri_free(g.base_uri);
-	g.base_uri = NULL;
 }
 
 void conn_setup(void)
@@ -85,7 +74,6 @@ void conn_setup(void)
 	g_type_init();
 	g_thread_init(NULL);
 
-	g.base_uri = NULL;
 	g.pending = false;
 	if (file_config.proxy != NULL)
 		g.proxy = soup_uri_new(file_config.proxy);
@@ -103,9 +91,6 @@ conn_initiate(char *url, callback_t * callback, char *post_data)
 	g.callback = callback;
 
 	g.base = url;
-	g.base_uri = soup_uri_new(g.base);
-	if (!g.base_uri)
-		fatal("Could not parse '%s' as a URL", g.base);
 
 	g.session =
 	    soup_session_async_new_with_options(SOUP_SESSION_PROXY_URI, g.proxy,
@@ -141,8 +126,7 @@ conn_initiate(char *url, callback_t * callback, char *post_data)
 	soup_message_set_flags(msg, SOUP_MESSAGE_NO_REDIRECT);
 
 	g.pending = true;
-	soup_session_queue_message(g.session, msg,
-				   conn_callback, soup_uri_new(g.base));
+	soup_session_queue_message(g.session, msg, conn_callback, NULL);
 
 	return CONN_OK;
 }
