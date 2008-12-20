@@ -244,10 +244,12 @@ static void as_handshake_callback(size_t length, const char *response)
 		case AS_COMMAND:
 			ret = as_parse_handshake_response(next);
 			if (!ret) {
+				g_free(next);
 				as_increase_interval();
-			} else
-				state = AS_SESSION;
+				return;
+			}
 
+			state = AS_SESSION;
 			break;
 		case AS_SESSION:
 			g_session = next;
@@ -272,6 +274,7 @@ static void as_handshake_callback(size_t length, const char *response)
 		g_free(next);
 		length = response + length - (newline + 1);
 		response = newline + 1;
+
 	}
 }
 
