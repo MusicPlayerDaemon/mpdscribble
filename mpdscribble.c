@@ -40,7 +40,6 @@ static guint update_source_id, save_source_id;
 static int last_id = -1;
 static struct mpd_song *current_song;
 static bool was_paused;
-static bool submitted = true;
 static GTimer *timer;
 static char mbid[MBID_BUFFER_SIZE];
 
@@ -69,12 +68,6 @@ static bool played_long_enough(int length)
 
 static void song_changed(const struct mpd_song *song)
 {
-	if (song->artist == NULL || song->title == NULL) {
-		notice("new song detected with tags missing (%s)", song->file);
-		submitted = true;
-		return;
-	}
-
 	notice("new song detected (%s - %s), id: %i, pos: %i",
 	       song->artist, song->title, song->id, song->pos);
 
@@ -88,8 +81,6 @@ static void song_changed(const struct mpd_song *song)
 		else
 			notice("mbid is %s.", mbid);
 	}
-
-	submitted = false;
 
 	as_now_playing(song->artist, song->title, song->album, mbid,
 		       song->time);
@@ -125,6 +116,16 @@ timer_mpd_update(G_GNUC_UNUSED gpointer data)
 	} else if (elapsed != MPD_STATUS_STATE_PLAY) {
 		current_song = NULL;
 		last_id = -1;
+	} else if (current_song->artist == NULL ||
+		   current_song->title == NULL) {
+		if (current_song->id != last_id) {
+			notice("new song detected with tags missing (%s)",
+			       current_song->file);
+			last_id = current_song->id;
+		}
+
+		mpd_freeSong(current_song);
+		current_song = NULL;
 	}
 
 	if (was_paused) {
@@ -134,7 +135,7 @@ timer_mpd_update(G_GNUC_UNUSED gpointer data)
 	}
 
 	/* submit the previous song */
-	if (!submitted && prev != NULL &&
+	if (prev != NULL &&
 	    (current_song == NULL || prev->id != current_song->id) &&
 	    played_long_enough(prev->time)) {
 		/* FIXME:
