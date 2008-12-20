@@ -123,8 +123,8 @@ timer_mpd_update(G_GNUC_UNUSED gpointer data)
 		was_paused = 1;
 		return true;
 	} else if (elapsed != MPD_STATUS_STATE_PLAY) {
+		current_song = NULL;
 		last_id = -1;
-		return true;
 	}
 
 	if (was_paused) {
