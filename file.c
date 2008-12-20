@@ -265,6 +265,8 @@ FILE *file_open_logfile(void)
 	if (!file_loghandle)
 		fatal_errno("cannot open %s", log);
 
+	setvbuf(file_loghandle, NULL, _IONBF, 0);
+
 	return file_loghandle;
 }
 
