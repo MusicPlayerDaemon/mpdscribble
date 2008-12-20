@@ -40,7 +40,10 @@ static bool was_paused;
 static char *g_host;
 static int g_port;
 
-static guint update_source_id;
+static guint reconnect_source_id, update_source_id;
+
+static void
+lmc_schedule_reconnect(void);
 
 static void
 lmc_schedule_update(void);
@@ -55,7 +58,8 @@ static void lmc_failure(void)
 	g_mpd = 0;
 }
 
-static int lmc_reconnect(void)
+static gboolean
+lmc_reconnect(G_GNUC_UNUSED gpointer data)
 {
 	char *at = strchr(g_host, '@');
 	char *host = g_host;
@@ -69,7 +73,7 @@ static int lmc_reconnect(void)
 	g_mpd = mpd_newConnection(host, g_port, 10);
 	if (g_mpd->error) {
 		lmc_failure();
-		return 0;
+		return true;
 	}
 
 	if (password) {
@@ -82,22 +86,36 @@ static int lmc_reconnect(void)
 
 	if (g_mpd->error) {
 		lmc_failure();
-		return 0;
+		return true;
 	}
 
 	notice("connected to mpd %i.%i.%i at %s:%i.",
 	       g_mpd->version[0], g_mpd->version[1], g_mpd->version[2],
 	       host, g_port);
 
-	return 1;
+	lmc_schedule_update();
+
+	reconnect_source_id = 0;
+	return false;
+}
+
+static void
+lmc_schedule_reconnect(void)
+{
+	assert(reconnect_source_id == 0);
+
+	warning("waiting 15 seconds before reconnecting.");
+
+	reconnect_source_id = g_timeout_add_seconds(15, lmc_reconnect, NULL);
 }
 
 void lmc_connect(char *host, int port)
 {
 	g_host = host;
 	g_port = port;
-	lmc_reconnect();
-	lmc_schedule_update();
+
+	if (lmc_reconnect(NULL))
+		lmc_schedule_reconnect();
 }
 
 void lmc_disconnect(void)
@@ -114,13 +132,7 @@ int lmc_current(struct mpd_song **song_r)
 	int state;
 	struct mpd_InfoEntity *entity;
 
-	if (!g_mpd) {
-		warning("waiting 15 seconds before reconnecting.");
-		sleep(15);
-		warning("attempting to reconnect to mpd... ");
-		lmc_reconnect();
-		return MPD_STATUS_STATE_UNKNOWN;
-	}
+	assert(g_mpd != NULL);
 
 	mpd_sendCommandListOkBegin(g_mpd);
 	mpd_sendStatusCommand(g_mpd);
@@ -130,10 +142,6 @@ int lmc_current(struct mpd_song **song_r)
 	status = mpd_getStatus(g_mpd);
 	if (!status) {
 		lmc_failure();
-		warning("waiting 15 seconds before reconnecting.");
-		sleep(15);
-		warning("attempting to reconnect to mpd... ");
-		lmc_reconnect();
 		return MPD_STATUS_STATE_UNKNOWN;
 	}
 
@@ -240,6 +248,12 @@ lmc_update(G_GNUC_UNUSED gpointer data)
 
 	if (prev != NULL)
 		mpd_freeSong(prev);
+
+	if (g_mpd == NULL) {
+		lmc_schedule_reconnect();
+		update_source_id = 0;
+		return false;
+	}
 
 	return true;
 }
