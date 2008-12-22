@@ -1,7 +1,7 @@
 AC_PREREQ(2.60)
 AC_INIT(mpdscribble, 0.14~git, max@duempel.org, mpdscribble)
 AC_CONFIG_MACRO_DIR([m4])
-AC_CONFIG_SRCDIR([mpdscribble.c])
+AC_CONFIG_SRCDIR([src/mpdscribble.c])
 AC_CONFIG_AUX_DIR(build)
 AM_INIT_AUTOMAKE([foreign 1.9 dist-bzip2])
 AM_CONFIG_HEADER([config.h])
@@ -76,4 +76,4 @@ dnl
 dnl Generate output files
 dnl
 
-AC_OUTPUT(Makefile)
+AC_OUTPUT(src/Makefile Makefile)
