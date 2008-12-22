@@ -23,7 +23,7 @@
 #ifndef LMC_H
 #define LMC_H
 
-#include <libmpdclient.h>
+#include <libmpdclient/libmpdclient.h>
 #include <stdio.h>
 
 void lmc_connect(char *host, int port);
