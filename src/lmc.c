@@ -20,7 +20,6 @@
 */
 
 #include "lmc.h"
-#include "misc.h"
 #include "file.h"
 
 #include <glib.h>
@@ -56,7 +55,7 @@ static void lmc_failure(void)
 {
 	char *msg = g_strescape(g_mpd->errorStr, NULL);
 
-	warning("mpd error (%i): %s", g_mpd->error, msg);
+	g_warning("mpd error (%i): %s\n", g_mpd->error, msg);
 	g_free(msg);
 	mpd_closeConnection(g_mpd);
 	g_mpd = 0;
@@ -83,7 +82,7 @@ lmc_reconnect(G_GNUC_UNUSED gpointer data)
 	idle_supported = true;
 
 	if (password) {
-		notice("sending password ... ");
+		g_debug("sending MPD password\n");
 
 		mpd_sendPasswordCommand(g_mpd, password);
 		mpd_finishCommand(g_mpd);
@@ -95,9 +94,9 @@ lmc_reconnect(G_GNUC_UNUSED gpointer data)
 		return true;
 	}
 
-	notice("connected to mpd %i.%i.%i at %s:%i.",
-	       g_mpd->version[0], g_mpd->version[1], g_mpd->version[2],
-	       host, g_port);
+	g_message("connected to mpd %i.%i.%i at %s:%i\n",
+		  g_mpd->version[0], g_mpd->version[1], g_mpd->version[2],
+		  host, g_port);
 
 	lmc_schedule_update();
 
@@ -110,7 +109,7 @@ lmc_schedule_reconnect(void)
 {
 	assert(reconnect_source_id == 0);
 
-	warning("waiting 15 seconds before reconnecting.");
+	g_message("waiting 15 seconds before reconnecting\n");
 
 	reconnect_source_id = g_timeout_add_seconds(15, lmc_reconnect, NULL);
 }
@@ -231,8 +230,8 @@ lmc_update(G_GNUC_UNUSED gpointer data)
 	} else if (current_song->artist == NULL ||
 		   current_song->title == NULL) {
 		if (current_song->id != last_id) {
-			notice("new song detected with tags missing (%s)",
-			       current_song->file);
+			g_message("new song detected with tags missing (%s)\n",
+				  current_song->file);
 			last_id = current_song->id;
 		}
 
@@ -316,7 +315,8 @@ lmc_idle(G_GNUC_UNUSED GIOChannel *source,
 		/* MPD does not recognize the "idle" command - disable
 		   it for this connection */
 
-		notice("MPD does not support the 'idle' command - falling back to polling");
+		g_message("MPD does not support the 'idle' command - "
+			  "falling back to polling\n");
 
 		idle_supported = false;
 		lmc_schedule_update();
@@ -355,7 +355,8 @@ lmc_schedule_idle(void)
 		/* MPD does not recognize the "idle" command - disable
 		   it for this connection */
 
-		notice("MPD does not support the 'idle' command - falling back to polling");
+		g_message("MPD does not support the 'idle' command - "
+			  "falling back to polling\n");
 
 		idle_supported = false;
 		lmc_schedule_update();

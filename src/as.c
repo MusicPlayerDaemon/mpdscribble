@@ -22,7 +22,6 @@
 #include "as.h"
 #include "file.h"
 #include "journal.h"
-#include "misc.h"
 #include "conn.h"
 #include "config.h"
 
@@ -139,28 +138,28 @@ static void as_increase_interval(void)
 	if (g_interval > 60 * 60 * 2)
 		g_interval = 60 * 60 * 2;
 
-	warning("waiting %i seconds before trying again.", g_interval);
+	g_warning("waiting %i seconds before trying again\n", g_interval);
 }
 
 static int as_parse_submit_response(const char *line, size_t length)
 {
 	if (length == sizeof(OK) - 1 && memcmp(line, OK, length) == 0) {
-		notice("OK");
+		g_message("OK\n");
 		return AS_SUBMIT_OK;
 	} else if (length == sizeof(BADSESSION) - 1 &&
 		   memcmp(line, BADSESSION, length) == 0) {
-		warning("invalid session");
+		g_warning("invalid session\n");
 
 		return AS_SUBMIT_HANDSHAKE;
 	} else if (length == sizeof(FAILED) - 1 &&
 		   memcmp(line, FAILED, length) == 0) {
 		const char *start = line + strlen(FAILED);
 		if (*start)
-			warning("submission rejected: %s", start);
+			g_warning("submission rejected: %s\n", start);
 		else
-			warning("submission rejected");
+			g_warning("submission rejected\n");
 	} else {
-		warning("unknown response");
+		g_warning("unknown response\n");
 	}
 
 	return AS_SUBMIT_FAILED;
@@ -176,23 +175,23 @@ as_parse_handshake_response(const char *line)
 	/* FIXME: some code duplication between this
 	   and as_parse_submit_response. */
 	if (!strncmp(line, OK, strlen(OK))) {
-		notice("handshake ok.");
+		g_message("handshake ok\n");
 		return true;
 	} else if (!strncmp(line, BANNED, strlen(BANNED))) {
-		warning("handshake failed, we're banned (%s).", line);
+		g_warning("handshake failed, we're banned (%s)\n", line);
 		g_state = AS_BADAUTH;
 	} else if (!strncmp(line, BADAUTH, strlen(BADAUTH))) {
-		warning
-		    ("handshake failed, username or password incorrect (%s).",
-		     line);
+		g_warning("handshake failed, username or password incorrect (%s)\n",
+			  line);
 		g_state = AS_BADAUTH;
 	} else if (!strncmp(line, BADTIME, strlen(BADTIME))) {
-		warning("handshake failed, clock not synchronized (%s).", line);
+		g_warning("handshake failed, clock not synchronized (%s)\n",
+			  line);
 		g_state = AS_BADAUTH;
 	} else if (!strncmp(line, FAILED, strlen(FAILED))) {
-		warning("handshake failed (%s).", line);
+		g_warning("handshake failed (%s)\n", line);
 	} else {
-		warning("error parsing handshake response (%s).", line);
+		g_warning("error parsing handshake response (%s)\n", line);
 	}
 
 	return false;
@@ -220,7 +219,7 @@ static void as_handshake_callback(size_t length, const char *response)
 	g_state = AS_NOTHING;
 
 	if (!length) {
-		warning("handshake timed out, ");
+		g_warning("handshake timed out\n");
 		as_increase_interval();
 		as_schedule_handshake();
 		return;
@@ -243,18 +242,18 @@ static void as_handshake_callback(size_t length, const char *response)
 		case AS_SESSION:
 			g_session = next;
 			next = NULL;
-			notice("session: %s", g_session);
+			g_debug("session: %s\n", g_session);
 			state = AS_NOWPLAY;
 			break;
 		case AS_NOWPLAY:
 			g_nowplay_url = next;
 			next = NULL;
-			notice("now playing url: %s", g_nowplay_url);
+			g_debug("now playing url: %s\n", g_nowplay_url);
 			state = AS_SUBMIT;
 			break;
 		case AS_SUBMIT:
 			g_submit_url = next;
-			notice("submit url: %s", g_submit_url);
+			g_debug("submit url: %s\n", g_submit_url);
 			g_state = AS_READY;
 			g_interval = 1;
 
@@ -293,7 +292,7 @@ static void as_submit_callback(size_t length, const char *response)
 
 	if (!length) {
 		g_submit_pending = 0;
-		warning("submit timed out, ");
+		g_warning("submit timed out\n");
 		as_increase_interval();
 		as_schedule_submit();
 		return;
@@ -381,8 +380,8 @@ static void as_handshake(void)
 	//  notice ("handshake url:\n%s", url);
 
 	if (!conn_initiate(url->str, &as_handshake_callback, NULL)) {
-		warning("something went wrong when trying to connect,"
-			" probably a bug.");
+		g_warning("something went wrong when trying to connect, "
+			  "probably a bug\n");
 
 		g_state = AS_NOTHING;
 		as_increase_interval();
@@ -436,11 +435,11 @@ as_send_now_playing(const char *artist, const char *track,
 	add_var(post_data, "n", "");
 	add_var(post_data, "m", mbid);
 
-	notice("sending 'now playing' notification");
+	g_message("sending 'now playing' notification");
 
 	if (!conn_initiate(g_nowplay_url, as_submit_callback,
 			   post_data->str)) {
-		warning("failed to POST to %s", g_nowplay_url);
+		g_warning("failed to POST to %s\n", g_nowplay_url);
 
 		g_state = AS_READY;
 		as_increase_interval();
@@ -516,15 +515,15 @@ static void as_submit(void)
 		count++;
 	}
 
-	notice("submitting %i song%s.", count, count == 1 ? "" : "s");
-	notice("post data: %s", post_data->str);
-	notice("url: %s", g_submit_url);
+	g_message("submitting %i song%s\n", count, count == 1 ? "" : "s");
+	g_debug("post data: %s\n", post_data->str);
+	g_debug("url: %s\n", g_submit_url);
 
 	g_submit_pending = count;
 	if (!conn_initiate(g_submit_url, &as_submit_callback,
 			   post_data->str)) {
-		warning("something went wrong when trying to connect,"
-			" probably a bug.");
+		g_warning("something went wrong when trying to connect,"
+			  " probably a bug\n");
 
 		g_state = AS_READY;
 		as_increase_interval();
@@ -549,14 +548,14 @@ as_songchange(const char *file, const char *artist, const char *track,
 	   everything else is mandatory.
 	 */
 	if (!(artist && strlen(artist))) {
-		warning("empty artist, not submitting");
-		warning("please check the tags on %s", file);
+		g_warning("empty artist, not submitting; "
+			  "please check the tags on %s\n", file);
 		return -1;
 	}
 
 	if (!(track && strlen(track))) {
-		warning("empty title, not submitting");
-		warning("please check the tags on %s", file);
+		g_warning("empty title, not submitting; "
+			  "please check the tags on %s", file);
 		return -1;
 	}
 
@@ -569,9 +568,9 @@ as_songchange(const char *file, const char *artist, const char *track,
 	current->time = time2 ? g_strdup(time2) : as_timestamp();
 	current->source = strstr(file, "://") == NULL ? "P" : "R";
 
-	notice("%s, songchange: %s - %s (%i)",
-	       current->time, current->artist,
-	       current->track, current->length);
+	g_message("%s, songchange: %s - %s (%i)\n",
+		  current->time, current->artist,
+		  current->track, current->length);
 
 	g_queue_push_tail(queue, current);
 
@@ -587,15 +586,14 @@ void as_init(void)
 
 	assert(g_state == AS_NOTHING);
 
-	notice("starting mpdscribble (" AS_CLIENT_ID " " AS_CLIENT_VERSION
-	       ").");
+	g_message("starting mpdscribble (" AS_CLIENT_ID " " AS_CLIENT_VERSION ")\n");
 
 	queue = g_queue_new();
 	journal_read(queue);
 
 	queue_length = g_queue_get_length(queue);
-	notice("(loaded %i song%s from cache)",
-	       queue_length, queue_length == 1 ? "" : "s");
+	g_message("loaded %i song%s from cache",
+		  queue_length, queue_length == 1 ? "" : "s");
 
 	conn_setup();
 
@@ -628,8 +626,8 @@ void as_save_cache(void)
 {
 	if (journal_write(queue)) {
 		guint queue_length = g_queue_get_length(queue);
-		notice("(saved %i song%s to cache)",
-		       queue_length, queue_length == 1 ? "" : "s");
+		g_message("saved %i song%s to cache\n",
+			  queue_length, queue_length == 1 ? "" : "s");
 	}
 }
 

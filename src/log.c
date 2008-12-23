@@ -56,7 +56,7 @@ mpdscribble_log_func(const gchar *log_domain, GLogLevelFlags log_level,
 	if (log_domain == NULL)
 		log_domain = "";
 
-	fprintf(log_file, "%s %s%s%s ",
+	fprintf(log_file, "%s %s%s%s",
 		log_date(),
 		log_domain, *log_domain == 0 ? "" : ": ",
 		message);

@@ -21,7 +21,6 @@
 
 #include "file.h"
 #include "as.h"
-#include "misc.h"
 #include "config.h"
 
 #include <glib.h>
@@ -30,6 +29,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <errno.h>
 
 enum file_type { conf_type, cache_type, log_type, };
 
@@ -101,7 +101,7 @@ static char *read_file(const char *filename)
 
 	ret = g_file_get_contents(filename, &contents, NULL, &error);
 	if (!ret) {
-		warning("%s", error->message);
+		g_warning("%s\n", error->message);
 		g_error_free(error);
 		return NULL;
 	}
@@ -165,11 +165,11 @@ static char *file_getname(enum file_type type)
 	if (!file) {
 		switch (type) {
 		case conf_type:
-			fatal("internal error. this is a bug.");
+			g_error("internal error - this is a bug\n");
 		case cache_type:
-			fatal("please specify where to put the cache file.");
+			g_error("please specify where to put the cache file\n");
 		case log_type:
-			fatal("please specify where to put the log file.");
+			g_error("please specify where to put the log filen\n");
 		}
 	}
 
@@ -182,7 +182,7 @@ FILE *file_open_logfile(void)
 
 	file_loghandle = fopen(log, "ab");
 	if (!file_loghandle)
-		fatal_errno("cannot open %s", log);
+		g_error("cannot open %s: %s\n", log, strerror(errno));
 
 	setvbuf(file_loghandle, NULL, _IONBF, 0);
 
@@ -203,7 +203,7 @@ static void load_string(GKeyFile * file, const char *name, char **value_r)
 
 	if (error != NULL) {
 		if (error->code != G_KEY_FILE_ERROR_KEY_NOT_FOUND)
-			fatal("%s", error->message);
+			g_error("%s\n", error->message);
 		g_error_free(error);
 		return;
 	}
@@ -219,7 +219,7 @@ static void load_integer(GKeyFile * file, const char *name, int *value_r)
 
 	if (error != NULL) {
 		if (error->code != G_KEY_FILE_ERROR_KEY_NOT_FOUND)
-			fatal("%s", error->message);
+			g_error("%s\n", error->message);
 		g_error_free(error);
 		return;
 	}
@@ -261,7 +261,7 @@ int file_read_config(int argc, char **argv)
 					  G_KEY_FILE_NONE, &error);
 		g_free(data2);
 		if (error != NULL)
-			fatal("%s", error->message);
+			g_error("%s\n", error->message);
 
 		load_string(file, "username", &file_config.username);
 		load_string(file, "password", &file_config.password);
@@ -304,13 +304,13 @@ int file_read_config(int argc, char **argv)
 	}
 
 	if (!file_config.conf)
-		fatal("cannot find configuration file");
+		g_error("cannot find configuration file\n");
 
 	if (!file_config.username)
-		fatal("no audioscrobbler username specified in %s",
-		      file_config.conf);
+		g_error("no audioscrobbler username specified in %s\n",
+			file_config.conf);
 	if (!file_config.password)
-		fatal("no audioscrobbler password specified in %s",
+		g_error("no audioscrobbler password specified in %s\n",
 		      file_config.conf);
 	if (!file_config.host)
 		file_config.host = g_strdup(mpd_host);

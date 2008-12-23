@@ -20,7 +20,6 @@
 */
 
 #include "file.h"
-#include "misc.h"
 #include "log.h"
 #include "lmc.h"
 #include "as.h"
@@ -86,8 +85,8 @@ static bool played_long_enough(int length)
 
 static void song_changed(const struct mpd_song *song)
 {
-	notice("new song detected (%s - %s), id: %i, pos: %i",
-	       song->artist, song->title, song->id, song->pos);
+	g_message("new song detected (%s - %s), id: %i, pos: %i\n",
+		  song->artist, song->title, song->id, song->pos);
 
 	g_timer_start(timer);
 
@@ -97,7 +96,7 @@ static void song_changed(const struct mpd_song *song)
 		if (getMBID(song->file, mbid))
 			mbid[0] = 0x00;
 		else
-			notice("mbid is %s.", mbid);
+			g_message("mbid is %s\n", mbid);
 	}
 
 	as_now_playing(song->artist, song->title, song->album, mbid,
@@ -163,24 +162,19 @@ song_ended(const struct mpd_song *song)
 					  NULL),
 			  NULL);
 	if (q != -1)
-		notice
-			("added (%s - %s) to submit queue at position %i.",
-			 song->artist, song->title, q);
+		g_message("added (%s - %s) to submit queue at position %i\n",
+			  song->artist, song->title, q);
 }
 
 int main(int argc, char **argv)
 {
 	FILE *log;
 
-	/* apparantly required for regex.h, which
-	   is used in file.h */
-	set_logfile(stderr, 2);
 	if (!file_read_config(argc, argv))
-		fatal("cannot read configuration file.\n");
+		g_error("cannot read configuration file\n");
 
 	log = file_open_logfile();
 	log_init(log, file_config.verbose);
-	set_logfile(log, file_config.verbose);
 
 	main_loop = g_main_loop_new(NULL, FALSE);
 
@@ -202,7 +196,7 @@ int main(int argc, char **argv)
 
 	/* cleanup */
 
-	notice("shutting down...");
+	g_message("shutting down\n");
 
 	g_main_loop_unref(main_loop);
 

@@ -13,7 +13,6 @@ mpdscribble_SOURCES = \
 	file.c file.h \
 	journal.c journal.h \
 	lmc.c lmc.h \
-	misc.c misc.h \
 	log.c log.h \
 	mbid.c mbid.h \
 	$(libmpdclient_SOURCES)

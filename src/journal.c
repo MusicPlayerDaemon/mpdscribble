@@ -22,7 +22,6 @@
 #include "journal.h"
 #include "file.h"
 #include "as.h"
-#include "misc.h"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -53,7 +52,8 @@ bool journal_write(GQueue *queue)
 
 	handle = fopen(file_config.cache, "wb");
 	if (!handle) {
-		warning_errno("error opening %s", file_config.cache);
+		g_warning("failed to open %s: %s\n",
+			  file_config.cache, strerror(errno));
 		return false;
 	}
 
@@ -107,8 +107,8 @@ void journal_read(GQueue *queue)
 
 	file = fopen(file_config.cache, "r");
 	if (file == NULL) {
-		warning("Failed to open %s: %s",
-			file_config.cache, strerror(errno));
+		g_warning("Failed to open %s: %s\n",
+			  file_config.cache, strerror(errno));
 		return;
 	}
 
