@@ -76,29 +76,28 @@ static void clear_song(struct song *s)
 }
 
 static void
-journal_commit_song(struct song *song)
+journal_commit_song(GQueue *queue, struct song *song)
 {
-	/* send song to the audioscrobbler library */
-
 	if (song->artist != NULL && song->track != NULL) {
-		as_songchange("", song->artist, song->track,
-			      song->album, song->mbid, song->length,
-			      song->time);
+		/* append song to the queue; reuse allocated strings */
+
+		g_queue_push_tail(queue, g_memdup(song, sizeof(*song)));
+
 		journal_file_empty = false;
+	} else {
+		/* free and clear the song, it was not used */
+
+		g_free(song->artist);
+		g_free(song->track);
+		g_free(song->album);
+		g_free(song->mbid);
+		g_free(song->time);
 	}
-
-	/* free and clear the song */
-
-	g_free(song->artist);
-	g_free(song->track);
-	g_free(song->album);
-	g_free(song->mbid);
-	g_free(song->time);
 
 	clear_song(song);
 }
 
-void journal_read(void)
+void journal_read(GQueue *queue)
 {
 	FILE *file;
 	char line[1024];
@@ -132,7 +131,7 @@ void journal_read(void)
 		value = g_strstrip(value);
 
 		if (!strcmp("a", key)) {
-			journal_commit_song(&sng);
+			journal_commit_song(queue, &sng);
 			sng.artist = g_strdup(value);
 		} else if (!strcmp("t", key))
 			sng.track = g_strdup(value);
@@ -150,5 +149,5 @@ void journal_read(void)
 
 	fclose(file);
 
-	journal_commit_song(&sng);
+	journal_commit_song(queue, &sng);
 }

@@ -29,6 +29,6 @@
 struct song;
 
 bool journal_write(GQueue *queue);
-void journal_read(void);
+void journal_read(GQueue *queue);
 
 #endif

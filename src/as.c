@@ -586,7 +586,7 @@ void as_init(void)
 	       ").");
 
 	queue = g_queue_new();
-	journal_read();
+	journal_read(queue);
 
 	queue_length = g_queue_get_length(queue);
 	notice("(loaded %i song%s from cache)",
