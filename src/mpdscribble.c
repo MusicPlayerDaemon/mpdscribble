@@ -51,16 +51,28 @@ static void sigpipe_handler(G_GNUC_UNUSED int signum)
 }
 
 static void
+x_sigaction(int signum, const struct sigaction *act)
+{
+	if (sigaction(signum, act, NULL) < 0) {
+		perror("sigaction()");
+		exit(EXIT_FAILURE);
+	}
+}
+
+static void
 setup_signals(void)
 {
-	if (signal(SIGINT, signal_handler) == SIG_IGN)
-		signal(SIGINT, SIG_IGN);
-	if (signal(SIGHUP, signal_handler) == SIG_IGN)
-		signal(SIGHUP, SIG_IGN);
-	if (signal(SIGTERM, signal_handler) == SIG_IGN)
-		signal(SIGTERM, SIG_IGN);
-	if (signal(SIGPIPE, sigpipe_handler) == SIG_IGN)
-		signal(SIGPIPE, SIG_IGN);
+	struct sigaction sa;
+
+	sigemptyset(&sa.sa_mask);
+	sa.sa_flags = 0;
+	sa.sa_handler = signal_handler;
+	x_sigaction(SIGINT, &sa);
+	x_sigaction(SIGTERM, &sa);
+	x_sigaction(SIGHUP, &sa);
+
+	sa.sa_handler = sigpipe_handler;
+	x_sigaction(SIGPIPE, &sa);
 }
 
 static bool played_long_enough(int length)
