@@ -153,6 +153,8 @@ int journal_read(void)
 			sng.source = "R";
 	}
 
+	fclose(file);
+
 	file_saved_count = count;
 
 	return count;
