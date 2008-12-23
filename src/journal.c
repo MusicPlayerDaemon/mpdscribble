@@ -32,56 +32,7 @@
 #include <string.h>
 #include <errno.h>
 
-#include <regex.h>
-
-struct pair {
-	char *key;
-	char *val;
-};
-
 static int file_saved_count = 0;
-
-static void free_pairs(struct pair *p)
-{
-	free(p->key);
-	free(p->val);
-	free(p);
-}
-
-static struct pair *
-make_pair(const char *ptr, int s0, int e0, int s1, int e1)
-{
-	struct pair *p = g_new(struct pair, 1);
-
-	p->key = g_strndup(ptr + s0, e0 - s0);
-	p->val = g_strndup(ptr + s1, e1 - s1);
-
-	return p;
-}
-
-static struct pair *get_pair(const char *str)
-{
-	struct pair *p = NULL;
-	regex_t compiled;
-	regmatch_t m[4];
-	int error = 0;
-
-	if ((error = regcomp(&compiled,
-			     "^(#.*|[ \t]*|([A-Za-z_][A-Za-z0-9_]*) = (.*))$",
-			     REG_NEWLINE | REG_EXTENDED)))
-		fatal("error %i when compiling regexp, this is a bug.\n",
-		      error);
-
-	error = regexec(&compiled, str, 4, m, 0);
-	if (!error && m[3].rm_eo != -1)
-		p = make_pair(str,
-			      m[2].rm_so, m[2].rm_eo,
-			      m[3].rm_so, m[3].rm_eo);
-
-	regfree(&compiled);
-
-	return p;
-}
 
 int journal_write(struct song *sng)
 {
@@ -129,9 +80,7 @@ int journal_read(void)
 {
 	FILE *file;
 	char line[1024];
-	char *data;
 	int count = 0;
-	struct pair *p;
 	struct song sng;
 
 	file = fopen(file_config.cache, "r");
@@ -144,22 +93,33 @@ int journal_read(void)
 	clear_song(&sng);
 
 	while (fgets(line, sizeof(line), file) != NULL) {
-		p = get_pair(line);
-		if (p == NULL)
+		char *key, *value;
+
+		key = g_strchug(line);
+		if (*key == 0 || *key == '#')
 			continue;
 
-		if (!strcmp("a", p->key))
-			sng.artist = g_strdup(p->val);
-		if (!strcmp("t", p->key))
-			sng.track = g_strdup(p->val);
-		if (!strcmp("b", p->key))
-			sng.album = g_strdup(p->val);
-		if (!strcmp("m", p->key))
-			sng.mbid = g_strdup(p->val);
-		if (!strcmp("i", p->key))
-			sng.time = g_strdup(p->val);
-		if (!strcmp("l", p->key)) {
-			sng.length = atoi(p->val);
+		value = strchr(key, '=');
+		if (value == NULL || value == key)
+			continue;
+
+		*value++ = 0;
+
+		key = g_strchomp(key);
+		value = g_strstrip(value);
+
+		if (!strcmp("a", key))
+			sng.artist = g_strdup(value);
+		else if (!strcmp("t", key))
+			sng.track = g_strdup(value);
+		else if (!strcmp("b", key))
+			sng.album = g_strdup(value);
+		else if (!strcmp("m", key))
+			sng.mbid = g_strdup(value);
+		else if (!strcmp("i", key))
+			sng.time = g_strdup(value);
+		else if (!strcmp("l", key)) {
+			sng.length = atoi(value);
 
 			as_songchange("", sng.artist, sng.track,
 				      sng.album, sng.mbid, sng.length,
@@ -189,15 +149,11 @@ int journal_read(void)
 			}
 
 			clear_song(&sng);
-		}
-		if (strcmp("o", p->key) == 0 && p->val[0] == 'R')
+		} else if (strcmp("o", key) == 0 && value[0] == 'R')
 			sng.source = "R";
-
-		free_pairs(p);
 	}
 
 	file_saved_count = count;
 
-	free(data);
 	return count;
 }
