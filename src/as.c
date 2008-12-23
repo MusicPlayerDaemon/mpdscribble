@@ -311,7 +311,14 @@ static void as_submit_callback(size_t length, const char *response)
 		if (g_submit_pending > 0) {
 			as_queue_remove_oldest(g_submit_pending);
 			g_submit_pending = 0;
+		} else {
+			assert(g_now_playing.artist != NULL &&
+			       g_now_playing.track != NULL);
+
+			as_song_cleanup(&g_now_playing, false);
+			memset(&g_now_playing, 0, sizeof(g_now_playing));
 		}
+
 
 		/* submit the next chunk (if there is some left) */
 		as_submit();
@@ -478,8 +485,6 @@ static void as_submit(void)
 					    g_now_playing.album,
 					    g_now_playing.mbid,
 					    g_now_playing.length);
-			as_song_cleanup(&g_now_playing, false);
-			memset(&g_now_playing, 0, sizeof(g_now_playing));
 		}
 
 		return;
