@@ -175,65 +175,67 @@ int journal_read(void)
 {
 	char *data;
 	int count = 0;
+	struct pair *root, *p;
+	struct song sng;
 
-	if ((data = read_file(file_config.cache))) {
-		struct pair *root = get_pair(data);
-		struct pair *p = root;
-		struct song sng;
+	data = read_file(file_config.cache);
+	if (data == NULL)
+		return 0;
 
-		clear_song(&sng);
+	root = p = get_pair(data);
 
-		while (p) {
-			if (!strcmp("a", p->key))
-				sng.artist = g_strdup(p->val);
-			if (!strcmp("t", p->key))
-				sng.track = g_strdup(p->val);
-			if (!strcmp("b", p->key))
-				sng.album = g_strdup(p->val);
-			if (!strcmp("m", p->key))
-				sng.mbid = g_strdup(p->val);
-			if (!strcmp("i", p->key))
-				sng.time = g_strdup(p->val);
-			if (!strcmp("l", p->key)) {
-				sng.length = atoi(p->val);
+	clear_song(&sng);
 
-				as_songchange("", sng.artist, sng.track,
-					      sng.album, sng.mbid, sng.length,
-					      sng.time);
+	while (p) {
+		if (!strcmp("a", p->key))
+			sng.artist = g_strdup(p->val);
+		if (!strcmp("t", p->key))
+			sng.track = g_strdup(p->val);
+		if (!strcmp("b", p->key))
+			sng.album = g_strdup(p->val);
+		if (!strcmp("m", p->key))
+			sng.mbid = g_strdup(p->val);
+		if (!strcmp("i", p->key))
+			sng.time = g_strdup(p->val);
+		if (!strcmp("l", p->key)) {
+			sng.length = atoi(p->val);
 
-				count++;
+			as_songchange("", sng.artist, sng.track,
+				      sng.album, sng.mbid, sng.length,
+				      sng.time);
 
-				if (sng.artist) {
-					free(sng.artist);
-					sng.artist = NULL;
-				}
-				if (sng.track) {
-					free(sng.track);
-					sng.track = NULL;
-				}
-				if (sng.album) {
-					free(sng.album);
-					sng.album = NULL;
-				}
-				if (sng.mbid) {
-					free(sng.mbid);
-					sng.mbid = NULL;
-				}
-				if (sng.time) {
-					free(sng.time);
-					sng.time = NULL;
-				}
+			count++;
 
-				clear_song(&sng);
+			if (sng.artist) {
+				free(sng.artist);
+				sng.artist = NULL;
 			}
-			if (strcmp("o", p->key) == 0 && p->val[0] == 'R')
-				sng.source = "R";
+			if (sng.track) {
+				free(sng.track);
+				sng.track = NULL;
+			}
+			if (sng.album) {
+				free(sng.album);
+				sng.album = NULL;
+			}
+			if (sng.mbid) {
+				free(sng.mbid);
+				sng.mbid = NULL;
+			}
+			if (sng.time) {
+				free(sng.time);
+				sng.time = NULL;
+			}
 
-			p = p->next;
+			clear_song(&sng);
 		}
+		if (strcmp("o", p->key) == 0 && p->val[0] == 'R')
+			sng.source = "R";
 
-		free_pairs(p);
+		p = p->next;
 	}
+
+	free_pairs(p);
 
 	file_saved_count = count;
 
