@@ -130,6 +130,11 @@ void lmc_disconnect(void)
 		mpd_closeConnection(g_mpd);
 		g_mpd = 0;
 	}
+
+	if (current_song != NULL) {
+		mpd_freeSong(current_song);
+		current_song = NULL;
+	}
 }
 
 int lmc_current(struct mpd_song **song_r)
