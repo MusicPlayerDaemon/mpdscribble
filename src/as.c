@@ -312,8 +312,10 @@ static void as_submit_callback(size_t length, const char *response)
 		g_interval = 1;
 
 		/* submission was accepted, so clean up the cache. */
-		as_queue_remove_oldest(g_submit_pending);
-		g_submit_pending = 0;
+		if (g_submit_pending > 0) {
+			as_queue_remove_oldest(g_submit_pending);
+			g_submit_pending = 0;
+		}
 
 		/* submit the next chunk (if there is some left) */
 		as_submit();
@@ -408,31 +410,6 @@ as_schedule_handshake(void)
 					as_handshake_timer, NULL);
 }
 
-static void as_now_playing_callback(size_t length, const char *response)
-{
-	char *newline;
-
-	if (length == 0) {
-		g_state = AS_READY;
-		warning("the 'now playing' submit has failed");
-
-		as_increase_interval();
-		as_schedule_submit();
-		return;
-	}
-
-	assert(g_state == AS_SUBMITTING);
-
-	newline = memchr(response, '\n', length);
-	if (newline != NULL)
-		length = newline - response;
-
-	notice("now playing notification response: %.*s",
-	       (int)length, response);
-
-	g_state = AS_READY;
-}
-
 static void
 as_send_now_playing(const char *artist, const char *track,
 		    const char *album, const char *mbid, const int length)
@@ -458,7 +435,7 @@ as_send_now_playing(const char *artist, const char *track,
 
 	notice("sending 'now playing' notification");
 
-	if (!conn_initiate(g_nowplay_url, as_now_playing_callback,
+	if (!conn_initiate(g_nowplay_url, as_submit_callback,
 			   post_data->str)) {
 		warning("failed to POST to %s", g_nowplay_url);
 
