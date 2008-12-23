@@ -50,6 +50,19 @@ static void sigpipe_handler(G_GNUC_UNUSED int signum)
 	warning("broken pipe, disconnected from mpd");
 }
 
+static void
+setup_signals(void)
+{
+	if (signal(SIGINT, signal_handler) == SIG_IGN)
+		signal(SIGINT, SIG_IGN);
+	if (signal(SIGHUP, signal_handler) == SIG_IGN)
+		signal(SIGHUP, SIG_IGN);
+	if (signal(SIGTERM, signal_handler) == SIG_IGN)
+		signal(SIGTERM, SIG_IGN);
+	if (signal(SIGPIPE, sigpipe_handler) == SIG_IGN)
+		signal(SIGPIPE, SIG_IGN);
+}
+
 static bool played_long_enough(int length)
 {
 	int elapsed = g_timer_elapsed(timer, NULL);
@@ -165,14 +178,7 @@ int main(int argc, char **argv)
 	lmc_connect(file_config.host, file_config.port);
 	as_init();
 
-	if (signal(SIGINT, signal_handler) == SIG_IGN)
-		signal(SIGINT, SIG_IGN);
-	if (signal(SIGHUP, signal_handler) == SIG_IGN)
-		signal(SIGHUP, SIG_IGN);
-	if (signal(SIGTERM, signal_handler) == SIG_IGN)
-		signal(SIGTERM, SIG_IGN);
-	if (signal(SIGPIPE, sigpipe_handler) == SIG_IGN)
-		signal(SIGPIPE, SIG_IGN);
+	setup_signals();
 
 	timer = g_timer_new();
 
