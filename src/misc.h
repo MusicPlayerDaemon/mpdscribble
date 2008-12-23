@@ -25,8 +25,6 @@
 #include <stddef.h>
 #include <stdio.h>
 
-long now(void);
-
 void set_logfile(FILE *, int verbose);
 
 void fatal(const char *template, ...);

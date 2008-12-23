@@ -53,17 +53,6 @@ static const char *log_date(void)
 	return buf;
 }
 
-long now(void)
-{
-	struct timeval tv;
-
-	if (!gettimeofday(&tv, NULL))
-		return tv.tv_sec;
-
-	warning("error getting current time, this is probably a bug.\n");
-	return 0;
-}
-
 void set_logfile(FILE * log, int verbose)
 {
 	g_log = log;
