@@ -21,6 +21,7 @@
 
 #include "file.h"
 #include "misc.h"
+#include "log.h"
 #include "lmc.h"
 #include "as.h"
 #include "mbid.h"
@@ -178,6 +179,7 @@ int main(int argc, char **argv)
 		fatal("cannot read configuration file.\n");
 
 	log = file_open_logfile();
+	log_init(log, file_config.verbose);
 	set_logfile(log, file_config.verbose);
 
 	main_loop = g_main_loop_new(NULL, FALSE);
