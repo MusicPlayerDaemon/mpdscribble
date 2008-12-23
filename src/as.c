@@ -592,15 +592,14 @@ as_songchange(const char *file, const char *artist, const char *track,
 
 void as_init(void)
 {
-	int saved;
-
 	assert(g_state == AS_NOTHING);
 
 	notice("starting mpdscribble (" AS_CLIENT_ID " " AS_CLIENT_VERSION
 	       ").");
 
-	saved = journal_read();
-	notice("(loaded %i song%s from cache)", saved, saved == 1 ? "" : "s");
+	journal_read();
+	notice("(loaded %i song%s from cache)",
+	       g_queue_size, g_queue_size == 1 ? "" : "s");
 
 	conn_setup();
 
@@ -631,10 +630,9 @@ as_schedule_submit(void)
 
 void as_save_cache(void)
 {
-	int saved = journal_write(g_queue);
-	if (saved >= 0)
-		notice("(saved %i song%s to cache)", saved,
-		       saved == 1 ? "" : "s");
+	if (journal_write(g_queue))
+		notice("(saved %i song%s to cache)",
+		       g_queue_size, g_queue_size == 1 ? "" : "s");
 }
 
 void as_cleanup(void)

@@ -26,7 +26,6 @@
 
 #include <glib.h>
 
-#include <stdbool.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -34,19 +33,19 @@
 
 static int file_saved_count = 0;
 
-int journal_write(struct song *sng)
+bool journal_write(struct song *sng)
 {
 	struct song *tmp = sng;
 	int count = 0;
 	FILE *handle;
 
 	if (!tmp && file_saved_count == 0)
-		return -1;
+		return false;
 
 	handle = fopen(file_config.cache, "wb");
 	if (!handle) {
 		warning_errno("error opening %s", file_config.cache);
-		return 0;
+		return false;
 	}
 
 	while (tmp) {
@@ -62,7 +61,8 @@ int journal_write(struct song *sng)
 	fclose(handle);
 
 	file_saved_count = count;
-	return count;
+
+	return true;
 }
 
 static void clear_song(struct song *s)
@@ -76,7 +76,7 @@ static void clear_song(struct song *s)
 	s->source = "P";
 }
 
-int journal_read(void)
+void journal_read(void)
 {
 	FILE *file;
 	char line[1024];
@@ -87,7 +87,7 @@ int journal_read(void)
 	if (file == NULL) {
 		warning("Failed to open %s: %s",
 			file_config.cache, strerror(errno));
-		return 0;
+		return;
 	}
 
 	clear_song(&sng);
@@ -156,6 +156,4 @@ int journal_read(void)
 	fclose(file);
 
 	file_saved_count = count;
-
-	return count;
 }

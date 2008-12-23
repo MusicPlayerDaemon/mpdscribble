@@ -22,9 +22,11 @@
 #ifndef JOURNAL_H
 #define JOURNAL_H
 
+#include <stdbool.h>
+
 struct song;
 
-int journal_write(struct song *sng);
-int journal_read(void);
+bool journal_write(struct song *sng);
+void journal_read(void);
 
 #endif
