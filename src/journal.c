@@ -31,15 +31,14 @@
 #include <string.h>
 #include <errno.h>
 
-static int file_saved_count = 0;
+static int journal_file_empty;
 
 bool journal_write(struct song *sng)
 {
 	struct song *tmp = sng;
-	int count = 0;
 	FILE *handle;
 
-	if (!tmp && file_saved_count == 0)
+	if (!tmp && journal_file_empty)
 		return false;
 
 	handle = fopen(file_config.cache, "wb");
@@ -50,8 +49,8 @@ bool journal_write(struct song *sng)
 
 	while (tmp) {
 		fprintf(handle,
-			"# song %i in queue\na = %s\nt = %s\nb = %s\nm = %s\n"
-			"i = %s\nl = %i\no = %s\n\n", ++count, tmp->artist,
+			"a = %s\nt = %s\nb = %s\nm = %s\n"
+			"i = %s\nl = %i\no = %s\n\n", tmp->artist,
 			tmp->track, tmp->album, tmp->mbid, tmp->time,
 			tmp->length, tmp->source);
 
@@ -59,8 +58,6 @@ bool journal_write(struct song *sng)
 	}
 
 	fclose(handle);
-
-	file_saved_count = count;
 
 	return true;
 }
@@ -80,8 +77,9 @@ void journal_read(void)
 {
 	FILE *file;
 	char line[1024];
-	int count = 0;
 	struct song sng;
+
+	journal_file_empty = true;
 
 	file = fopen(file_config.cache, "r");
 	if (file == NULL) {
@@ -124,8 +122,7 @@ void journal_read(void)
 			as_songchange("", sng.artist, sng.track,
 				      sng.album, sng.mbid, sng.length,
 				      sng.time);
-
-			count++;
+			journal_file_empty = false;
 
 			if (sng.artist) {
 				free(sng.artist);
@@ -154,6 +151,4 @@ void journal_read(void)
 	}
 
 	fclose(file);
-
-	file_saved_count = count;
 }
