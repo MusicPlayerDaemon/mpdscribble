@@ -345,7 +345,7 @@ lmc_schedule_idle(void)
 	idle_notified = false;
 
 	mpd_startIdle(g_mpd, lmc_idle_callback, NULL);
-	if (g_mpd->error == MPD_ERROR_ACK ||
+	if (g_mpd->error == MPD_ERROR_ACK &&
 	    g_mpd->errorCode == MPD_ACK_ERROR_UNKNOWN_CMD) {
 		/* MPD does not recognize the "idle" command - disable
 		   it for this connection */
