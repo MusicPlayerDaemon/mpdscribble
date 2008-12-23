@@ -75,6 +75,29 @@ static void clear_song(struct song *s)
 	s->source = "P";
 }
 
+static void
+journal_commit_song(struct song *song)
+{
+	/* send song to the audioscrobbler library */
+
+	if (song->artist != NULL && song->track != NULL) {
+		as_songchange("", song->artist, song->track,
+			      song->album, song->mbid, song->length,
+			      song->time);
+		journal_file_empty = false;
+	}
+
+	/* free and clear the song */
+
+	g_free(song->artist);
+	g_free(song->track);
+	g_free(song->album);
+	g_free(song->mbid);
+	g_free(song->time);
+
+	clear_song(song);
+}
+
 void journal_read(void)
 {
 	FILE *file;
@@ -108,9 +131,10 @@ void journal_read(void)
 		key = g_strchomp(key);
 		value = g_strstrip(value);
 
-		if (!strcmp("a", key))
+		if (!strcmp("a", key)) {
+			journal_commit_song(&sng);
 			sng.artist = g_strdup(value);
-		else if (!strcmp("t", key))
+		} else if (!strcmp("t", key))
 			sng.track = g_strdup(value);
 		else if (!strcmp("b", key))
 			sng.album = g_strdup(value);
@@ -118,39 +142,13 @@ void journal_read(void)
 			sng.mbid = g_strdup(value);
 		else if (!strcmp("i", key))
 			sng.time = g_strdup(value);
-		else if (!strcmp("l", key)) {
+		else if (!strcmp("l", key))
 			sng.length = atoi(value);
-
-			as_songchange("", sng.artist, sng.track,
-				      sng.album, sng.mbid, sng.length,
-				      sng.time);
-			journal_file_empty = false;
-
-			if (sng.artist) {
-				free(sng.artist);
-				sng.artist = NULL;
-			}
-			if (sng.track) {
-				free(sng.track);
-				sng.track = NULL;
-			}
-			if (sng.album) {
-				free(sng.album);
-				sng.album = NULL;
-			}
-			if (sng.mbid) {
-				free(sng.mbid);
-				sng.mbid = NULL;
-			}
-			if (sng.time) {
-				free(sng.time);
-				sng.time = NULL;
-			}
-
-			clear_song(&sng);
-		} else if (strcmp("o", key) == 0 && value[0] == 'R')
+		else if (strcmp("o", key) == 0 && value[0] == 'R')
 			sng.source = "R";
 	}
 
 	fclose(file);
+
+	journal_commit_song(&sng);
 }
