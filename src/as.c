@@ -21,6 +21,7 @@
 
 #include "as.h"
 #include "file.h"
+#include "journal.h"
 #include "misc.h"
 #include "conn.h"
 #include "config.h"

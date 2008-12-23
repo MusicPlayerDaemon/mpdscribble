@@ -63,10 +63,10 @@ struct config {
 
 extern struct config file_config;
 
+char *file_expand_tilde(const char *path);
+
 FILE *file_open_logfile(void);
 int file_read_config(int argc, char **argv);
-int file_write_cache(struct song *sng);
-int file_read_cache(void);
 void file_cleanup(void);
 
 #endif /* FILE_H */

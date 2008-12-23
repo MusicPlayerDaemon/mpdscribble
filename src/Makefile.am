@@ -11,6 +11,7 @@ mpdscribble_SOURCES = \
 	as.c as.h \
 	conn.c conn.h \
 	file.c file.h \
+	journal.c journal.h \
 	lmc.c lmc.h \
 	misc.c misc.h \
 	mbid.c mbid.h \
