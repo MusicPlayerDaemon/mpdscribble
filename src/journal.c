@@ -30,59 +30,38 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <errno.h>
 
 #include <regex.h>
 
 struct pair {
 	char *key;
 	char *val;
-	struct pair *next;
 };
 
 static int file_saved_count = 0;
 
 static void free_pairs(struct pair *p)
 {
-	struct pair *n;
-
-	if (!p)
-		return;
-
-	do {
-		n = p->next;
-		free(p->key);
-		free(p->val);
-		free(p);
-		p = n;
-	}
-	while (p);
+	free(p->key);
+	free(p->val);
+	free(p);
 }
 
-static void
-add_pair(struct pair **stack, const char *ptr, int s0, int e0, int s1, int e1)
+static struct pair *
+make_pair(const char *ptr, int s0, int e0, int s1, int e1)
 {
 	struct pair *p = g_new(struct pair, 1);
-	struct pair *last;
 
 	p->key = g_strndup(ptr + s0, e0 - s0);
 	p->val = g_strndup(ptr + s1, e1 - s1);
-	p->next = NULL;
 
-	if (!*stack) {
-		*stack = p;
-		return;
-	}
-
-	last = *stack;
-	while (last->next)
-		last = last->next;
-	last->next = p;
+	return p;
 }
 
 static struct pair *get_pair(const char *str)
 {
 	struct pair *p = NULL;
-	const char *ptr;
 	regex_t compiled;
 	regmatch_t m[4];
 	int error = 0;
@@ -93,40 +72,15 @@ static struct pair *get_pair(const char *str)
 		fatal("error %i when compiling regexp, this is a bug.\n",
 		      error);
 
-	m[0].rm_eo = 0;
-	ptr = str - 1;
-	do {
-		ptr += m[0].rm_eo + 1;
-		if (*ptr == '\0') {
-			break;
-		}
-		error = regexec(&compiled, ptr, 4, m, 0);
-		if (!error && m[3].rm_eo != -1)
-			add_pair(&p, ptr,
-				 m[2].rm_so, m[2].rm_eo,
-				 m[3].rm_so, m[3].rm_eo);
-	}
-	while (!error);
+	error = regexec(&compiled, str, 4, m, 0);
+	if (!error && m[3].rm_eo != -1)
+		p = make_pair(str,
+			      m[2].rm_so, m[2].rm_eo,
+			      m[3].rm_so, m[3].rm_eo);
 
 	regfree(&compiled);
 
 	return p;
-}
-
-static char *read_file(const char *filename)
-{
-	bool ret;
-	gchar *contents;
-	GError *error = NULL;
-
-	ret = g_file_get_contents(filename, &contents, NULL, &error);
-	if (!ret) {
-		warning("%s", error->message);
-		g_error_free(error);
-		return NULL;
-	}
-
-	return contents;
 }
 
 int journal_write(struct song *sng)
@@ -173,20 +127,27 @@ static void clear_song(struct song *s)
 
 int journal_read(void)
 {
+	FILE *file;
+	char line[1024];
 	char *data;
 	int count = 0;
-	struct pair *root, *p;
+	struct pair *p;
 	struct song sng;
 
-	data = read_file(file_config.cache);
-	if (data == NULL)
+	file = fopen(file_config.cache, "r");
+	if (file == NULL) {
+		warning("Failed to open %s: %s",
+			file_config.cache, strerror(errno));
 		return 0;
-
-	root = p = get_pair(data);
+	}
 
 	clear_song(&sng);
 
-	while (p) {
+	while (fgets(line, sizeof(line), file) != NULL) {
+		p = get_pair(line);
+		if (p == NULL)
+			continue;
+
 		if (!strcmp("a", p->key))
 			sng.artist = g_strdup(p->val);
 		if (!strcmp("t", p->key))
@@ -232,10 +193,8 @@ int journal_read(void)
 		if (strcmp("o", p->key) == 0 && p->val[0] == 'R')
 			sng.source = "R";
 
-		p = p->next;
+		free_pairs(p);
 	}
-
-	free_pairs(p);
 
 	file_saved_count = count;
 
