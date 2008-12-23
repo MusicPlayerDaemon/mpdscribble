@@ -45,11 +45,6 @@ static void signal_handler(G_GNUC_UNUSED int signum)
 	g_main_loop_quit(main_loop);
 }
 
-static void sigpipe_handler(G_GNUC_UNUSED int signum)
-{
-	warning("broken pipe, disconnected from mpd");
-}
-
 static void
 x_sigaction(int signum, const struct sigaction *act)
 {
@@ -71,7 +66,7 @@ setup_signals(void)
 	x_sigaction(SIGTERM, &sa);
 	x_sigaction(SIGHUP, &sa);
 
-	sa.sa_handler = sigpipe_handler;
+	sa.sa_handler = SIG_IGN;
 	x_sigaction(SIGPIPE, &sa);
 }
 
