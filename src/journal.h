@@ -24,7 +24,7 @@
 
 struct song;
 
-int file_write_cache(struct song *sng);
-int file_read_cache(void);
+int journal_write(struct song *sng);
+int journal_read(void);
 
 #endif

@@ -599,7 +599,7 @@ void as_init(void)
 	notice("starting mpdscribble (" AS_CLIENT_ID " " AS_CLIENT_VERSION
 	       ").");
 
-	saved = file_read_cache();
+	saved = journal_read();
 	notice("(loaded %i song%s from cache)", saved, saved == 1 ? "" : "s");
 
 	conn_setup();
@@ -631,7 +631,7 @@ as_schedule_submit(void)
 
 void as_save_cache(void)
 {
-	int saved = file_write_cache(g_queue);
+	int saved = journal_write(g_queue);
 	if (saved >= 0)
 		notice("(saved %i song%s to cache)", saved,
 		       saved == 1 ? "" : "s");

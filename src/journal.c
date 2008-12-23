@@ -129,7 +129,7 @@ static char *read_file(const char *filename)
 	return contents;
 }
 
-int file_write_cache(struct song *sng)
+int journal_write(struct song *sng)
 {
 	struct song *tmp = sng;
 	int count = 0;
@@ -171,7 +171,7 @@ static void clear_song(struct song *s)
 	s->source = "P";
 }
 
-int file_read_cache(void)
+int journal_read(void)
 {
 	char *data;
 	int count = 0;
