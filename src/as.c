@@ -80,9 +80,7 @@ static int g_interval = 1;
 static as_state g_state = AS_NOTHING;
 
 static struct song g_now_playing;
-static struct song *g_queue = NULL;
-static struct song *g_queuep = NULL;
-static unsigned g_queue_size;
+static GQueue *queue;
 static unsigned g_submit_pending;
 
 static guint as_handshake_id, as_submit_id;
@@ -279,13 +277,10 @@ static void as_handshake_callback(size_t length, const char *response)
 static void as_queue_remove_oldest(unsigned count)
 {
 	assert(count > 0);
-	assert(g_queue_size >= count);
 
 	while (count--) {
-		struct song *tmp = g_queue;
-		g_queue = g_queue->next;
+		struct song *tmp = g_queue_pop_head(queue);
 		as_song_cleanup(tmp, 1);
-		g_queue_size--;
 	}
 }
 
@@ -468,15 +463,13 @@ static void as_submit(void)
 {
 	//MAX_SUBMIT_COUNT
 	unsigned count = 0;
-	unsigned queue_size = g_queue_size;
-	struct song *queue = g_queue;
 	GString *post_data;
 	char len[MAX_VAR_SIZE];
 
 	assert(g_state == AS_READY);
 	assert(as_submit_id == 0);
 
-	if (g_queue_size == 0) {
+	if (g_queue_is_empty(queue)) {
 		/* the submission queue is empty.  See if a "now playing" song is
 		   scheduled - these should be sent after song submissions */
 		if (g_now_playing.artist != NULL && g_now_playing.track != NULL) {
@@ -498,22 +491,24 @@ static void as_submit(void)
 	post_data = g_string_new(NULL);
 	add_var(post_data, "s", g_session);
 
-	while (queue_size && (count < MAX_SUBMIT_COUNT)) {
-		snprintf(len, MAX_VAR_SIZE, "%i", queue->length);
+	for (GList *list = g_queue_peek_head_link(queue);
+	     list != NULL && count < MAX_SUBMIT_COUNT;
+	     list = g_list_next(list)) {
+		struct song *song = list->data;
 
-		add_var_i(post_data, "a", count, queue->artist);
-		add_var_i(post_data, "t", count, queue->track);
+		snprintf(len, MAX_VAR_SIZE, "%i", song->length);
+
+		add_var_i(post_data, "a", count, song->artist);
+		add_var_i(post_data, "t", count, song->track);
 		add_var_i(post_data, "l", count, len);
-		add_var_i(post_data, "i", count, queue->time);
-		add_var_i(post_data, "o", count, queue->source);
+		add_var_i(post_data, "i", count, song->time);
+		add_var_i(post_data, "o", count, song->source);
 		add_var_i(post_data, "r", count, "");
-		add_var_i(post_data, "b", count, queue->album);
+		add_var_i(post_data, "b", count, song->album);
 		add_var_i(post_data, "n", count, "");
-		add_var_i(post_data, "m", count, queue->mbid);
+		add_var_i(post_data, "m", count, song->mbid);
 
 		count++;
-		queue = queue->next;
-		queue_size--;
 	}
 
 	notice("submitting %i song%s.", count, count == 1 ? "" : "s");
@@ -561,7 +556,6 @@ as_songchange(const char *file, const char *artist, const char *track,
 	}
 
 	current = g_new(struct song, 1);
-	current->next = NULL;
 	current->artist = g_strdup(artist);
 	current->track = g_strdup(track);
 	current->album = g_strdup(album);
@@ -574,32 +568,29 @@ as_songchange(const char *file, const char *artist, const char *track,
 	       current->time, current->artist,
 	       current->track, current->length);
 
-	g_queue_size++;
-
-	if (!g_queue) {
-		g_queue = current;
-		g_queuep = current;
-	} else {
-		g_queuep->next = current;
-		g_queuep = current;
-	}
+	g_queue_push_tail(queue, current);
 
 	if (g_state == AS_READY && as_submit_id == 0)
 		as_schedule_submit();
 
-	return g_queue_size;
+	return g_queue_get_length(queue);
 }
 
 void as_init(void)
 {
+	guint queue_length;
+
 	assert(g_state == AS_NOTHING);
 
 	notice("starting mpdscribble (" AS_CLIENT_ID " " AS_CLIENT_VERSION
 	       ").");
 
+	queue = g_queue_new();
 	journal_read();
+
+	queue_length = g_queue_get_length(queue);
 	notice("(loaded %i song%s from cache)",
-	       g_queue_size, g_queue_size == 1 ? "" : "s");
+	       queue_length, queue_length == 1 ? "" : "s");
 
 	conn_setup();
 
@@ -621,7 +612,7 @@ static void
 as_schedule_submit(void)
 {
 	assert(as_submit_id == 0);
-	assert(g_queue_size > 0 ||
+	assert(!g_queue_is_empty(queue) ||
 	       (g_now_playing.artist != NULL && g_now_playing.track != NULL));
 
 	as_submit_id = g_timeout_add(g_interval * 1000,
@@ -630,23 +621,28 @@ as_schedule_submit(void)
 
 void as_save_cache(void)
 {
-	if (journal_write(g_queue))
+	if (journal_write(queue)) {
+		guint queue_length = g_queue_get_length(queue);
 		notice("(saved %i song%s to cache)",
-		       g_queue_size, g_queue_size == 1 ? "" : "s");
+		       queue_length, queue_length == 1 ? "" : "s");
+	}
+}
+
+static void
+free_queue_song(gpointer data, G_GNUC_UNUSED gpointer user_data)
+{
+	struct song *song = data;
+	as_song_cleanup(song, true);
 }
 
 void as_cleanup(void)
 {
-	struct song *sng = g_queue;
-
 	as_save_cache();
 
 	as_song_cleanup(&g_now_playing, false);
 
-	while (sng) {
-		as_song_cleanup(sng, 1);
-		sng = sng->next;
-	}
+	g_queue_foreach(queue, free_queue_song, NULL);
+	g_queue_free(queue);
 
 	g_free(g_submit_url);
 	g_free(g_md5_response);

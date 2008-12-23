@@ -24,8 +24,6 @@
 #include "as.h"
 #include "misc.h"
 
-#include <glib.h>
-
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -33,12 +31,24 @@
 
 static int journal_file_empty;
 
-bool journal_write(struct song *sng)
+static void
+journal_write_song(gpointer data, gpointer user_data)
 {
-	struct song *tmp = sng;
+	struct song *song = data;
+	FILE *file = user_data;
+
+	fprintf(file,
+		"a = %s\nt = %s\nb = %s\nm = %s\n"
+		"i = %s\nl = %i\no = %s\n\n", song->artist,
+		song->track, song->album, song->mbid, song->time,
+		song->length, song->source);
+}
+
+bool journal_write(GQueue *queue)
+{
 	FILE *handle;
 
-	if (!tmp && journal_file_empty)
+	if (g_queue_is_empty(queue) && journal_file_empty)
 		return false;
 
 	handle = fopen(file_config.cache, "wb");
@@ -47,15 +57,7 @@ bool journal_write(struct song *sng)
 		return false;
 	}
 
-	while (tmp) {
-		fprintf(handle,
-			"a = %s\nt = %s\nb = %s\nm = %s\n"
-			"i = %s\nl = %i\no = %s\n\n", tmp->artist,
-			tmp->track, tmp->album, tmp->mbid, tmp->time,
-			tmp->length, tmp->source);
-
-		tmp = tmp->next;
-	}
+	g_queue_foreach(queue, journal_write_song, handle);
 
 	fclose(handle);
 

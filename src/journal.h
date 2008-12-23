@@ -22,11 +22,13 @@
 #ifndef JOURNAL_H
 #define JOURNAL_H
 
+#include <glib.h>
+
 #include <stdbool.h>
 
 struct song;
 
-bool journal_write(struct song *sng);
+bool journal_write(GQueue *queue);
 void journal_read(void);
 
 #endif

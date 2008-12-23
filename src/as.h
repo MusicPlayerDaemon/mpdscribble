@@ -35,7 +35,6 @@ struct song {
 	char *time;
 	int length;
 	const char *source;
-	struct song *next;
 };
 
 void as_init(void);
