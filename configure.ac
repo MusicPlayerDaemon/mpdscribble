@@ -8,6 +8,26 @@ AM_CONFIG_HEADER([config.h])
 
 AC_PROG_CC_C99
 
+
+dnl
+dnl libc features
+dnl
+
+AC_CHECK_FUNCS(syslog)
+if test $ac_cv_func_syslog = no; then
+	# syslog is not in the default libraries.  See if it's in some other.
+	for lib in bsd socket inet; do
+		AC_CHECK_LIB($lib, syslog,
+			[AC_DEFINE(HAVE_SYSLOG)
+			LIBS="$LIBS -l$lib"; break])
+	done
+fi
+
+
+dnl
+dnl libraries
+dnl
+
 PKG_CHECK_MODULES([libglib],
 	[glib-2.0 >= 2.16],
 	[glib216=yes], [glib216=no])

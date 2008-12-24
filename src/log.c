@@ -18,6 +18,7 @@
  */
 
 #include "log.h"
+#include "config.h"
 
 #include <glib.h>
 
@@ -25,6 +26,10 @@
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
+
+#ifdef HAVE_SYSLOG
+#include <syslog.h>
+#endif
 
 static FILE *log_file;
 static GLogLevelFlags log_threshold = G_LOG_LEVEL_MESSAGE;
@@ -80,6 +85,55 @@ log_init_file(const char *path)
 	g_log_set_default_handler(file_log_func, NULL);
 }
 
+#ifdef HAVE_SYSLOG
+
+static int
+glib_to_syslog_level(GLogLevelFlags log_level)
+{
+	switch (log_level & G_LOG_LEVEL_MASK) {
+	case G_LOG_LEVEL_ERROR:
+	case G_LOG_LEVEL_CRITICAL:
+		return LOG_ERR;
+
+	case G_LOG_LEVEL_WARNING:
+		return LOG_WARNING;
+
+	case G_LOG_LEVEL_MESSAGE:
+		return LOG_NOTICE;
+
+	case G_LOG_LEVEL_INFO:
+		return LOG_INFO;
+
+	case G_LOG_LEVEL_DEBUG:
+		return LOG_DEBUG;
+
+	default:
+		return LOG_NOTICE;
+	}
+}
+
+static void
+syslog_log_func(G_GNUC_UNUSED const gchar *log_domain,
+		GLogLevelFlags log_level, const gchar *message,
+		G_GNUC_UNUSED gpointer user_data)
+{
+	if (log_level > log_threshold)
+		return;
+
+	syslog(glib_to_syslog_level(log_level), "%s", message);
+}
+
+static void
+log_init_syslog(void)
+{
+	assert(log_file == NULL);
+
+	openlog(PACKAGE, 0, LOG_DAEMON);
+	g_log_set_default_handler(syslog_log_func, NULL);
+}
+
+#endif
+
 void
 log_init(const char *path, int verbose)
 {
@@ -94,13 +148,24 @@ log_init(const char *path, int verbose)
 	else
 		log_threshold = G_LOG_LEVEL_DEBUG;
 
-	log_init_file(path);
+#ifdef HAVE_SYSLOG
+	if (strcmp(path, "syslog") == 0)
+		log_init_syslog();
+	else
+#endif
+		log_init_file(path);
 }
 
 void
 log_deinit(void)
 {
+#ifndef HAVE_SYSLOG
 	assert(log_file != NULL);
 
-	fclose(log_file);
+#else
+	if (log_file == NULL)
+		closelog();
+	else
+#endif
+		fclose(log_file);
 }

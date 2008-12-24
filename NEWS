@@ -3,6 +3,7 @@ mpdscribble 0.14 - not yet released
   * support MPD's "idle" command (ignores the "sleep" setting)
   * resubmit "now playing" after re-handshake
   * turn off buffering for the log file
+  * logging to syslog
 
 
 mpdscribble 0.13 - 2008-12-19

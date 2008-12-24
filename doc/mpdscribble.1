@@ -37,6 +37,8 @@ Display version information and exit.
 .TP
 .B \-\-log FILE
 Specify log file. /var/log/mpdscribble.log is used by default.
+The special value "syslog" makes mpdscribble use the local syslog
+daemon.
 .TP
 .B \-\-cache FILE
 Specify Last.fm cache file. /var/cache/mpdscribble.cache is used
@@ -80,6 +82,8 @@ The md5sum of your Last.fm password.
 .TP
 .B log = FILE
 The file to which mpdscribble should output debugging information.
+The special value "syslog" makes mpdscribble use the local syslog
+daemon.
 .TP
 .B cache = FILE
 The file where mpdscribble should store its Last.fm cache in case
