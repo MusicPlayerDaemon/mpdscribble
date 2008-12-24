@@ -66,7 +66,7 @@ static void lmc_failure(void)
 	g_warning("mpd error (%i): %s\n", g_mpd->error, msg);
 	g_free(msg);
 	mpd_closeConnection(g_mpd);
-	g_mpd = 0;
+	g_mpd = NULL;
 }
 
 static gboolean
@@ -135,7 +135,7 @@ void lmc_disconnect(void)
 {
 	if (g_mpd) {
 		mpd_closeConnection(g_mpd);
-		g_mpd = 0;
+		g_mpd = NULL;
 	}
 
 	if (current_song != NULL) {
