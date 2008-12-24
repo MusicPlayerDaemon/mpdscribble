@@ -22,8 +22,6 @@
 #ifndef FILE_H
 #define FILE_H
 
-#include <stdio.h>
-
 /*
   default locations for files.
 
@@ -65,7 +63,6 @@ extern struct config file_config;
 
 char *file_expand_tilde(const char *path);
 
-FILE *file_open_logfile(void);
 int file_read_config(int argc, char **argv);
 void file_cleanup(void);
 
