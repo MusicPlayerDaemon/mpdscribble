@@ -50,8 +50,8 @@ static const char *log_date(void)
 }
 
 static void
-mpdscribble_log_func(const gchar *log_domain, GLogLevelFlags log_level,
-		     const gchar *message, G_GNUC_UNUSED gpointer user_data)
+file_log_func(const gchar *log_domain, GLogLevelFlags log_level,
+	      const gchar *message, G_GNUC_UNUSED gpointer user_data)
 {
 	if (log_level > log_threshold)
 		return;
@@ -65,11 +65,10 @@ mpdscribble_log_func(const gchar *log_domain, GLogLevelFlags log_level,
 		message);
 }
 
-void
-log_init(const char *path, int verbose)
+static void
+log_init_file(const char *path)
 {
 	assert(path != NULL);
-	assert(verbose >= 0);
 	assert(log_file == NULL);
 
 	log_file = fopen(path, "ab");
@@ -78,6 +77,16 @@ log_init(const char *path, int verbose)
 
 	setvbuf(log_file, NULL, _IONBF, 0);
 
+	g_log_set_default_handler(file_log_func, NULL);
+}
+
+void
+log_init(const char *path, int verbose)
+{
+	assert(path != NULL);
+	assert(verbose >= 0);
+	assert(log_file == NULL);
+
 	if (verbose == 0)
 		log_threshold = G_LOG_LEVEL_ERROR;
 	else if (verbose == 1)
@@ -85,7 +94,7 @@ log_init(const char *path, int verbose)
 	else
 		log_threshold = G_LOG_LEVEL_DEBUG;
 
-	g_log_set_default_handler(mpdscribble_log_func, NULL);
+	log_init_file(path);
 }
 
 void
