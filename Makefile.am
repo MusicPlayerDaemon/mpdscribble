@@ -15,6 +15,7 @@ libmpdclient_SOURCES = \
 
 src_mpdscribble_SOURCES = \
 	src/mpdscribble.c \
+	src/daemon.c src/daemon.h \
 	src/as.c src/as.h \
 	src/conn.c src/conn.h \
 	src/file.c src/file.h \

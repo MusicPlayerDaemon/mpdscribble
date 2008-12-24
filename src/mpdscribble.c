@@ -19,6 +19,7 @@
 
 */
 
+#include "daemon.h"
 #include "file.h"
 #include "log.h"
 #include "lmc.h"
@@ -168,6 +169,8 @@ song_ended(const struct mpd_song *song)
 
 int main(int argc, char **argv)
 {
+	daemonize_close_stdin();
+
 	if (!file_read_config(argc, argv))
 		g_error("cannot read configuration file\n");
 
