@@ -31,3 +31,14 @@ AM_CPPFLAGS = $(libgobject_CFLAGS) $(libgthread_CFLAGS) $(libsoup_CFLAGS) \
 LDADD = $(libgobject_LIBS) $(libgthread_LIBS) $(libsoup_LIBS) \
 	$(libgcrypt_LIBS)
 	$(libglib_LIBS)
+
+SPARSE = sparse
+SPARSE_FLAGS =
+SPARSE_CPPFLAGS = $(DEFAULT_INCLUDES) \
+	-I$(shell $(CC) -print-file-name=include) \
+	-I$(shell $(CC) -print-file-name=include-fixed)
+sparse-check:
+	for i in $(src_mpdscribble_SOURCES); \
+	do \
+		$(SPARSE) -I. $(CFLAGS) $(AM_CPPFLAGS) $(SPARSE_FLAGS) $(SPARSE_CPPFLAGS) $(srcdir)/$$i || exit; \
+	done
