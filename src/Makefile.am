@@ -16,6 +16,11 @@ mpdscribble_SOURCES = \
 	log.c log.h \
 	mbid.c mbid.h \
 	$(libmpdclient_SOURCES)
-  
-AM_CPPFLAGS = $(libgobject_CFLAGS) $(libgthread_CFLAGS) $(libsoup_CFLAGS) "-I./libmpdclient"
-LDADD = $(libgobject_LIBS) $(libgthread_LIBS) $(libsoup_LIBS)
+
+AM_CPPFLAGS = $(libgobject_CFLAGS) $(libgthread_CFLAGS) $(libsoup_CFLAGS) \
+	$(libgcrypt_CFLAGS) \
+	$(libglib_CFLAGS) \
+	"-I./libmpdclient"
+LDADD = $(libgobject_LIBS) $(libgthread_LIBS) $(libsoup_LIBS) \
+	$(libgcrypt_LIBS)
+	$(libglib_LIBS)

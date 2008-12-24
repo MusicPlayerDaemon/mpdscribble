@@ -8,6 +8,21 @@ AM_CONFIG_HEADER([config.h])
 
 AC_PROG_CC_C99
 
+PKG_CHECK_MODULES([libglib],
+	[glib-2.0 >= 2.16],
+	[glib216=yes], [glib216=no])
+if test "x$glib216" != "xyes"; then
+	PKG_CHECK_MODULES([libglib],
+		[glib-2.0 >= 2.4],,
+		[AC_MSG_ERROR([glib 2.4 is required])])
+
+	# use libgcrypt's MD5 routines with GLib < 2.16
+	AC_PATH_PROG(LIBGCRYPT_CONFIG, libgcrypt-config,
+		[AC_MSG_ERROR([libgcrypt-config required])])
+	AC_SUBST(libgcrypt_CFLAGS, `$LIBGCRYPT_CONFIG --cflags`)
+	AC_SUBST(libgcrypt_LIBS, `$LIBGCRYPT_CONFIG --libs`)
+fi
+
 PKG_CHECK_MODULES([libgobject],[gobject-2.0],,[AC_MSG_ERROR([libgobject-2.0 not found])])
 AC_SUBST(libgobject_CFLAGS)
 AC_SUBST(libgobject_LIBS)
