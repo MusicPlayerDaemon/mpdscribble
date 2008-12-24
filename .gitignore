@@ -16,3 +16,4 @@ stamp-*
 config.h
 config.h.in
 mpdscribble
+.dirstamp

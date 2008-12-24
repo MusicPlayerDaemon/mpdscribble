@@ -91,4 +91,4 @@ dnl
 dnl Generate output files
 dnl
 
-AC_OUTPUT(doc/Makefile src/Makefile Makefile)
+AC_OUTPUT(Makefile)
