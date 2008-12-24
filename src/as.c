@@ -29,6 +29,7 @@
 
 #if GLIB_MAJOR_VERSION == 2 && GLIB_MINOR_VERSION < 16
 #include <gcrypt.h>
+#include <libsoup/soup.h>
 #endif
 
 #include <assert.h>
@@ -101,7 +102,11 @@ add_var_internal(GString * s, char sep, const char *key,
 	g_string_append_c(s, '=');
 
 	if (val != NULL) {
+#if GLIB_MAJOR_VERSION > 3 || (GLIB_MAJOR_VERSION == 2 && GLIB_MINOR_VERSION >= 16)
 		char *escaped = g_uri_escape_string(val, NULL, false);
+#else
+		char *escaped = soup_uri_encode(val, NULL);
+#endif
 		g_string_append(s, escaped);
 		g_free(escaped);
 	}
