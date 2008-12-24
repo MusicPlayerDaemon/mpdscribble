@@ -22,6 +22,9 @@
 #include <glib.h>
 
 #include <assert.h>
+#include <stdio.h>
+#include <string.h>
+#include <errno.h>
 
 static FILE *log_file;
 static GLogLevelFlags log_threshold = G_LOG_LEVEL_MESSAGE;
@@ -63,12 +66,17 @@ mpdscribble_log_func(const gchar *log_domain, GLogLevelFlags log_level,
 }
 
 void
-log_init(FILE *file, int verbose)
+log_init(const char *path, int verbose)
 {
-	assert(file != NULL);
+	assert(path != NULL);
 	assert(verbose >= 0);
+	assert(log_file == NULL);
 
-	log_file = file;
+	log_file = fopen(path, "ab");
+	if (log_file == NULL)
+		g_error("cannot open %s: %s\n", path, strerror(errno));
+
+	setvbuf(log_file, NULL, _IONBF, 0);
 
 	if (verbose == 0)
 		log_threshold = G_LOG_LEVEL_ERROR;
@@ -78,4 +86,12 @@ log_init(FILE *file, int verbose)
 		log_threshold = G_LOG_LEVEL_DEBUG;
 
 	g_log_set_default_handler(mpdscribble_log_func, NULL);
+}
+
+void
+log_deinit(void)
+{
+	assert(log_file != NULL);
+
+	fclose(log_file);
 }

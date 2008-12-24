@@ -37,8 +37,6 @@ struct config file_config = {
 	.loc = file_unknown,
 };
 
-FILE *file_loghandle = NULL;
-
 static char *file_getname(enum file_type type);
 
 static const char *blurb =
@@ -174,19 +172,6 @@ static char *file_getname(enum file_type type)
 	}
 
 	return file;
-}
-
-FILE *file_open_logfile(void)
-{
-	char *log = file_config.log;
-
-	file_loghandle = fopen(log, "ab");
-	if (!file_loghandle)
-		g_error("cannot open %s: %s\n", log, strerror(errno));
-
-	setvbuf(file_loghandle, NULL, _IONBF, 0);
-
-	return file_loghandle;
 }
 
 static void replace(char **dst, char *src)
@@ -344,7 +329,4 @@ void file_cleanup(void)
 	g_free(file_config.log);
 	g_free(file_config.conf);
 	g_free(file_config.cache);
-
-	if (file_loghandle)
-		fclose(file_loghandle);
 }

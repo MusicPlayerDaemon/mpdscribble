@@ -20,9 +20,10 @@
 #ifndef LOG_H
 #define LOG_H
 
-#include <stdio.h>
+void
+log_init(const char *path, int verbose);
 
 void
-log_init(FILE *file, int verbose);
+log_deinit(void);
 
 #endif

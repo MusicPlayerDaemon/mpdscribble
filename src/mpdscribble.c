@@ -168,13 +168,10 @@ song_ended(const struct mpd_song *song)
 
 int main(int argc, char **argv)
 {
-	FILE *log;
-
 	if (!file_read_config(argc, argv))
 		g_error("cannot read configuration file\n");
 
-	log = file_open_logfile();
-	log_init(log, file_config.verbose);
+	log_init(file_config.log, file_config.verbose);
 
 	main_loop = g_main_loop_new(NULL, FALSE);
 
@@ -205,6 +202,7 @@ int main(int argc, char **argv)
 	as_cleanup();
 	lmc_disconnect();
 	file_cleanup();
+	log_deinit();
 
 	return 0;
 }
