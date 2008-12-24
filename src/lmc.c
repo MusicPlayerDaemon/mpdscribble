@@ -31,6 +31,14 @@
 #include <string.h>
 #include <unistd.h>
 
+#if GLIB_MAJOR_VERSION == 2 && GLIB_MINOR_VERSION < 14
+static inline guint
+g_timeout_add_seconds(guint interval, GSourceFunc function, gpointer data)
+{
+	return g_timeout_add(interval * 1000, function, data);
+}
+#endif
+
 static mpd_Connection *g_mpd = NULL;
 static bool idle_supported, idle_notified;
 static int last_id = -1;
