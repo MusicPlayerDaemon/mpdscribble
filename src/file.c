@@ -112,7 +112,8 @@ static int file_exists(const char *filename)
 	return g_file_test(filename, G_FILE_TEST_IS_REGULAR);
 }
 
-char *file_expand_tilde(const char *path)
+static char *
+file_expand_tilde(const char *path)
 {
 	const char *home;
 

@@ -61,8 +61,6 @@ struct config {
 
 extern struct config file_config;
 
-char *file_expand_tilde(const char *path);
-
 int file_read_config(int argc, char **argv);
 void file_cleanup(void);
 
