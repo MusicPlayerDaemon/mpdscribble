@@ -35,3 +35,18 @@ daemonize_close_stdin(void)
 	} else
 		close(STDIN_FILENO);
 }
+
+void
+daemonize_close_stdout_stderr(void)
+{
+	int fd = open("/dev/null", O_WRONLY);
+
+	if (fd >= 0) {
+		dup2(fd, STDOUT_FILENO);
+		dup2(fd, STDERR_FILENO);
+		close(fd);
+	} else {
+		close(STDOUT_FILENO);
+		close(STDERR_FILENO);
+	}
+}

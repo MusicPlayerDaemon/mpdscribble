@@ -26,4 +26,10 @@
 void
 daemonize_close_stdin(void);
 
+/**
+ * Close stdout and stderr and re-open it as /dev/null.
+ */
+void
+daemonize_close_stdout_stderr(void);
+
 #endif
