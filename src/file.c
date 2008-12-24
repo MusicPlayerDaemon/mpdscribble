@@ -31,6 +31,23 @@
 #include <string.h>
 #include <errno.h>
 
+/*
+  default locations for files.
+
+  FILE_ETC_* are paths for a system-wide install.
+  FILE_USR_* will be used instead if FILE_USR_CONF exists.
+*/
+
+#define FILE_CONF "/etc/mpdscribble.conf"
+#define FILE_CACHE "/var/cache/mpdscribble/mpdscribble.cache"
+#define FILE_LOG "/var/log/mpdscribble/mpdscribble.log"
+#define FILE_HOME_CONF "~/.mpdscribble/mpdscribble.conf"
+#define FILE_HOME_CACHE "~/.mpdscribble/mpdscribble.cache"
+#define FILE_HOME_LOG "~/.mpdscribble/mpdscribble.log"
+
+#define FILE_DEFAULT_PORT 6600
+#define FILE_DEFAULT_HOST "localhost"
+
 enum file_type { conf_type, cache_type, log_type, };
 
 struct config file_config = {
