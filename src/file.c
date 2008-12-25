@@ -130,18 +130,16 @@ static char *file_getname(enum file_type type)
 	return file;
 }
 
-static void replace(char **dst, char *src)
-{
-	if (*dst)
-		free(*dst);
-	*dst = src;
-}
-
 static void load_string(GKeyFile * file, const char *name, char **value_r)
 {
 	GError *error = NULL;
-	char *value = g_key_file_get_string(file, PACKAGE, name, &error);
+	char *value;
 
+	if (*value_r != NULL)
+		/* already set by command line */
+		return;
+
+	value = g_key_file_get_string(file, PACKAGE, name, &error);
 	if (error != NULL) {
 		if (error->code != G_KEY_FILE_ERROR_KEY_NOT_FOUND)
 			g_error("%s\n", error->message);
@@ -156,8 +154,13 @@ static void load_string(GKeyFile * file, const char *name, char **value_r)
 static void load_integer(GKeyFile * file, const char *name, int *value_r)
 {
 	GError *error = NULL;
-	int value = g_key_file_get_integer(file, PACKAGE, name, &error);
+	int value;
 
+	if (*value_r != -1)
+		/* already set by command line */
+		return;
+
+	value = g_key_file_get_integer(file, PACKAGE, name, &error);
 	if (error != NULL) {
 		if (error->code != G_KEY_FILE_ERROR_KEY_NOT_FOUND)
 			g_error("%s\n", error->message);
@@ -215,15 +218,15 @@ int file_read_config(int argc, char **argv)
 	char *mpd_host = getenv("MPD_HOST");
 	char *mpd_port = getenv("MPD_PORT");
 	char *http_proxy = getenv("http_proxy");
-	int i;
 
+	file_config.port = -1;
+	file_config.sleep = -1;
+	file_config.cache_interval = -1;
 	file_config.verbose = -1;
 
-	/* look for config path in command-line options. */
-	for (i = 0; i < argc; i++) {
-		if (!strcmp("--conf", argv[i]))
-			replace(&file_config.conf, g_strdup(argv[++i]));
-	}
+	/* parse command-line options. */
+
+	parse_cmdline(argc, argv);
 
 	if (file_config.conf == NULL)
 		file_config.conf = file_getname(conf_type);
@@ -232,9 +235,6 @@ int file_read_config(int argc, char **argv)
 
 	if (file_config.conf != NULL)
 		load_config_file(file_config.conf);
-
-	/* parse command-line options. */
-	parse_cmdline(argc, argv);
 
 	if (!file_config.conf)
 		g_error("cannot find configuration file\n");
@@ -253,15 +253,15 @@ int file_read_config(int argc, char **argv)
 		file_config.log = file_getname(log_type);
 	if (!file_config.cache)
 		file_config.cache = file_getname(cache_type);
-	if (!file_config.port && mpd_port)
+	if (file_config.port == -1 && mpd_port)
 		file_config.port = file_atoi(mpd_port);
-	if (!file_config.port)
+	if (file_config.port == -1)
 		file_config.port = FILE_DEFAULT_PORT;
 	if (!file_config.proxy)
 		file_config.proxy = http_proxy;
 	if (!file_config.sleep)
 		file_config.sleep = 1;
-	if (!file_config.cache_interval)
+	if (file_config.cache_interval == -1)
 		file_config.cache_interval = 600;
 	if (file_config.verbose == -1)
 		file_config.verbose = 2;

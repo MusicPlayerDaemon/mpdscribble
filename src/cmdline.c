@@ -110,5 +110,7 @@ parse_cmdline(int argc, char **argv)
 			file_config.verbose = file_atoi(argv[++i]);
 		else if (!strcmp("--proxy", argv[i]))
 			file_config.proxy = g_strdup(argv[++i]);
+		else if (!strcmp("--conf", argv[i]))
+			replace(&file_config.conf, g_strdup(argv[++i]));
 	}
 }
