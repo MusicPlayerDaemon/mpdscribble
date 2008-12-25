@@ -47,3 +47,15 @@ sparse-check:
 	do \
 		$(SPARSE) -I. $(CFLAGS) $(AM_CPPFLAGS) $(SPARSE_FLAGS) $(SPARSE_CPPFLAGS) $(srcdir)/$$i || exit; \
 	done
+
+install-sysconfDATA:
+	@list='$(sysconf_DATA)'; \
+	for p in $$list; do \
+	    dest=`basename $$p`; \
+	    if test -f $(DESTDIR)$(sysconfdir)/$$dest; then \
+	        echo "$@ will not overwrite existing $(DESTDIR)$(sysconfdir)/$$dest"; \
+	    else \
+	        echo " $(INSTALL_DATA) $$p $(DESTDIR)$(sysconfdir)/$$dest"; \
+	        $(INSTALL_DATA) $$p $(DESTDIR)$(sysconfdir)/$$dest; \
+	    fi; \
+	done
