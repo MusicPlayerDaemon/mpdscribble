@@ -62,22 +62,6 @@ static int file_atoi(const char *s)
 	return atoi(s);
 }
 
-static char *read_file(const char *filename)
-{
-	bool ret;
-	gchar *contents;
-	GError *error = NULL;
-
-	ret = g_file_get_contents(filename, &contents, NULL, &error);
-	if (!ret) {
-		g_warning("%s\n", error->message);
-		g_error_free(error);
-		return NULL;
-	}
-
-	return contents;
-}
-
 static int file_exists(const char *filename)
 {
 	return g_file_test(filename, G_FILE_TEST_IS_REGULAR);
@@ -187,13 +171,14 @@ static void load_integer(GKeyFile * file, const char *name, int *value_r)
 static void
 load_config_file(const char *path)
 {
+	bool ret;
 	char *data1, *data2;
 	GKeyFile *file;
 	GError *error = NULL;
 
-	data1 = read_file(path);
-	if (data1 == NULL)
-		return;
+	ret = g_file_get_contents(path, &data1, NULL, &error);
+	if (!ret)
+		g_error("%s\n", error->message);
 
 	/* GKeyFile does not allow values without a section.  Apply a
 	   hack here: prepend the string "[mpdscribble]" to have all
@@ -240,9 +225,8 @@ int file_read_config(int argc, char **argv)
 			replace(&file_config.conf, g_strdup(argv[++i]));
 	}
 
-	if (!file_config.conf || !file_exists(file_config.conf)) {
+	if (file_config.conf == NULL)
 		file_config.conf = file_getname(conf_type);
-	}
 
 	/* parse config file options. */
 
