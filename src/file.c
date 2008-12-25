@@ -25,6 +25,7 @@
 
 #include <glib.h>
 
+#include <assert.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
@@ -45,13 +46,9 @@
 #define FILE_DEFAULT_PORT 6600
 #define FILE_DEFAULT_HOST "localhost"
 
-enum file_type { conf_type, cache_type, log_type, };
-
 struct config file_config = {
 	.loc = file_unknown,
 };
-
-static char *file_getname(enum file_type type);
 
 static int file_atoi(const char *s)
 {
@@ -81,52 +78,58 @@ file_expand_tilde(const char *path)
 	return g_strconcat(home, path + 1, NULL);
 }
 
-static char *file_getname(enum file_type type)
+static char *
+get_default_config_path(void)
 {
-	char *file = NULL;
+	char *file = file_expand_tilde(FILE_HOME_CONF);
+	if (file_exists(file)) {
+		file_config.loc = file_home;
+		return file;
+	} else {
+		free(file);
 
-	switch (type) {
-	case conf_type:
-		file = file_expand_tilde(FILE_HOME_CONF);
-		if (file_exists(file)) {
-			file_config.loc = file_home;
-		} else {
-			free(file);
-			file = file_expand_tilde(FILE_CONF);
-			if (!file_exists(file)) {
-				free(file);
-				return NULL;
-			}
-			file_config.loc = file_etc;
-		}
-		break;
+		if (!file_exists(FILE_CONF))
+			return NULL;
 
-	case cache_type:
-		if (file_config.loc == file_home)
-			file = file_expand_tilde(FILE_HOME_CACHE);
-		else if (file_config.loc == file_etc)
-			file = file_expand_tilde(FILE_CACHE);
-		break;
-	case log_type:
-		if (file_config.loc == file_home)
-			file = file_expand_tilde(FILE_HOME_LOG);
-		else if (file_config.loc == file_etc)
-			file = file_expand_tilde(FILE_LOG);
-		break;
+		file_config.loc = file_etc;
+		return g_strdup(FILE_CONF);
+	}
+}
+
+static char *
+get_default_log_path(void)
+{
+	switch (file_config.loc) {
+	case file_home:
+		return file_expand_tilde(FILE_HOME_LOG);
+
+	case file_etc:
+		return g_strdup(FILE_LOG);
+
+	case file_unknown:
+		g_error("please specify where to put the log file\n");
 	}
 
-	if (!file) {
-		switch (type) {
-		case conf_type:
-			g_error("internal error - this is a bug\n");
-		case cache_type:
-			g_error("please specify where to put the cache file\n");
-		case log_type:
-			g_error("please specify where to put the log filen\n");
-		}
+	assert(false);
+	return NULL;
+}
+
+static char *
+get_default_cache_path(void)
+{
+	switch (file_config.loc) {
+	case file_home:
+		return file_expand_tilde(FILE_HOME_CACHE);
+
+	case file_etc:
+		return g_strdup(FILE_CACHE);
+
+	case file_unknown:
+		g_error("please specify where to put the cache file\n");
 	}
 
-	return file;
+	assert(false);
+	return NULL;
 }
 
 static void load_string(GKeyFile * file, const char *name, char **value_r)
@@ -228,7 +231,7 @@ int file_read_config(int argc, char **argv)
 	parse_cmdline(argc, argv);
 
 	if (file_config.conf == NULL)
-		file_config.conf = file_getname(conf_type);
+		file_config.conf = get_default_config_path();
 
 	/* parse config file options. */
 
@@ -249,9 +252,9 @@ int file_read_config(int argc, char **argv)
 	if (!file_config.host)
 		file_config.host = g_strdup(FILE_DEFAULT_HOST);
 	if (!file_config.log)
-		file_config.log = file_getname(log_type);
+		file_config.log = get_default_log_path();
 	if (!file_config.cache)
-		file_config.cache = file_getname(cache_type);
+		file_config.cache = get_default_cache_path();
 	if (file_config.port == -1 && mpd_port)
 		file_config.port = file_atoi(mpd_port);
 	if (file_config.port == -1)
