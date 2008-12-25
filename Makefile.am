@@ -50,7 +50,7 @@ sparse-check:
 install-dist_sysconfDATA:
 	@list='$(dist_sysconf_DATA)'; \
 	for p in $$list; do \
-	    dest=`basename $$p`; \
+	    dest=$(am__strip_dir) \
 	    if test -f $(DESTDIR)$(sysconfdir)/$$dest; then \
 	        echo "$@ will not overwrite existing $(DESTDIR)$(sysconfdir)/$$dest"; \
 	    else \
