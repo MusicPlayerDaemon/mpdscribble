@@ -3,7 +3,8 @@ AUTOMAKE_OPTIONS = foreign 1.9 dist-bzip2
 
 doc_DATA = README AUTHORS NEWS
 man_MANS = doc/mpdscribble.1
-EXTRA_DIST = $(man_MANS) setup.sh
+sysconf_DATA = doc/mpdscribble.conf
+EXTRA_DIST = $(man_MANS) $(sysconf_DATA) setup.sh
 
 bin_PROGRAMS = src/mpdscribble
 
