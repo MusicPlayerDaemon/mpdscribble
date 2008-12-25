@@ -2,9 +2,8 @@ ACLOCAL_AMFLAGS = -I m4
 AUTOMAKE_OPTIONS = foreign 1.9 dist-bzip2
 
 doc_DATA = README AUTHORS NEWS
-man_MANS = doc/mpdscribble.1
-sysconf_DATA = doc/mpdscribble.conf
-EXTRA_DIST = $(man_MANS) $(sysconf_DATA)
+dist_man_MANS = doc/mpdscribble.1
+dist_sysconf_DATA = doc/mpdscribble.conf
 
 bin_PROGRAMS = src/mpdscribble
 
