@@ -184,12 +184,52 @@ static void load_integer(GKeyFile * file, const char *name, int *value_r)
 	*value_r = value;
 }
 
+static void
+load_config_file(const char *path)
+{
+	char *data1, *data2;
+	GKeyFile *file;
+	GError *error = NULL;
+
+	data1 = read_file(path);
+	if (data1 == NULL)
+		return;
+
+	/* GKeyFile does not allow values without a section.  Apply a
+	   hack here: prepend the string "[mpdscribble]" to have all
+	   values in the "mpdscribble" section */
+
+	data2 = g_strconcat("[" PACKAGE "]\n", data1, NULL);
+	g_free(data1);
+
+	file = g_key_file_new();
+	g_key_file_load_from_data(file, data2, strlen(data2),
+				  G_KEY_FILE_NONE, &error);
+	g_free(data2);
+	if (error != NULL)
+		g_error("%s\n", error->message);
+
+	load_string(file, "username", &file_config.username);
+	load_string(file, "password", &file_config.password);
+	load_string(file, "log", &file_config.log);
+	load_string(file, "cache", &file_config.cache);
+	load_string(file, "musicdir", &file_config.musicdir);
+	load_string(file, "host", &file_config.host);
+	load_integer(file, "port", &file_config.port);
+	load_string(file, "proxy", &file_config.proxy);
+	load_integer(file, "sleep", &file_config.sleep);
+	load_integer(file, "cache_interval",
+		     &file_config.cache_interval);
+	load_integer(file, "verbose", &file_config.verbose);
+
+	g_key_file_free(file);
+}
+
 int file_read_config(int argc, char **argv)
 {
 	char *mpd_host = getenv("MPD_HOST");
 	char *mpd_port = getenv("MPD_PORT");
 	char *http_proxy = getenv("http_proxy");
-	char *data = NULL;
 	int i;
 
 	file_config.verbose = -1;
@@ -205,36 +245,9 @@ int file_read_config(int argc, char **argv)
 	}
 
 	/* parse config file options. */
-	if (file_config.conf && (data = read_file(file_config.conf))) {
-		/* GKeyFile does not allow values without a section.  Apply a
-		   hack here: prepend the string "[mpdscribble]" to have all
-		   values in the "mpdscribble" section */
-		char *data2 = g_strconcat("[" PACKAGE "]\n", data, NULL);
-		GKeyFile *file = g_key_file_new();
-		GError *error = NULL;
 
-		g_free(data);
-		g_key_file_load_from_data(file, data2, strlen(data2),
-					  G_KEY_FILE_NONE, &error);
-		g_free(data2);
-		if (error != NULL)
-			g_error("%s\n", error->message);
-
-		load_string(file, "username", &file_config.username);
-		load_string(file, "password", &file_config.password);
-		load_string(file, "log", &file_config.log);
-		load_string(file, "cache", &file_config.cache);
-		load_string(file, "musicdir", &file_config.musicdir);
-		load_string(file, "host", &file_config.host);
-		load_integer(file, "port", &file_config.port);
-		load_string(file, "proxy", &file_config.proxy);
-		load_integer(file, "sleep", &file_config.sleep);
-		load_integer(file, "cache_interval",
-			     &file_config.cache_interval);
-		load_integer(file, "verbose", &file_config.verbose);
-
-		g_key_file_free(file);
-	}
+	if (file_config.conf != NULL)
+		load_config_file(file_config.conf);
 
 	/* parse command-line options. */
 	parse_cmdline(argc, argv);
