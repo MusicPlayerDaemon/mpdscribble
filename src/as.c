@@ -102,7 +102,7 @@ add_var_internal(GString * s, char sep, const char *key,
 	g_string_append_c(s, '=');
 
 	if (val != NULL) {
-#if GLIB_MAJOR_VERSION > 3 || (GLIB_MAJOR_VERSION == 2 && GLIB_MINOR_VERSION >= 16)
+#if GLIB_MAJOR_VERSION > 2 || (GLIB_MAJOR_VERSION == 2 && GLIB_MINOR_VERSION >= 16)
 		char *escaped = g_uri_escape_string(val, NULL, false);
 #else
 		char *escaped = soup_uri_encode(val, NULL);
@@ -357,7 +357,7 @@ static char *as_md5(const char *password, const char *timestamp)
 	char *cat, *result;
 
 	cat = g_strconcat(password, timestamp, NULL);
-#if GLIB_MAJOR_VERSION > 3 || (GLIB_MAJOR_VERSION == 2 && GLIB_MINOR_VERSION >= 16)
+#if GLIB_MAJOR_VERSION > 2 || (GLIB_MAJOR_VERSION == 2 && GLIB_MINOR_VERSION >= 16)
 	result = g_compute_checksum_for_string(G_CHECKSUM_MD5, cat, -1);
 #else
 	/* fall back to libgcrypt on GLib < 2.16 */
