@@ -22,8 +22,6 @@
 #ifndef FILE_H
 #define FILE_H
 
-struct song;
-
 enum file_location { file_etc, file_home, file_unknown, };
 
 struct config {
