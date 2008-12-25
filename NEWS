@@ -1,4 +1,4 @@
-mpdscribble 0.14 - not yet released
+mpdscribble 0.14 - 12-25-2008
   * reformatted the whole source code (indentation with tabs)
   * support MPD's "idle" command (ignores the "sleep" setting)
   * resubmit "now playing" after re-handshake
