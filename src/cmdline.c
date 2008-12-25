@@ -79,7 +79,7 @@ static void version(void)
 	     "For more information about these matters, see the file named COPYING.\n"
 	     "\n");
 
-	exit(1);
+	exit(0);
 }
 
 void
