@@ -464,7 +464,7 @@ as_send_now_playing(const char *artist, const char *track,
 	add_var(post_data, "n", "");
 	add_var(post_data, "m", mbid);
 
-	g_message("sending 'now playing' notification");
+	g_message("sending 'now playing' notification\n");
 
 	if (!conn_initiate(g_nowplay_url, as_submit_callback,
 			   post_data->str)) {
