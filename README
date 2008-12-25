@@ -10,14 +10,10 @@ ABOUT
    mpdscribble is Copyright © 2005,2006 Kuno Woudt <kuno@frob.nl>
 
 
-INSTALL
+Installing mpdscribble
+----------------------
 
-   This version of mpdscribble uses the gnu autotools, for a quick
-   install to /usr/local/bin, do:
-
-   ./configure && make && make install
-
-   Read the INSTALL file for more information.
+See the INSTALL file.
 
 
 CONFIGURE
