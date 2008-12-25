@@ -18,6 +18,7 @@ src_mpdscribble_SOURCES = \
 	src/daemon.c src/daemon.h \
 	src/as.c src/as.h \
 	src/conn.c src/conn.h \
+	src/cmdline.c src/cmdline.h \
 	src/file.c src/file.h \
 	src/journal.c src/journal.h \
 	src/lmc.c src/lmc.h \
