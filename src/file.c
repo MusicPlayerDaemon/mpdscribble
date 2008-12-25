@@ -36,7 +36,6 @@
   FILE_USR_* will be used instead if FILE_USR_CONF exists.
 */
 
-#define FILE_CONF "/etc/mpdscribble.conf"
 #define FILE_CACHE "/var/cache/mpdscribble/mpdscribble.cache"
 #define FILE_LOG "/var/log/mpdscribble/mpdscribble.log"
 #define FILE_HOME_CONF "~/.mpdscribble/mpdscribble.conf"

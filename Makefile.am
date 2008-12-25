@@ -35,6 +35,8 @@ LDADD = $(libgobject_LIBS) $(libgthread_LIBS) $(libsoup_LIBS) \
 	$(libgcrypt_LIBS)
 	$(libglib_LIBS)
 
+AM_CPPFLAGS += -DFILE_CONF='"$(sysconfdir)/mpdscribble.conf"'
+
 SPARSE = sparse
 SPARSE_FLAGS =
 SPARSE_CPPFLAGS = $(DEFAULT_INCLUDES) \
