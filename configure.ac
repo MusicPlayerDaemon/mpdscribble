@@ -33,8 +33,8 @@ PKG_CHECK_MODULES([libglib],
 	[glib216=yes], [glib216=no])
 if test "x$glib216" != "xyes"; then
 	PKG_CHECK_MODULES([libglib],
-		[glib-2.0 >= 2.4],,
-		[AC_MSG_ERROR([glib 2.4 is required])])
+		[glib-2.0 >= 2.6],,
+		[AC_MSG_ERROR([glib 2.6 is required])])
 
 	# use libgcrypt's MD5 routines with GLib < 2.16
 	AC_PATH_PROG(LIBGCRYPT_CONFIG, libgcrypt-config,

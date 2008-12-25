@@ -24,6 +24,7 @@
 
 #include <glib.h>
 
+#include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -32,6 +33,39 @@ static const char *blurb =
 	"another audioscrobbler plugin for music player daemon.\n"
 	"Copyright 2005,2006 Kuno Woudt <kuno@frob.nl>.\n"
 	"Copyright 2008 Max Kellermann <max@duempel.org>\n" "\n";
+
+#if GLIB_MAJOR_VERSION > 2 || (GLIB_MAJOR_VERSION == 2 && GLIB_MINOR_VERSION >= 12)
+static const char *summary =
+	"A Music Player Daemon (MPD) client which submits information about\n"
+	"tracks being played to Last.fm (formerly Audioscrobbler).";
+#endif
+
+static gboolean option_version;
+
+static const GOptionEntry entries[] = {
+	{ "version", 'V', 0, G_OPTION_ARG_NONE, &option_version,
+	  "print version number", NULL },
+	{ "verbose", 'v', 0, G_OPTION_ARG_INT, &file_config.verbose,
+	  "verbosity (0-2, default 2)", NULL },
+	{ "conf", 0, 0, G_OPTION_ARG_STRING, &file_config.conf,
+	  "load configuration from this file", NULL },
+	{ "log", 0, 0, G_OPTION_ARG_STRING, &file_config.log,
+	  "log file or 'syslog'", NULL },
+	{ "cache", 0, 0, G_OPTION_ARG_STRING, &file_config.cache,
+	  "cache file name", NULL },
+	{ "host", 0, 0, G_OPTION_ARG_STRING, &file_config.host,
+	  "MPD host name to connect to, or Unix domain socket path", NULL },
+	{ "port", 0, 0, G_OPTION_ARG_INT, &file_config.port,
+	  "MPD port to connect to", NULL },
+	{ "proxy", 0, 0, G_OPTION_ARG_STRING, &file_config.host,
+	  "HTTP proxy URI", NULL },
+	{ "sleep", 0, 0, G_OPTION_ARG_INT, &file_config.sleep,
+	  "update interval (default 1 second)", NULL },
+	{ "cache-interval", 0, 0, G_OPTION_ARG_INT,
+	  &file_config.cache_interval,
+	  "write cache every i seconds (default 600 seconds)", NULL },
+	{ .long_name = NULL }
+};
 
 static void version(void)
 {
@@ -48,69 +82,28 @@ static void version(void)
 	exit(1);
 }
 
-static void help(void)
-{
-	printf(blurb);
-
-	printf("Usage: mpdscribble [OPTIONS]\n"
-	       "\n"
-	       "  --help                      \tthis message\n"
-	       "  --version                   \tthat message\n"
-	       "  --log            <filename> \tlog file\n"
-	       "  --cache          <filename> \tcache file\n"
-	       "  --conf           <filename> \tconfiguration file\n"
-	       "  --host           <host>     \tmpd host\n"
-	       "  --port           <port>     \tmpd port\n"
-	       "  --proxy          <proxy>    \tHTTP proxy URI\n"
-	       "  --sleep          <interval> \tupdate interval (default 1 second)\n"
-	       "  --cache-interval <interval> \twrite cache file every i seconds\n"
-	       "                              \t(default 600 seconds)\n"
-	       "  --verbose <0-2>             \tverbosity (default 2)\n"
-	       "\n" "Report bugs to <kuno@frob.nl>.\n");
-
-	exit(1);
-}
-
-static int file_atoi(const char *s)
-{
-	if (!s)
-		return 0;
-
-	return atoi(s);
-}
-
-static void replace(char **dst, char *src)
-{
-	if (*dst)
-		free(*dst);
-	*dst = src;
-}
-
 void
 parse_cmdline(int argc, char **argv)
 {
-	for (int i = 0; i < argc; i++) {
-		if (!strcmp("--help", argv[i]))
-			help();
-		else if (!strcmp("--version", argv[i]))
-			version();
-		else if (!strcmp("--host", argv[i]))
-			replace(&file_config.host, g_strdup(argv[++i]));
-		else if (!strcmp("--log", argv[i]))
-			replace(&file_config.log, g_strdup(argv[++i]));
-		else if (!strcmp("--cache", argv[i]))
-			replace(&file_config.cache, g_strdup(argv[++i]));
-		else if (!strcmp("--port", argv[i]))
-			file_config.port = file_atoi(argv[++i]);
-		else if (!strcmp("--sleep", argv[i]))
-			file_config.sleep = file_atoi(argv[++i]);
-		else if (!strcmp("--cache-interval", argv[i]))
-			file_config.cache_interval = file_atoi(argv[++i]);
-		else if (!strcmp("--verbose", argv[i]))
-			file_config.verbose = file_atoi(argv[++i]);
-		else if (!strcmp("--proxy", argv[i]))
-			file_config.proxy = g_strdup(argv[++i]);
-		else if (!strcmp("--conf", argv[i]))
-			replace(&file_config.conf, g_strdup(argv[++i]));
+	GError *error = NULL;
+	GOptionContext *context;
+	bool ret;
+
+	context = g_option_context_new(NULL);
+	g_option_context_add_main_entries(context, entries, NULL);
+
+#if GLIB_MAJOR_VERSION > 2 || (GLIB_MAJOR_VERSION == 2 && GLIB_MINOR_VERSION >= 12)
+	g_option_context_set_summary(context, summary);
+#endif
+
+	ret = g_option_context_parse(context, &argc, &argv, &error);
+	g_option_context_free(context);
+
+	if (!ret) {
+		g_print ("option parsing failed: %s\n", error->message);
+		exit (1);
 	}
+
+	if (option_version)
+		version();
 }
