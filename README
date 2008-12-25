@@ -16,27 +16,6 @@ Installing mpdscribble
 See the INSTALL file.
 
 
-CONFIGURE
-   
-   After you have installed mpdscribble, run ./setup.sh from this
-   directory.  setup.sh will prompt you for your audioscrobbler 
-   username and password.
-
-   run ./setup.sh as root to install a system-wide mpdscribble 
-   configuration file.
-   
-   For more info on using mpdscribble, try man mpdscribble
-
-   NOTE: the previous version of setup.sh set up an init.d script
-   for debian.  This is obviously better handled with a proper debian
-   package, which will be available soon.  For now, the script can
-   still be found in the contrib/ directory.
-
-   WARNING: the abovementioned debian script runs mpdscribble as root,
-   this is generally not a good idea, and you may want to run it as
-   a regular user until a proper debian package is available.
-
-
 SUPPORT
 
 If you find a bug, please file a bug report at MPD's bug tracker:
