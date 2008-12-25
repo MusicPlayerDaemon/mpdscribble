@@ -621,7 +621,7 @@ void as_init(void)
 	journal_read(queue);
 
 	queue_length = g_queue_get_length(queue);
-	g_message("loaded %i song%s from cache",
+	g_message("loaded %i song%s from cache\n",
 		  queue_length, queue_length == 1 ? "" : "s");
 
 	conn_setup();
