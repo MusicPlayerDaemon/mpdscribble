@@ -48,6 +48,7 @@ sparse-check:
 	done
 
 install-dist_sysconfDATA:
+	test -z "$(sysconfdir)" || $(mkdir_p) "$(DESTDIR)$(sysconfdir)"
 	@list='$(dist_sysconf_DATA)'; \
 	for p in $$list; do \
 	    dest=$(am__strip_dir) \
