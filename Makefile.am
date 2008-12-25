@@ -47,8 +47,8 @@ sparse-check:
 		$(SPARSE) -I. $(CFLAGS) $(AM_CPPFLAGS) $(SPARSE_FLAGS) $(SPARSE_CPPFLAGS) $(srcdir)/$$i || exit; \
 	done
 
-install-sysconfDATA:
-	@list='$(sysconf_DATA)'; \
+install-dist_sysconfDATA:
+	@list='$(dist_sysconf_DATA)'; \
 	for p in $$list; do \
 	    dest=`basename $$p`; \
 	    if test -f $(DESTDIR)$(sysconfdir)/$$dest; then \
