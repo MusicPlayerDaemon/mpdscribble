@@ -54,7 +54,8 @@ install-dist_sysconfDATA:
 	    if test -f $(DESTDIR)$(sysconfdir)/$$dest; then \
 	        echo "$@ will not overwrite existing $(DESTDIR)$(sysconfdir)/$$dest"; \
 	    else \
-	        echo " $(INSTALL_DATA) $$p $(DESTDIR)$(sysconfdir)/$$dest"; \
-	        $(INSTALL_DATA) $$p $(DESTDIR)$(sysconfdir)/$$dest; \
+	        if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
+	        echo " $(INSTALL_DATA) $$d$$p $(DESTDIR)$(sysconfdir)/$$dest"; \
+	        $(INSTALL_DATA) $$d$$p $(DESTDIR)$(sysconfdir)/$$dest; \
 	    fi; \
 	done
