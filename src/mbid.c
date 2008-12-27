@@ -338,7 +338,8 @@ static int getMP3_MBID(const char *path, char mbid[MBID_BUFFER_SIZE])
 		debug("Tag size: %d\n", tag_size);
 
 		while (true) {
-			if (ftell(fp) > tag_size || ftell(fp) > 1048576) {
+			if (ftell(fp) > (long)tag_size ||
+			    ftell(fp) > 1048576) {
 				break;
 			}
 
