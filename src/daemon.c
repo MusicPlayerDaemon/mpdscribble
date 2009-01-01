@@ -30,11 +30,12 @@ daemonize_close_stdin(void)
 {
 	int fd = open("/dev/null", O_RDONLY);
 
-	if (fd >= 0) {
+	if (fd < 0)
+		close(STDIN_FILENO);
+	else if (fd != STDIN_FILENO) {
 		dup2(fd, STDIN_FILENO);
 		close(fd);
-	} else
-		close(STDIN_FILENO);
+	}
 }
 
 void
@@ -43,9 +44,12 @@ daemonize_close_stdout_stderr(void)
 	int fd = open("/dev/null", O_WRONLY);
 
 	if (fd >= 0) {
-		dup2(fd, STDOUT_FILENO);
-		dup2(fd, STDERR_FILENO);
-		close(fd);
+		if (fd != STDOUT_FILENO)
+			dup2(fd, STDOUT_FILENO);
+		if (fd != STDERR_FILENO)
+			dup2(fd, STDERR_FILENO);
+		if (fd != STDOUT_FILENO && fd != STDERR_FILENO)
+			close(fd);
 	} else {
 		close(STDOUT_FILENO);
 		close(STDERR_FILENO);
