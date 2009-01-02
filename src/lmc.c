@@ -221,17 +221,17 @@ static gboolean
 lmc_update(G_GNUC_UNUSED gpointer data)
 {
 	struct mpd_song *prev;
-	int elapsed;
+	int state;
 
 	prev = current_song;
-	elapsed = lmc_current(&current_song);
+	state = lmc_current(&current_song);
 
-	if (elapsed == MPD_STATUS_STATE_PAUSE) {
+	if (state == MPD_STATUS_STATE_PAUSE) {
 		if (!was_paused)
 			song_paused();
 		was_paused = true;
 		return true;
-	} else if (elapsed != MPD_STATUS_STATE_PLAY) {
+	} else if (state != MPD_STATUS_STATE_PLAY) {
 		current_song = NULL;
 		last_id = -1;
 	} else if (current_song->artist == NULL ||
