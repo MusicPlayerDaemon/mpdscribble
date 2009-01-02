@@ -230,6 +230,13 @@ lmc_update(G_GNUC_UNUSED gpointer data)
 		if (!was_paused)
 			song_paused();
 		was_paused = true;
+
+		if (idle_supported) {
+			lmc_schedule_idle();
+			update_source_id = 0;
+			return false;
+		}
+
 		return true;
 	} else if (state != MPD_STATUS_STATE_PLAY) {
 		current_song = NULL;
