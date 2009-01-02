@@ -42,7 +42,7 @@ static const char *log_date(void)
 	struct tm *tmp;
 
 	t = time(NULL);
-	tmp = gmtime(&t);
+	tmp = localtime(&t);
 	if (tmp == NULL) {
 		buf[0] = 0;
 		return buf;
