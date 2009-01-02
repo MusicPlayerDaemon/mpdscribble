@@ -31,7 +31,7 @@ AM_CPPFLAGS = $(libgobject_CFLAGS) $(libgthread_CFLAGS) $(libsoup_CFLAGS) \
 	$(libglib_CFLAGS) \
 	-I$(srcdir)/src -I$(srcdir)/src/libmpdclient
 LDADD = $(libgobject_LIBS) $(libgthread_LIBS) $(libsoup_LIBS) \
-	$(libgcrypt_LIBS)
+	$(libgcrypt_LIBS) \
 	$(libglib_LIBS)
 
 AM_CPPFLAGS += -DFILE_CONF='"$(sysconfdir)/mpdscribble.conf"'
