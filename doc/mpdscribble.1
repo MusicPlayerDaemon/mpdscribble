@@ -36,12 +36,12 @@ Display help and exit.
 Display version information and exit.
 .TP
 .B \-\-log FILE
-Specify log file. /var/log/mpdscribble.log is used by default.
+Specify log file. /var/log/mpdscribble/mpdscribble.log is used by default.
 The special value "syslog" makes mpdscribble use the local syslog
 daemon.
 .TP
 .B \-\-cache FILE
-Specify Last.fm cache file. /var/cache/mpdscribble.cache is used
+Specify Last.fm cache file. /var/cache/mpdscribble/mpdscribble.cache is used
 by default.
 .TP
 .B \-\-conf FILE
@@ -108,7 +108,7 @@ How verbose mpdscribble's logging should be.
 .B sleep = INTERVAL
 How long mpdscribble should wait between MPD status queries.
 .SH FILES
-.I /etc/mpdscribble/mpdscribble.conf
+.I /etc/mpdscribble.conf
 .RS
 The system wide configuration file. 
 .RE
@@ -118,7 +118,7 @@ The system wide configuration file.
 Per user configuration file. 
 .RE
 
-.I /var/cache/mpdscribble.cache
+.I /var/cache/mpdscribble/mpdscribble.cache
 .RS
 The system wide Last.fm cache file.
 .RE
@@ -128,12 +128,12 @@ The system wide Last.fm cache file.
 Per user Last.fm cache file.
 .RE
 
-.I /var/log/mpdscribble.log
+.I /var/log/mpdscribble/mpdscribble.log
 .RS
 The system wide log file. 
 .RE
 
-.I ~/.mpdscribble/.mpdscribble.log
+.I ~/.mpdscribble/mpdscribble.log
 .RS
 Per user log file. 
 .RE
