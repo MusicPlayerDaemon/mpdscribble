@@ -234,6 +234,7 @@ lmc_update(G_GNUC_UNUSED gpointer data)
 	} else if (state != MPD_STATUS_STATE_PLAY) {
 		current_song = NULL;
 		last_id = -1;
+		was_paused = false;
 	} else if (current_song->artist == NULL ||
 		   current_song->title == NULL) {
 		if (current_song->id != last_id) {
