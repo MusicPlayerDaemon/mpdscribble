@@ -240,12 +240,14 @@ int file_read_config(int argc, char **argv)
 	if (!file_config.conf)
 		g_error("cannot find configuration file\n");
 
-	if (!file_config.username)
+	if (file_config.username == NULL || *file_config.username == 0)
 		g_error("no audioscrobbler username specified in %s\n",
 			file_config.conf);
-	if (!file_config.password)
+
+	if (file_config.password == NULL || *file_config.password == 0)
 		g_error("no audioscrobbler password specified in %s\n",
 		      file_config.conf);
+
 	if (!file_config.host)
 		file_config.host = g_strdup(mpd_host);
 	if (!file_config.host)
