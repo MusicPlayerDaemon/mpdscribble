@@ -351,32 +351,45 @@ char *as_timestamp(void)
 	return g_strdup(timestr);
 }
 
+/**
+ * Calculate the MD5 checksum of the specified string.  The return
+ * value is a newly allocated string containing the hexadecimal
+ * checksum.
+ */
+static char *md5_hex(const char *p, int len)
+{
+#if GLIB_MAJOR_VERSION > 2 || (GLIB_MAJOR_VERSION == 2 && GLIB_MINOR_VERSION >= 16)
+	return g_compute_checksum_for_string(G_CHECKSUM_MD5, p, len);
+#else
+	/* fall back to libgcrypt on GLib < 2.16 */
+	gcry_md_hd_t hd;
+	unsigned char *binary;
+	char *result;
+
+	if (len == -1)
+		len = strlen(p);
+
+	if (gcry_md_open(&hd, GCRY_MD_MD5, 0) != GPG_ERR_NO_ERROR)
+		g_error("gcry_md_open() failed\n");
+	gcry_md_write(hd, p, len);
+	binary = gcry_md_read(hd, GCRY_MD_MD5);
+	if (binary == NULL)
+		g_error("gcry_md_read() failed\n");
+	result = g_malloc(gcry_md_get_algo_dlen(GCRY_MD_MD5) * 2 + 1);
+	for (size_t i = 0; i < gcry_md_get_algo_dlen(GCRY_MD_MD5); ++i)
+		snprintf(result + i * 2, 3, "%02x", binary[i]);
+	gcry_md_close(hd);
+
+	return result;
+#endif
+}
+
 static char *as_md5(const char *password, const char *timestamp)
 {
 	char *cat, *result;
 
 	cat = g_strconcat(password, timestamp, NULL);
-#if GLIB_MAJOR_VERSION > 2 || (GLIB_MAJOR_VERSION == 2 && GLIB_MINOR_VERSION >= 16)
-	result = g_compute_checksum_for_string(G_CHECKSUM_MD5, cat, -1);
-#else
-	/* fall back to libgcrypt on GLib < 2.16 */
-	{
-		gcry_md_hd_t hd;
-		unsigned char *p;
-		size_t i;
-
-		if (gcry_md_open(&hd, GCRY_MD_MD5, 0) != GPG_ERR_NO_ERROR)
-			g_error("gcry_md_open() failed\n");
-		gcry_md_write(hd, cat, strlen(cat));
-		p = gcry_md_read(hd, GCRY_MD_MD5);
-		if (p == NULL)
-			g_error("gcry_md_read() failed\n");
-		result = g_malloc(gcry_md_get_algo_dlen(GCRY_MD_MD5) * 2 + 1);
-		for (i = 0; i < gcry_md_get_algo_dlen(GCRY_MD_MD5); ++i)
-			snprintf(result + i * 2, 3, "%02x", p[i]);
-		gcry_md_close(hd);
-	}
-#endif
+	result = md5_hex(cat, -1);
 	g_free(cat);
 
 	return result;
