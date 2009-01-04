@@ -50,6 +50,7 @@ is used by default.
 .TP
 .B \-\-host [PASSWORD@]HOSTNAME
 Specify host protected by password. 
+To connect via Unix Domain Socket, specify an absolute path here.
 .TP
 .B \-\-port PORT
 Specify which port the MPD listens on.
@@ -95,6 +96,7 @@ If this option is set, mpdscribble will attempt to fetch musicbrainz ids from th
 .TP
 .B host = [PASSWORD@]HOSTNAME
 The host running MPD, possibly protected by a password.
+To connect via Unix Domain Socket, specify an absolute path here.
 .TP
 .B port = PORT
 The port that the MPD listens on and mpdscribble should try to connect to.
