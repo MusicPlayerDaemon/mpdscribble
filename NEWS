@@ -1,6 +1,7 @@
 mpdscribble 0.15 - not yet released
   * re-enter idle mode if MPD is paused (fixes high CPU usage)
   * log with local time stamp
+  * allow configuring the cleartext last.fm password
 
 
 mpdscribble 0.14 - 12-25-2008

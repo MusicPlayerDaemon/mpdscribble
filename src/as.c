@@ -386,9 +386,17 @@ static char *md5_hex(const char *p, int len)
 
 static char *as_md5(const char *password, const char *timestamp)
 {
-	char *cat, *result;
+	char *password_md5, *cat, *result;
+
+	if (strlen(password) != 32)
+		/* assume it's not hashed yet */
+		password = password_md5 = md5_hex(password, -1);
+	else
+		password_md5 = NULL;
 
 	cat = g_strconcat(password, timestamp, NULL);
+	g_free(password_md5);
+
 	result = md5_hex(cat, -1);
 	g_free(cat);
 
