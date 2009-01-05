@@ -1,10 +1,10 @@
-mpdscribble 0.15 - not yet released
+mpdscribble 0.15 - 2009-01-04
   * re-enter idle mode if MPD is paused (fixes high CPU usage)
   * log with local time stamp
   * allow configuring the cleartext last.fm password
 
 
-mpdscribble 0.14 - 12-25-2008
+mpdscribble 0.14 - 2008-12-25
   * reformatted the whole source code (indentation with tabs)
   * support MPD's "idle" command (ignores the "sleep" setting)
   * resubmit "now playing" after re-handshake
