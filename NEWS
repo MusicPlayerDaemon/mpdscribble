@@ -1,3 +1,7 @@
+mpdscribble 0.16 - not yet released
+
+
+
 mpdscribble 0.15 - 2009-01-04
   * re-enter idle mode if MPD is paused (fixes high CPU usage)
   * log with local time stamp
