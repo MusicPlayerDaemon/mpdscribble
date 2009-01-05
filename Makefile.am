@@ -5,6 +5,8 @@ doc_DATA = README AUTHORS NEWS
 dist_man_MANS = doc/mpdscribble.1
 dist_sysconf_DATA = doc/mpdscribble.conf
 
+EXTRA_DIST = autogen.sh
+
 bin_PROGRAMS = src/mpdscribble
 
 libmpdclient_SOURCES = \
