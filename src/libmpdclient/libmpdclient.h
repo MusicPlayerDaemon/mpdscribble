@@ -172,7 +172,7 @@ typedef struct _mpd_Connection {
 	enum mpd_error error;
 	/* DON'T TOUCH any of the rest of this stuff */
 	int sock;
-	char buffer[16384];
+	char buffer[4096];
 	size_t buflen;
 	size_t bufstart;
 	int doneProcessing;
