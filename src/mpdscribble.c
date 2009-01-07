@@ -174,7 +174,10 @@ int main(int argc, char **argv)
 		g_error("cannot read configuration file\n");
 
 	log_init(file_config.log, file_config.verbose);
+
+#ifdef NDEBUG
 	daemonize_close_stdout_stderr();
+#endif
 
 	main_loop = g_main_loop_new(NULL, FALSE);
 
