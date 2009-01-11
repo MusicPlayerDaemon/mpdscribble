@@ -147,6 +147,17 @@ void
 song_playing(G_GNUC_UNUSED const struct mpd_song *song,
 	     G_GNUC_UNUSED int elapsed)
 {
+	int prev_elapsed = g_timer_elapsed(timer, NULL);
+
+	if (elapsed < 60 && prev_elapsed > elapsed &&
+	    prev_elapsed - elapsed >= 240) {
+		/* the song is playing repeatedly: make it virtually
+		   stop and re-start */
+		g_debug("repeated song detected");
+
+		song_ended(song);
+		song_started(song);
+	}
 }
 
 /**
