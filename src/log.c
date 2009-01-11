@@ -35,6 +35,21 @@
 static FILE *log_file;
 static GLogLevelFlags log_threshold = G_LOG_LEVEL_MESSAGE;
 
+/**
+ * Determines the length of the string excluding trailing whitespace
+ * characters.
+ */
+static int
+chomp_length(const char *p)
+{
+	size_t length = strlen(p);
+
+	while (length > 0 && g_ascii_isspace(p[length - 1]))
+		--length;
+
+	return (int)length;
+}
+
 static const char *log_date(void)
 {
 	static char buf[20];
@@ -65,10 +80,10 @@ file_log_func(const gchar *log_domain, GLogLevelFlags log_level,
 	if (log_domain == NULL)
 		log_domain = "";
 
-	fprintf(log_file, "%s %s%s%s",
+	fprintf(log_file, "%s %s%s%.*s\n",
 		log_date(),
 		log_domain, *log_domain == 0 ? "" : ": ",
-		message);
+		chomp_length(message), message);
 }
 
 static void
@@ -121,7 +136,8 @@ syslog_log_func(G_GNUC_UNUSED const gchar *log_domain,
 	if (log_level > log_threshold)
 		return;
 
-	syslog(glib_to_syslog_level(log_level), "%s", message);
+	syslog(glib_to_syslog_level(log_level), "%.*s",
+	       chomp_length(message), message);
 }
 
 static void
