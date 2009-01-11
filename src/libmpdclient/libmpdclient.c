@@ -1761,6 +1761,16 @@ void mpd_stopIdle(mpd_Connection *connection)
 	connection->doneProcessing = 0;
 	mpd_readChanges(connection);
 	connection->notify_cb = NULL;
+
+	if (connection->error == MPD_ERROR_ACK &&
+	    connection->errorCode == MPD_ACK_ERROR_UNKNOWN_CMD) {
+		/* MPD does not support the "idle" command, and also
+		   does not support "noidle" - this means it generates
+		   two responses, one for each command.  Read the
+		   second response now. */
+		connection->doneProcessing = 0;
+		mpd_finishCommand(connection);
+	}
 }
 
 #ifdef MPD_GLIB
