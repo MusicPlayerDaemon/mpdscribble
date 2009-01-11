@@ -38,6 +38,9 @@ void
 song_started(const struct mpd_song *song);
 
 void
+song_playing(const struct mpd_song *song, int elapsed);
+
+void
 song_ended(const struct mpd_song *song);
 
 #endif /* LMC_H */

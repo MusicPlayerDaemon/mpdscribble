@@ -141,6 +141,15 @@ song_started(const struct mpd_song *song)
 }
 
 /**
+ * MPD is still playing the song.
+ */
+void
+song_playing(G_GNUC_UNUSED const struct mpd_song *song,
+	     G_GNUC_UNUSED int elapsed)
+{
+}
+
+/**
  * MPD stopped playing this song.
  */
 void

@@ -144,7 +144,7 @@ void lmc_disconnect(void)
 }
 
 static int
-lmc_current(struct mpd_song **song_r)
+lmc_current(struct mpd_song **song_r, int *elapsed_r)
 {
 	mpd_Status *status;
 	int state;
@@ -173,6 +173,8 @@ lmc_current(struct mpd_song **song_r)
 	}
 
 	state = status->state;
+	*elapsed_r = status->elapsedTime;
+
 	mpd_freeStatus(status);
 
 	if (state != MPD_STATUS_STATE_PLAY) {
@@ -222,10 +224,10 @@ static gboolean
 lmc_update(G_GNUC_UNUSED gpointer data)
 {
 	struct mpd_song *prev;
-	int state;
+	int state, elapsed = -1;
 
 	prev = current_song;
-	state = lmc_current(&current_song);
+	state = lmc_current(&current_song, &elapsed);
 
 	if (state == MPD_STATUS_STATE_PAUSE) {
 		if (!was_paused)
@@ -266,10 +268,17 @@ lmc_update(G_GNUC_UNUSED gpointer data)
 	    (current_song == NULL || prev->id != current_song->id))
 		song_ended(prev);
 
-	/* new song. */
-	if (current_song != NULL && current_song->id != last_id) {
-		song_started(current_song);
-		last_id = current_song->id;
+	if (current_song != NULL) {
+		if (current_song->id != last_id) {
+			/* new song. */
+
+			song_started(current_song);
+			last_id = current_song->id;
+		} else {
+			/* still playing the previous song */
+
+			song_playing(current_song, elapsed);
+		}
 	}
 
 	if (prev != NULL)
