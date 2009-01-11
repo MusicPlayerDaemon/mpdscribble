@@ -143,7 +143,8 @@ void lmc_disconnect(void)
 	}
 }
 
-int lmc_current(struct mpd_song **song_r)
+static int
+lmc_current(struct mpd_song **song_r)
 {
 	mpd_Status *status;
 	int state;
