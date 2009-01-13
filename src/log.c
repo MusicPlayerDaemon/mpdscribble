@@ -162,6 +162,8 @@ log_init(const char *path, int verbose)
 		log_threshold = G_LOG_LEVEL_ERROR;
 	else if (verbose == 1)
 		log_threshold = G_LOG_LEVEL_WARNING;
+	else if (verbose == 2)
+		log_threshold = G_LOG_LEVEL_INFO;
 	else
 		log_threshold = G_LOG_LEVEL_DEBUG;
 
