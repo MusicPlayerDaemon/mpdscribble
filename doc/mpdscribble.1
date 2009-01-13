@@ -115,7 +115,11 @@ The port that the MPD listens on and mpdscribble should try to connect to.
 HTTP proxy URL.
 .TP
 .B verbose = 0, 1, 2, 3
-How verbose mpdscribble's logging should be.  Default is 1.
+How verbose mpdscribble's logging should be.  Default is 1.  "0" means
+log only critical errors (e.g. "out of memory"); "1" also logs
+non-critical errors (e.g. "server unreachable"); "2" logs
+informational messages (e.g. "new song"); "3" prints a lot of
+debugging messages.
 .TP 
 .B sleep = INTERVAL
 How long mpdscribble should wait between MPD status queries.
