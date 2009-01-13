@@ -1379,16 +1379,16 @@ void mpd_sendSwapIdCommand(mpd_Connection * connection, int id1, int id2) {
 	free(string);
 }
 
-void mpd_sendSeekCommand(mpd_Connection * connection, int song, int time) {
+void mpd_sendSeekCommand(mpd_Connection * connection, int song, int _time) {
 	char * string = malloc(strlen("seek")+25);
-	sprintf(string,"seek \"%i\" \"%i\"\n",song,time);
+	sprintf(string,"seek \"%i\" \"%i\"\n", song, _time);
 	mpd_sendInfoCommand(connection,string);
 	free(string);
 }
 
-void mpd_sendSeekIdCommand(mpd_Connection * connection, int id, int time) {
+void mpd_sendSeekIdCommand(mpd_Connection * connection, int id, int _time) {
 	char * string = malloc(strlen("seekid")+25);
-	sprintf(string,"seekid \"%i\" \"%i\"\n",id,time);
+	sprintf(string,"seekid \"%i\" \"%i\"\n", id, _time);
 	mpd_sendInfoCommand(connection,string);
 	free(string);
 }
