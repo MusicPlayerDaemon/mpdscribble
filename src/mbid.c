@@ -51,9 +51,7 @@ History/Changes:
 #include <string.h>
 #include <stdlib.h>
 #include <errno.h>
-#ifndef __NT__
-#include <sys/errno.h>
-#endif
+#include <errno.h>
 
 #ifdef MBID_DEBUG
 #define debug(fmt, ...) printf(fmt, ## __VA_ARGS__)
