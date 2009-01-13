@@ -268,7 +268,7 @@ int file_read_config(int argc, char **argv)
 	if (file_config.cache_interval == -1)
 		file_config.cache_interval = 600;
 	if (file_config.verbose == -1)
-		file_config.verbose = 2;
+		file_config.verbose = 1;
 
 	return 1;
 }

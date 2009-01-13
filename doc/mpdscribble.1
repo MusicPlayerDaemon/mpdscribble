@@ -71,7 +71,8 @@ Specify how often mpdscribble should query MPD (in seconds, default is 1).
 Specify how often mpdscribble should write its cache file (in seconds, default is 600).
 .TP
 .B \-\-verbose LEVEL
-Specify how verbosely mpdscribble should log. Possible values are 0 to 3.
+Specify how verbosely mpdscribble should log.  Possible values are 0
+to 3, defaulting to 1.
 .SH CONFIGURATION
 mpdscribble looks for its configuration file first at 
 ~/.mpdscribble/mpdscribble.conf and then at /etc/mpdscribble.conf
@@ -114,7 +115,7 @@ The port that the MPD listens on and mpdscribble should try to connect to.
 HTTP proxy URL.
 .TP
 .B verbose = 0, 1, 2, 3
-How verbose mpdscribble's logging should be. 
+How verbose mpdscribble's logging should be.  Default is 1.
 .TP 
 .B sleep = INTERVAL
 How long mpdscribble should wait between MPD status queries.
