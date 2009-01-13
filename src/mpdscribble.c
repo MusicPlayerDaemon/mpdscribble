@@ -40,6 +40,7 @@ static guint save_source_id;
 static GTimer *timer;
 static char mbid[MBID_BUFFER_SIZE];
 
+#ifndef WIN32
 static void signal_handler(G_GNUC_UNUSED int signum)
 {
 	g_main_loop_quit(main_loop);
@@ -53,10 +54,12 @@ x_sigaction(int signum, const struct sigaction *act)
 		exit(EXIT_FAILURE);
 	}
 }
+#endif
 
 static void
 setup_signals(void)
 {
+#ifndef WIN32
 	struct sigaction sa;
 
 	sigemptyset(&sa.sa_mask);
@@ -68,6 +71,7 @@ setup_signals(void)
 
 	sa.sa_handler = SIG_IGN;
 	x_sigaction(SIGPIPE, &sa);
+#endif
 }
 
 static bool played_long_enough(int length)
