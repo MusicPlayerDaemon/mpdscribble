@@ -34,6 +34,13 @@ void
 daemonize_close_stdout_stderr(void);
 
 /**
+ * Daemonize the process: detach it from the parent process and the
+ * session.
+ */
+void
+daemonize_detach(void);
+
+/**
  * Writes the id of the current process to the specified pidfile.
  */
 void

@@ -29,6 +29,7 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <errno.h>
+#include <stdlib.h>
 
 void
 daemonize_close_stdin(void)
@@ -59,6 +60,30 @@ daemonize_close_stdout_stderr(void)
 		close(STDOUT_FILENO);
 		close(STDERR_FILENO);
 	}
+}
+
+void
+daemonize_detach(void)
+{
+	int ret;
+
+	/* detach from parent process */
+
+	ret = fork();
+	if (ret < 0)
+		g_error("fork() failed: %s", g_strerror(errno));
+
+	if (ret > 0)
+		/* exit the parent process */
+		_exit(EXIT_SUCCESS);
+
+	/* release the current working directory */
+
+	chdir("/");
+
+	/* detach from the current session */
+
+	setsid();
 }
 
 void

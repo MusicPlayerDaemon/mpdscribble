@@ -46,6 +46,8 @@ static gboolean option_version;
 static const GOptionEntry entries[] = {
 	{ "version", 'V', 0, G_OPTION_ARG_NONE, &option_version,
 	  "print version number", NULL },
+	{ "no-daemon", 'D', 0, G_OPTION_ARG_NONE, &file_config.no_daemon,
+	  "don't daemonize", NULL },
 	{ "verbose", 'v', 0, G_OPTION_ARG_INT, &file_config.verbose,
 	  "verbosity (0-2, default 2)", NULL },
 	{ "conf", 0, 0, G_OPTION_ARG_STRING, &file_config.conf,

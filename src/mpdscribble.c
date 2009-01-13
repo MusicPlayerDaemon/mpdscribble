@@ -195,12 +195,16 @@ int main(int argc, char **argv)
 
 	log_init(file_config.log, file_config.verbose);
 
+	if (!file_config.no_daemon)
+		daemonize_detach();
+
 	if (file_config.pidfile != NULL)
 		daemonize_write_pidfile(file_config.pidfile);
 
-#ifdef NDEBUG
-	daemonize_close_stdout_stderr();
+#ifndef NDEBUG
+	if (!file_config.no_daemon)
 #endif
+		daemonize_close_stdout_stderr();
 
 	main_loop = g_main_loop_new(NULL, FALSE);
 
