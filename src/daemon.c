@@ -20,10 +20,15 @@
 
 #include "daemon.h"
 
+#include <glib.h>
+
+#include <assert.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <stdio.h>
+#include <errno.h>
 
 void
 daemonize_close_stdin(void)
@@ -54,4 +59,22 @@ daemonize_close_stdout_stderr(void)
 		close(STDOUT_FILENO);
 		close(STDERR_FILENO);
 	}
+}
+
+void
+daemonize_write_pidfile(const char *path)
+{
+	FILE *pidfile;
+
+	assert(path != NULL);
+
+	unlink(path);
+
+	pidfile = fopen(path, "w");
+	if (pidfile == NULL)
+		g_error("Failed to create pidfile %s: %s",
+			path, g_strerror(errno));
+
+	fprintf(pidfile, "%d\n", getpid());
+	fclose(pidfile);
 }

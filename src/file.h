@@ -23,6 +23,8 @@
 enum file_location { file_etc, file_home, file_unknown, };
 
 struct config {
+	char *pidfile;
+
 	char *username;
 	char *password;
 	char *log;

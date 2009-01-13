@@ -195,6 +195,9 @@ int main(int argc, char **argv)
 
 	log_init(file_config.log, file_config.verbose);
 
+	if (file_config.pidfile != NULL)
+		daemonize_write_pidfile(file_config.pidfile);
+
 #ifdef NDEBUG
 	daemonize_close_stdout_stderr();
 #endif
@@ -229,6 +232,9 @@ int main(int argc, char **argv)
 	lmc_disconnect();
 	file_cleanup();
 	log_deinit();
+
+	if (file_config.pidfile != NULL)
+		unlink(file_config.pidfile);
 
 	return 0;
 }

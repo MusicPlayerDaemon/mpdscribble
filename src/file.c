@@ -198,6 +198,7 @@ load_config_file(const char *path)
 	if (error != NULL)
 		g_error("%s\n", error->message);
 
+	load_string(file, "pidfile", &file_config.pidfile);
 	load_string(file, "username", &file_config.username);
 	load_string(file, "password", &file_config.password);
 	load_string(file, "log", &file_config.log);

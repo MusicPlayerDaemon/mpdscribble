@@ -50,6 +50,8 @@ static const GOptionEntry entries[] = {
 	  "verbosity (0-2, default 2)", NULL },
 	{ "conf", 0, 0, G_OPTION_ARG_STRING, &file_config.conf,
 	  "load configuration from this file", NULL },
+	{ "pidfile", 0, 0, G_OPTION_ARG_STRING, &file_config.pidfile,
+	  "write the process id to this file", NULL },
 	{ "log", 0, 0, G_OPTION_ARG_STRING, &file_config.log,
 	  "log file or 'syslog'", NULL },
 	{ "cache", 0, 0, G_OPTION_ARG_STRING, &file_config.cache,

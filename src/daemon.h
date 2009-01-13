@@ -33,4 +33,10 @@ daemonize_close_stdin(void);
 void
 daemonize_close_stdout_stderr(void);
 
+/**
+ * Writes the id of the current process to the specified pidfile.
+ */
+void
+daemonize_write_pidfile(const char *path);
+
 #endif
