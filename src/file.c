@@ -263,7 +263,7 @@ int file_read_config(int argc, char **argv)
 		file_config.port = FILE_DEFAULT_PORT;
 	if (!file_config.proxy)
 		file_config.proxy = http_proxy;
-	if (!file_config.sleep)
+	if (file_config.sleep <= 0)
 		file_config.sleep = 1;
 	if (file_config.cache_interval == -1)
 		file_config.cache_interval = 600;

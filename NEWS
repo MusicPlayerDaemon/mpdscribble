@@ -5,6 +5,7 @@ mpdscribble 0.16 - not yet released
   * daemonize mpdscribble by default, added option --no-daemon
   * moved debugging messages to verbose 3
   * changed default verbose level to 1
+  * fix default value for "sleep"
 
 
 mpdscribble 0.15 - 2009-01-04
