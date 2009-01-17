@@ -1,4 +1,4 @@
-mpdscribble 0.16 - not yet released
+mpdscribble 0.16 - 2009-01-17
   * support repeating a song
   * fix MPD 0.13 support (without "idle")
   * added pidfile support
