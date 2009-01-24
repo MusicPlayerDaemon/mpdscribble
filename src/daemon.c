@@ -79,7 +79,9 @@ daemonize_detach(void)
 
 	/* release the current working directory */
 
-	chdir("/");
+	ret = chdir("/");
+	if (ret < 0)
+		g_error("chdir() failed: %s\n", g_strerror(errno));
 
 	/* detach from the current session */
 
