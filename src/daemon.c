@@ -31,6 +31,9 @@
 #include <errno.h>
 #include <stdlib.h>
 
+/** the absolute path of the pidfile */
+static char *pidfile;
+
 void
 daemonize_close_stdin(void)
 {
@@ -89,19 +92,35 @@ daemonize_detach(void)
 }
 
 void
-daemonize_write_pidfile(const char *path)
+daemonize_write_pidfile(void)
 {
-	FILE *pidfile;
+	FILE *file;
 
-	assert(path != NULL);
-
-	unlink(path);
-
-	pidfile = fopen(path, "w");
 	if (pidfile == NULL)
-		g_error("Failed to create pidfile %s: %s",
-			path, g_strerror(errno));
+		return;
 
-	fprintf(pidfile, "%d\n", getpid());
-	fclose(pidfile);
+	unlink(pidfile);
+
+	file = fopen(pidfile, "w");
+	if (file == NULL)
+		g_error("Failed to create pidfile %s: %s",
+			pidfile, g_strerror(errno));
+
+	fprintf(file, "%d\n", getpid());
+	fclose(file);
+}
+
+void
+daemonize_init(const char *_pidfile)
+{
+	pidfile = g_strdup(_pidfile);
+}
+
+void
+daemonize_finish(void)
+{
+	if (pidfile != NULL)
+		unlink(pidfile);
+
+	g_free(pidfile);
 }

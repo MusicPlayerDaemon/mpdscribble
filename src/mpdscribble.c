@@ -199,11 +199,12 @@ int main(int argc, char **argv)
 
 	log_init(file_config.log, file_config.verbose);
 
+	daemonize_init(file_config.pidfile);
+
 	if (!file_config.no_daemon)
 		daemonize_detach();
 
-	if (file_config.pidfile != NULL)
-		daemonize_write_pidfile(file_config.pidfile);
+	daemonize_write_pidfile();
 
 #ifndef NDEBUG
 	if (!file_config.no_daemon)
@@ -241,8 +242,7 @@ int main(int argc, char **argv)
 	file_cleanup();
 	log_deinit();
 
-	if (file_config.pidfile != NULL)
-		unlink(file_config.pidfile);
+	daemonize_finish();
 
 	return 0;
 }

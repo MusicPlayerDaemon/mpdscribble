@@ -21,6 +21,12 @@
 #ifndef DAEMON_H
 #define DAEMON_H
 
+void
+daemonize_init(const char *pidfile);
+
+void
+daemonize_finish(void);
+
 /**
  * Close stdin (fd 0) and re-open it as /dev/null.
  */
@@ -41,9 +47,9 @@ void
 daemonize_detach(void);
 
 /**
- * Writes the id of the current process to the specified pidfile.
+ * Writes the id of the current process to the configured pidfile.
  */
 void
-daemonize_write_pidfile(const char *path);
+daemonize_write_pidfile(void);
 
 #endif
