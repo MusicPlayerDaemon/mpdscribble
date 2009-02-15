@@ -49,6 +49,8 @@ sparse-check:
 		$(SPARSE) -I. $(CFLAGS) $(AM_CPPFLAGS) $(SPARSE_FLAGS) $(SPARSE_CPPFLAGS) $(srcdir)/$$i || exit; \
 	done
 
+INSTALL_SECURE = $(INSTALL) -m 600
+
 install-dist_sysconfDATA:
 	test -z "$(sysconfdir)" || $(mkdir_p) "$(DESTDIR)$(sysconfdir)"
 	@list='$(dist_sysconf_DATA)'; \
@@ -58,7 +60,7 @@ install-dist_sysconfDATA:
 	        echo "$@ will not overwrite existing $(DESTDIR)$(sysconfdir)/$$dest"; \
 	    else \
 	        if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
-	        echo " $(INSTALL_DATA) $$d$$p $(DESTDIR)$(sysconfdir)/$$dest"; \
-	        $(INSTALL_DATA) $$d$$p $(DESTDIR)$(sysconfdir)/$$dest; \
+	        echo " $(INSTALL_SECURE) $$d$$p $(DESTDIR)$(sysconfdir)/$$dest"; \
+	        $(INSTALL_SECURE) $$d$$p $(DESTDIR)$(sysconfdir)/$$dest; \
 	    fi; \
 	done
