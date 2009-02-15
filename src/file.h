@@ -30,6 +30,8 @@ struct config {
 
 	char *pidfile;
 
+	char *daemon_user;
+
 	char *username;
 	char *password;
 	char *log;

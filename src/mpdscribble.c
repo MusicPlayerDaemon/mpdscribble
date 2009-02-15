@@ -199,12 +199,13 @@ int main(int argc, char **argv)
 
 	log_init(file_config.log, file_config.verbose);
 
-	daemonize_init(file_config.pidfile);
+	daemonize_init(file_config.daemon_user, file_config.pidfile);
 
 	if (!file_config.no_daemon)
 		daemonize_detach();
 
 	daemonize_write_pidfile();
+	daemonize_set_user();
 
 #ifndef NDEBUG
 	if (!file_config.no_daemon)

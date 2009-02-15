@@ -54,6 +54,8 @@ static const GOptionEntry entries[] = {
 	  "load configuration from this file", NULL },
 	{ "pidfile", 0, 0, G_OPTION_ARG_STRING, &file_config.pidfile,
 	  "write the process id to this file", NULL },
+	{ "daemon-user", 0, 0, G_OPTION_ARG_STRING, &file_config.daemon_user,
+	  "run daemon as this user", NULL },
 	{ "log", 0, 0, G_OPTION_ARG_STRING, &file_config.log,
 	  "log file or 'syslog'", NULL },
 	{ "cache", 0, 0, G_OPTION_ARG_STRING, &file_config.cache,

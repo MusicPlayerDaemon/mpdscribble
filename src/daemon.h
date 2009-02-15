@@ -22,7 +22,7 @@
 #define DAEMON_H
 
 void
-daemonize_init(const char *pidfile);
+daemonize_init(const char *user, const char *pidfile);
 
 void
 daemonize_finish(void);
@@ -38,6 +38,9 @@ daemonize_close_stdin(void);
  */
 void
 daemonize_close_stdout_stderr(void);
+
+void
+daemonize_set_user(void);
 
 /**
  * Daemonize the process: detach it from the parent process and the

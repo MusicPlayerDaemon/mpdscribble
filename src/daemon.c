@@ -22,6 +22,7 @@
 
 #include <glib.h>
 
+#include <stdbool.h>
 #include <assert.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -29,7 +30,20 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <errno.h>
+#include <string.h>
 #include <stdlib.h>
+
+#include <pwd.h>
+#include <grp.h>
+
+/** the Unix user name which MPD runs as */
+static char *user_name;
+
+/** the Unix user id which MPD runs as */
+static uid_t user_uid;
+
+/** the Unix group id which MPD runs as */
+static gid_t user_gid;
 
 /** the absolute path of the pidfile */
 static char *pidfile;
@@ -63,6 +77,33 @@ daemonize_close_stdout_stderr(void)
 		close(STDOUT_FILENO);
 		close(STDERR_FILENO);
 	}
+}
+
+void
+daemonize_set_user(void)
+{
+	if (user_name == NULL)
+		return;
+
+	/* get uid */
+	if (setgid(user_gid) == -1)
+		g_error("cannot setgid for user \"%s\": %s",
+			user_name, g_strerror(errno));
+
+#ifdef _BSD_SOURCE
+	/* init suplementary groups
+	 * (must be done before we change our uid)
+	 */
+	if (initgroups(user_name, user_gid) == -1)
+		g_warning("cannot init supplementary groups "
+			  "of user \"%s\": %s",
+			  user_name, g_strerror(errno));
+#endif
+
+	/* set uid */
+	if (setuid(user_uid) == -1)
+		g_error("cannot change to uid of user \"%s\": %s",
+			user_name, g_strerror(errno));
 }
 
 void
@@ -111,8 +152,21 @@ daemonize_write_pidfile(void)
 }
 
 void
-daemonize_init(const char *_pidfile)
+daemonize_init(const char *user, const char *_pidfile)
 {
+	if (user != NULL && strcmp(user, g_get_user_name()) != 0) {
+		struct passwd *pwd;
+
+		user_name = g_strdup(user);
+
+		pwd = getpwnam(user_name);
+		if (pwd == NULL)
+			g_error("no such user \"%s\"", user_name);
+
+		user_uid = pwd->pw_uid;
+		user_gid = pwd->pw_gid;
+	}
+
 	pidfile = g_strdup(_pidfile);
 }
 
@@ -122,5 +176,6 @@ daemonize_finish(void)
 	if (pidfile != NULL)
 		unlink(pidfile);
 
+	g_free(user_name);
 	g_free(pidfile);
 }
