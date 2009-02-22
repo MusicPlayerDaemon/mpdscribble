@@ -104,7 +104,7 @@ add_var_internal(GString * s, char sep, const char *key,
 #if GLIB_MAJOR_VERSION > 2 || (GLIB_MAJOR_VERSION == 2 && GLIB_MINOR_VERSION >= 16)
 		char *escaped = g_uri_escape_string(val, NULL, false);
 #else
-		char *escaped = soup_uri_encode(val, NULL);
+		char *escaped = soup_uri_encode(val, "&");
 #endif
 		g_string_append(s, escaped);
 		g_free(escaped);
