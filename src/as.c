@@ -161,9 +161,10 @@ static int as_parse_submit_response(const char *line, size_t length)
 		return AS_SUBMIT_HANDSHAKE;
 	} else if (length == sizeof(FAILED) - 1 &&
 		   memcmp(line, FAILED, length) == 0) {
-		const char *start = line + strlen(FAILED);
-		if (*start)
-			g_warning("submission rejected: %s\n", start);
+		if (length > strlen(FAILED))
+			g_warning("submission rejected: %.*s\n",
+				  (int)(length - strlen(FAILED)),
+				  line + strlen(FAILED));
 		else
 			g_warning("submission rejected\n");
 	} else {
