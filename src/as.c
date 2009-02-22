@@ -167,7 +167,7 @@ static int as_parse_submit_response(const char *line, size_t length)
 		else
 			g_warning("submission rejected\n");
 	} else {
-		g_warning("unknown response\n");
+		g_warning("unknown response: %.*s", (int)length, line);
 	}
 
 	return AS_SUBMIT_FAILED;
