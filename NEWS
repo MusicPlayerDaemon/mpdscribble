@@ -3,6 +3,7 @@ mpdscribble 0.17 - not yet released
   * added "daemon_user" configuration option
   * escape '&'
   * import AS protocol v1.1 timestamps
+  * support logging to stderr
 
 
 mpdscribble 0.16 - 2009-01-17

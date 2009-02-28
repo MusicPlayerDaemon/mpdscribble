@@ -92,9 +92,13 @@ log_init_file(const char *path)
 	assert(path != NULL);
 	assert(log_file == NULL);
 
-	log_file = fopen(path, "ab");
-	if (log_file == NULL)
-		g_error("cannot open %s: %s\n", path, strerror(errno));
+	if (strcmp(path, "-") == 0) {
+		log_file = stderr;
+	} else {
+		log_file = fopen(path, "ab");
+		if (log_file == NULL)
+			g_error("cannot open %s: %s\n", path, strerror(errno));
+	}
 
 	setvbuf(log_file, NULL, _IONBF, 0);
 

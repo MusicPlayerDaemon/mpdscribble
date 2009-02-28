@@ -47,7 +47,7 @@ Change to this system user after daemonization.
 .B \-\-log FILE
 Specify log file. /var/log/mpdscribble/mpdscribble.log is used by default.
 The special value "syslog" makes mpdscribble use the local syslog
-daemon.
+daemon.  "-" means log to stderr.
 .TP
 .B \-\-cache FILE
 Specify Last.fm cache file. /var/cache/mpdscribble/mpdscribble.cache is used
@@ -97,7 +97,7 @@ Your Last.fm password, either cleartext or its MD5 sum.
 .B log = FILE
 The file to which mpdscribble should output debugging information.
 The special value "syslog" makes mpdscribble use the local syslog
-daemon.
+daemon.  "-" means log to stderr.
 .TP
 .B cache = FILE
 The file where mpdscribble should store its Last.fm cache in case

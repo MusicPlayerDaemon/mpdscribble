@@ -121,7 +121,7 @@ get_default_log_path(void)
 	assert(false);
 	return NULL;
 #else
-	return g_strdup("mpdscribble.log");
+	return g_strdup("-");
 #endif
 }
 
