@@ -41,7 +41,6 @@
 #include <unistd.h>
 #include <stdarg.h>
 #include <string.h>
-#include <time.h>
 
 #define MAX_VAR_SIZE 8192
 #define MAX_TIMESTAMP_SIZE 64
@@ -346,11 +345,10 @@ static void as_submit_callback(size_t length, const char *response)
 char *as_timestamp(void)
 {
 	/* create timestamp for 1.2 protocol. */
-	time_t timestamp = time(NULL);
-	char timestr[12];
-	snprintf(timestr, 12, "%ld", timestamp);
+	GTimeVal time_val;
 
-	return g_strdup(timestr);
+	g_get_current_time(&time_val);
+	return g_strdup_printf("%ld", (glong)time_val.tv_sec);
 }
 
 /**
