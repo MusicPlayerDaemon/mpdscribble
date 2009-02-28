@@ -36,11 +36,15 @@
   FILE_USR_* will be used instead if FILE_USR_CONF exists.
 */
 
+#ifndef G_OS_WIN32
+
 #define FILE_CACHE "/var/cache/mpdscribble/mpdscribble.cache"
 #define FILE_LOG "/var/log/mpdscribble/mpdscribble.log"
 #define FILE_HOME_CONF "~/.mpdscribble/mpdscribble.conf"
 #define FILE_HOME_CACHE "~/.mpdscribble/mpdscribble.cache"
 #define FILE_HOME_LOG "~/.mpdscribble/mpdscribble.log"
+
+#endif
 
 #define FILE_DEFAULT_PORT 6600
 #define FILE_DEFAULT_HOST "localhost"
@@ -80,6 +84,7 @@ file_expand_tilde(const char *path)
 static char *
 get_default_config_path(void)
 {
+#ifndef G_OS_WIN32
 	char *file = file_expand_tilde(FILE_HOME_CONF);
 	if (file_exists(file)) {
 		file_config.loc = file_home;
@@ -93,11 +98,15 @@ get_default_config_path(void)
 		file_config.loc = file_etc;
 		return g_strdup(FILE_CONF);
 	}
+#else
+	return g_strdup("mpdscribble.conf");
+#endif
 }
 
 static char *
 get_default_log_path(void)
 {
+#ifndef G_OS_WIN32
 	switch (file_config.loc) {
 	case file_home:
 		return file_expand_tilde(FILE_HOME_LOG);
@@ -111,11 +120,15 @@ get_default_log_path(void)
 
 	assert(false);
 	return NULL;
+#else
+	return g_strdup("mpdscribble.log");
+#endif
 }
 
 static char *
 get_default_cache_path(void)
 {
+#ifndef G_OS_WIN32
 	switch (file_config.loc) {
 	case file_home:
 		return file_expand_tilde(FILE_HOME_CACHE);
@@ -129,6 +142,9 @@ get_default_cache_path(void)
 
 	assert(false);
 	return NULL;
+#else
+	return g_strdup("mpdscribble.cache");
+#endif
 }
 
 static void load_string(GKeyFile * file, const char *name, char **value_r)
