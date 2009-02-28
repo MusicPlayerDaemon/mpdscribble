@@ -35,7 +35,7 @@ static const char *blurb =
 	"Copyright 2005,2006 Kuno Woudt <kuno@frob.nl>.\n"
 	"Copyright 2008 Max Kellermann <max@duempel.org>\n" "\n";
 
-#if GLIB_MAJOR_VERSION > 2 || (GLIB_MAJOR_VERSION == 2 && GLIB_MINOR_VERSION >= 12)
+#if GLIB_CHECK_VERSION(2,12,0)
 static const char *summary =
 	"A Music Player Daemon (MPD) client which submits information about\n"
 	"tracks being played to Last.fm (formerly Audioscrobbler).";
@@ -99,7 +99,7 @@ parse_cmdline(int argc, char **argv)
 	context = g_option_context_new(NULL);
 	g_option_context_add_main_entries(context, entries, NULL);
 
-#if GLIB_MAJOR_VERSION > 2 || (GLIB_MAJOR_VERSION == 2 && GLIB_MINOR_VERSION >= 12)
+#if GLIB_CHECK_VERSION(2,12,0)
 	g_option_context_set_summary(context, summary);
 #endif
 

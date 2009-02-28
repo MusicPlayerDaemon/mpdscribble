@@ -30,7 +30,7 @@
 #include <string.h>
 #include <unistd.h>
 
-#if GLIB_MAJOR_VERSION == 2 && GLIB_MINOR_VERSION < 14
+#if !GLIB_CHECK_VERSION(2,14,0)
 static inline guint
 g_timeout_add_seconds(guint interval, GSourceFunc function, gpointer data)
 {

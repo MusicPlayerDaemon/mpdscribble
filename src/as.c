@@ -26,7 +26,7 @@
 
 #include <glib.h>
 
-#if GLIB_MAJOR_VERSION == 2 && GLIB_MINOR_VERSION < 16
+#if !GLIB_CHECK_VERSION(2,16,0)
 #include <gcrypt.h>
 #include <libsoup/soup.h>
 #endif
@@ -101,7 +101,7 @@ add_var_internal(GString * s, char sep, const char *key,
 	g_string_append_c(s, '=');
 
 	if (val != NULL) {
-#if GLIB_MAJOR_VERSION > 2 || (GLIB_MAJOR_VERSION == 2 && GLIB_MINOR_VERSION >= 16)
+#if GLIB_CHECK_VERSION(2,16,0)
 		char *escaped = g_uri_escape_string(val, NULL, false);
 #else
 		char *escaped = soup_uri_encode(val, "&");
@@ -359,7 +359,7 @@ char *as_timestamp(void)
  */
 static char *md5_hex(const char *p, int len)
 {
-#if GLIB_MAJOR_VERSION > 2 || (GLIB_MAJOR_VERSION == 2 && GLIB_MINOR_VERSION >= 16)
+#if GLIB_CHECK_VERSION(2,16,0)
 	return g_compute_checksum_for_string(G_CHECKSUM_MD5, p, len);
 #else
 	/* fall back to libgcrypt on GLib < 2.16 */
