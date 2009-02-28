@@ -22,6 +22,7 @@
 
 #include <glib.h>
 
+#ifndef G_OS_WIN32
 #include <stdbool.h>
 #include <assert.h>
 #include <sys/types.h>
@@ -35,6 +36,9 @@
 
 #include <pwd.h>
 #include <grp.h>
+#endif
+
+#ifndef G_OS_WIN32
 
 /** the Unix user name which MPD runs as */
 static char *user_name;
@@ -48,9 +52,12 @@ static gid_t user_gid;
 /** the absolute path of the pidfile */
 static char *pidfile;
 
+#endif
+
 void
 daemonize_close_stdin(void)
 {
+#ifndef G_OS_WIN32
 	int fd = open("/dev/null", O_RDONLY);
 
 	if (fd < 0)
@@ -59,11 +66,13 @@ daemonize_close_stdin(void)
 		dup2(fd, STDIN_FILENO);
 		close(fd);
 	}
+#endif
 }
 
 void
 daemonize_close_stdout_stderr(void)
 {
+#ifndef G_OS_WIN32
 	int fd = open("/dev/null", O_WRONLY);
 
 	if (fd >= 0) {
@@ -77,11 +86,13 @@ daemonize_close_stdout_stderr(void)
 		close(STDOUT_FILENO);
 		close(STDERR_FILENO);
 	}
+#endif
 }
 
 void
 daemonize_set_user(void)
 {
+#ifndef G_OS_WIN32
 	if (user_name == NULL)
 		return;
 
@@ -104,11 +115,13 @@ daemonize_set_user(void)
 	if (setuid(user_uid) == -1)
 		g_error("cannot change to uid of user \"%s\": %s",
 			user_name, g_strerror(errno));
+#endif
 }
 
 void
 daemonize_detach(void)
 {
+#ifndef G_OS_WIN32
 	int ret;
 
 	/* detach from parent process */
@@ -130,11 +143,13 @@ daemonize_detach(void)
 	/* detach from the current session */
 
 	setsid();
+#endif
 }
 
 void
 daemonize_write_pidfile(void)
 {
+#ifndef G_OS_WIN32
 	FILE *file;
 
 	if (pidfile == NULL)
@@ -149,11 +164,13 @@ daemonize_write_pidfile(void)
 
 	fprintf(file, "%d\n", getpid());
 	fclose(file);
+#endif
 }
 
 void
 daemonize_init(const char *user, const char *_pidfile)
 {
+#ifndef G_OS_WIN32
 	if (user != NULL && strcmp(user, g_get_user_name()) != 0) {
 		struct passwd *pwd;
 
@@ -168,14 +185,20 @@ daemonize_init(const char *user, const char *_pidfile)
 	}
 
 	pidfile = g_strdup(_pidfile);
+#else
+	(void)user;
+	(void)_pidfile;
+#endif
 }
 
 void
 daemonize_finish(void)
 {
+#ifndef G_OS_WIN32
 	if (pidfile != NULL)
 		unlink(pidfile);
 
 	g_free(user_name);
 	g_free(pidfile);
+#endif
 }
