@@ -24,6 +24,7 @@
 #include "lmc.h"
 #include "as.h"
 #include "mbid.h"
+#include "compat.h"
 
 #include <glib.h>
 
@@ -223,8 +224,8 @@ int main(int argc, char **argv)
 
 	/* set up timeouts */
 
-	save_source_id = g_timeout_add(file_config.cache_interval * 1000,
-				       timer_save_cache, NULL);
+	save_source_id = g_timeout_add_seconds(file_config.cache_interval,
+					       timer_save_cache, NULL);
 
 	/* run the main loop */
 

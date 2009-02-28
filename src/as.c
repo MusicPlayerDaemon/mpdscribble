@@ -23,6 +23,7 @@
 #include "journal.h"
 #include "conn.h"
 #include "config.h"
+#include "compat.h"
 
 #include <glib.h>
 
@@ -458,8 +459,8 @@ as_schedule_handshake(void)
 	assert(g_state == AS_NOTHING);
 	assert(as_handshake_id == 0);
 
-	as_handshake_id = g_timeout_add(g_interval * 1000,
-					as_handshake_timer, NULL);
+	as_handshake_id = g_timeout_add_seconds(g_interval,
+						as_handshake_timer, NULL);
 }
 
 static void
@@ -668,8 +669,8 @@ as_schedule_submit(void)
 	assert(!g_queue_is_empty(queue) ||
 	       (g_now_playing.artist != NULL && g_now_playing.track != NULL));
 
-	as_submit_id = g_timeout_add(g_interval * 1000,
-				     as_submit_timer, NULL);
+	as_submit_id = g_timeout_add_seconds(g_interval,
+					     as_submit_timer, NULL);
 }
 
 void as_save_cache(void)

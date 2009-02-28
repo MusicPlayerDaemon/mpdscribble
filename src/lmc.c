@@ -20,6 +20,7 @@
 
 #include "lmc.h"
 #include "file.h"
+#include "compat.h"
 
 #include <glib.h>
 
@@ -29,14 +30,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-
-#if !GLIB_CHECK_VERSION(2,14,0)
-static inline guint
-g_timeout_add_seconds(guint interval, GSourceFunc function, gpointer data)
-{
-	return g_timeout_add(interval * 1000, function, data);
-}
-#endif
 
 static mpd_Connection *g_mpd = NULL;
 static bool idle_supported, idle_notified;
