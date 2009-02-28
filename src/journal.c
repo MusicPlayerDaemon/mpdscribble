@@ -96,6 +96,59 @@ journal_commit_song(GQueue *queue, struct song *song)
 	clear_song(song);
 }
 
+/* g_time_val_from_iso8601() was introduced in GLib 2.12 */
+#if GLIB_CHECK_VERSION(2,12,0)
+
+/**
+ * Imports an old (protocol v1.2) timestamp, format "%Y-%m-%d
+ * %H:%M:%S".
+ */
+static char *
+import_old_timestamp(const char *p)
+{
+	char *q;
+	bool success;
+	GTimeVal time_val;
+
+	if (strlen(p) <= 10 || p[10] != ' ')
+		return NULL;
+
+	g_debug("importing time stamp '%s'", p);
+
+	/* replace a space with 'T', as expected by
+	   g_time_val_from_iso8601() */
+	q = g_strdup(p);
+	q[10] = 'T';
+
+	success = g_time_val_from_iso8601(q, &time_val);
+	g_free(q);
+	if (!success) {
+		g_debug("import of '%s' failed", p);
+		return NULL;
+	}
+
+	g_debug("'%s' -> %ld", p, time_val.tv_sec);
+	return g_strdup_printf("%ld", time_val.tv_sec);
+}
+
+#endif
+
+/**
+ * Parses the time stamp.  If needed, converts the time stamp, and
+ * returns an allocated string.
+ */
+static char *
+parse_timestamp(const char *p)
+{
+#if GLIB_CHECK_VERSION(2,12,0)
+	char *ret = import_old_timestamp(p);
+	if (ret != NULL)
+		return ret;
+#endif
+
+	return g_strdup(p);
+}
+
 void journal_read(GQueue *queue)
 {
 	FILE *file;
@@ -139,7 +192,7 @@ void journal_read(GQueue *queue)
 		else if (!strcmp("m", key))
 			sng.mbid = g_strdup(value);
 		else if (!strcmp("i", key))
-			sng.time = g_strdup(value);
+			sng.time = parse_timestamp(value);
 		else if (!strcmp("l", key))
 			sng.length = atoi(value);
 		else if (strcmp("o", key) == 0 && value[0] == 'R')
