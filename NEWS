@@ -1,9 +1,10 @@
-mpdscribble 0.17 - not yet released
+mpdscribble 0.17 - 2009-03-02
   * secure permissions for mpdscribble.conf
   * added "daemon_user" configuration option
   * escape '&'
   * import AS protocol v1.1 timestamps
   * support logging to stderr
+  * add win32 support
 
 
 mpdscribble 0.16 - 2009-01-17
