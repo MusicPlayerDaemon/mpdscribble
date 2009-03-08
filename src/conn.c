@@ -23,7 +23,8 @@
 #include "as.h"
 #include "config.h"
 
-#include <libsoup/soup.h>
+#include <libsoup/soup-uri.h>
+#include <libsoup/soup-session-async.h>
 
 #include <assert.h>
 #include <stdlib.h>
