@@ -34,6 +34,7 @@
 #include "str_pool.h"
 
 #include <stdlib.h>
+#include <string.h>
 
 static void mpd_initSong(struct mpd_song *song) {
 	song->file = NULL;
@@ -49,6 +50,7 @@ static void mpd_initSong(struct mpd_song *song) {
 	song->performer = NULL;
 	song->disc = NULL;
 	song->comment = NULL;
+	song->musicbrainz_trackid = NULL;
 
 	song->time = MPD_SONG_NO_TIME;
 	song->pos = MPD_SONG_NO_NUM;
@@ -80,6 +82,8 @@ static void mpd_finishSong(struct mpd_song *song) {
 		str_pool_put(song->disc);
 	if (song->comment)
 		str_pool_put(song->comment);
+	if (song->musicbrainz_trackid != NULL)
+		free(song->musicbrainz_trackid);
 }
 
 struct mpd_song *mpd_newSong(void) {
@@ -124,6 +128,8 @@ mpd_songDup(const struct mpd_song *song)
 		ret->disc = str_pool_dup(song->disc);
 	if (song->comment)
 		ret->comment = str_pool_dup(song->comment);
+	if (song->musicbrainz_trackid != NULL)
+		ret->musicbrainz_trackid = strdup(song->musicbrainz_trackid);
 
 	ret->time = song->time;
 	ret->pos = song->pos;

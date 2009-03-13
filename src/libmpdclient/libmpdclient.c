@@ -1066,6 +1066,10 @@ mpd_InfoEntity * mpd_getNextInfoEntity(mpd_Connection * connection) {
 					strcmp(re->name, "Comment") == 0) {
 				entity->info.song->comment = str_pool_dup(re->value);
 			}
+			else if(!entity->info.song->musicbrainz_trackid &&
+				strcmp(re->name, "MUSICBRAINZ_TRACKID") == 0) {
+				entity->info.song->musicbrainz_trackid = strdup(re->value);
+			}
 		}
 		else if(entity->type == MPD_INFO_ENTITY_TYPE_DIRECTORY) {
 		}

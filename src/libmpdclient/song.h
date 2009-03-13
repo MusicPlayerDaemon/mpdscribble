@@ -68,6 +68,8 @@ struct mpd_song {
 	char *disc;
 	/* Comment */
 	char *comment;
+	/* MUSICBRAINZ_TRACKID */
+	char *musicbrainz_trackid;
 
 	/* length of song in seconds, check that it is not MPD_SONG_NO_TIME  */
 	int time;
