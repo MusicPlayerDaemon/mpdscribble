@@ -220,7 +220,6 @@ load_config_file(const char *path)
 	load_string(file, "password", &file_config.password);
 	load_string(file, "log", &file_config.log);
 	load_string(file, "cache", &file_config.cache);
-	load_string(file, "musicdir", &file_config.musicdir);
 	load_string(file, "host", &file_config.host);
 	load_integer(file, "port", &file_config.port);
 	load_string(file, "proxy", &file_config.proxy);

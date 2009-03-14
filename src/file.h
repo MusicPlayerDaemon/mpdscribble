@@ -36,7 +36,6 @@ struct config {
 	char *password;
 	char *log;
 	char *cache;
-	char *musicdir;
 	char *conf;
 	char *host;
 	char *proxy;
