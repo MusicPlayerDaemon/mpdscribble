@@ -75,10 +75,8 @@ setup_signals(void)
 #endif
 }
 
-static bool played_long_enough(int length)
+static bool played_long_enough(int elapsed, int length)
 {
-	int elapsed = g_timer_elapsed(timer, NULL);
-
 	/* http://www.lastfm.de/api/submissions "The track must have been
 	   played for a duration of at least 240 seconds or half the track's
 	   total length, whichever comes first. Skipping or pausing the
@@ -181,9 +179,10 @@ song_playing(const struct mpd_song *song, int elapsed)
 void
 song_ended(const struct mpd_song *song)
 {
+	int elapsed = g_timer_elapsed(timer, NULL);
 	int q;
 
-	if (!played_long_enough(song->time))
+	if (!played_long_enough(elapsed, song->time))
 		return;
 
 	/* FIXME:
