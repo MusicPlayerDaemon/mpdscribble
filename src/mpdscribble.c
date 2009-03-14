@@ -23,7 +23,6 @@
 #include "log.h"
 #include "lmc.h"
 #include "as.h"
-#include "mbid.h"
 #include "compat.h"
 
 #include <glib.h>
@@ -39,7 +38,6 @@ static GMainLoop *main_loop;
 static guint save_source_id;
 
 static GTimer *timer;
-static char mbid[MBID_BUFFER_SIZE];
 
 #ifndef WIN32
 static void signal_handler(G_GNUC_UNUSED int signum)
@@ -105,16 +103,8 @@ static void song_changed(const struct mpd_song *song)
 
 	g_timer_start(timer);
 
-	if (file_config.musicdir && chdir(file_config.musicdir) == 0) {
-		// yeah, I know i'm being silly, but I can't be arsed to
-		// concat the parts :P
-		if (getMBID(song->file, mbid))
-			mbid[0] = 0x00;
-		else
-			g_message("mbid is %s\n", mbid);
-	}
-
-	as_now_playing(song->artist, song->title, song->album, mbid,
+	as_now_playing(song->artist, song->title, song->album,
+		       song->musicbrainz_trackid,
 		       song->time);
 }
 
@@ -189,7 +179,7 @@ song_ended(const struct mpd_song *song)
 	   libmpdclient doesn't have any way to fetch the musicbrainz id. */
 	q = as_songchange(song->file, song->artist,
 			  song->title,
-			  song->album, mbid,
+			  song->album, song->musicbrainz_trackid,
 			  song->time >
 			  0 ? song->time : (int)
 			  g_timer_elapsed(timer,
