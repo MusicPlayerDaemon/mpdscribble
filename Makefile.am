@@ -26,7 +26,6 @@ src_mpdscribble_SOURCES = \
 	src/journal.c src/journal.h \
 	src/lmc.c src/lmc.h \
 	src/log.c src/log.h \
-	src/mbid.c src/mbid.h \
 	$(libmpdclient_SOURCES)
 
 AM_CPPFLAGS = $(libgobject_CFLAGS) $(libgthread_CFLAGS) $(libsoup_CFLAGS) \
