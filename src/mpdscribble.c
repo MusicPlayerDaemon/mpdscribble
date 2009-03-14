@@ -92,10 +92,10 @@ static bool played_long_enough(int elapsed, int length)
  * the "elapsed" value with the previous one.
  */
 static bool
-song_repeated(int elapsed, int prev_elapsed)
+song_repeated(const struct mpd_song *song, int elapsed, int prev_elapsed)
 {
 	return elapsed < 60 && prev_elapsed > elapsed &&
-		prev_elapsed - elapsed >= 240;
+		played_long_enough(prev_elapsed - elapsed, song->time);
 }
 
 static void song_changed(const struct mpd_song *song)
@@ -163,7 +163,7 @@ song_playing(const struct mpd_song *song, int elapsed)
 {
 	int prev_elapsed = g_timer_elapsed(timer, NULL);
 
-	if (song_repeated(elapsed, prev_elapsed)) {
+	if (song_repeated(song, elapsed, prev_elapsed)) {
 		/* the song is playing repeatedly: make it virtually
 		   stop and re-start */
 		g_debug("repeated song detected");
