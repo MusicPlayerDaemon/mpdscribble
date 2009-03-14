@@ -88,6 +88,18 @@ static bool played_long_enough(int length)
 	return elapsed > 240 || (length >= 30 && elapsed > length / 2);
 }
 
+/**
+ * This function determines if a song is played repeatedly: according
+ * to MPD, the current song hasn't changed, and now we're comparing
+ * the "elapsed" value with the previous one.
+ */
+static bool
+song_repeated(int elapsed, int prev_elapsed)
+{
+	return elapsed < 60 && prev_elapsed > elapsed &&
+		prev_elapsed - elapsed >= 240;
+}
+
 static void song_changed(const struct mpd_song *song)
 {
 	g_message("new song detected (%s - %s), id: %i, pos: %i\n",
@@ -149,13 +161,11 @@ song_started(const struct mpd_song *song)
  * MPD is still playing the song.
  */
 void
-song_playing(G_GNUC_UNUSED const struct mpd_song *song,
-	     G_GNUC_UNUSED int elapsed)
+song_playing(const struct mpd_song *song, int elapsed)
 {
 	int prev_elapsed = g_timer_elapsed(timer, NULL);
 
-	if (elapsed < 60 && prev_elapsed > elapsed &&
-	    prev_elapsed - elapsed >= 240) {
+	if (song_repeated(elapsed, prev_elapsed)) {
 		/* the song is playing repeatedly: make it virtually
 		   stop and re-start */
 		g_debug("repeated song detected");
