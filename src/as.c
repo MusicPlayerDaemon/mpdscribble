@@ -488,7 +488,7 @@ void
 as_now_playing(const char *artist, const char *track,
 	       const char *album, const char *mbid, const int length)
 {
-	struct config_as_host *as_host = &file_config.as_hosts;
+	struct config_as_host *current_host = &file_config.as_hosts;
 
 	as_song_cleanup(&g_now_playing, false);
 
@@ -498,8 +498,10 @@ as_now_playing(const char *artist, const char *track,
 	g_now_playing.mbid = g_strdup(mbid);
 	g_now_playing.length = length;
 
-	if (as_host->g_state == AS_READY && as_host->as_submit_id == 0)
-		as_schedule_submit(as_host); /* TODO: actually iterate over all hosts */
+	do {
+		if (current_host->g_state == AS_READY && current_host->as_submit_id == 0)
+			as_schedule_submit(current_host);
+	} while((current_host = current_host->next));
 }
 
 static void as_submit(struct config_as_host *as_host)
@@ -576,8 +578,8 @@ as_songchange(const char *file, const char *artist, const char *track,
 	      const char *album, const char *mbid, const int length,
 	      const char *time2)
 {
-	struct config_as_host *as_host = &file_config.as_hosts;
 	struct song *current;
+	struct config_as_host *current_host = &file_config.as_hosts;
 
 	/* from the 1.2 protocol draft:
 
@@ -613,8 +615,10 @@ as_songchange(const char *file, const char *artist, const char *track,
 
 	g_queue_push_tail(queue, current);
 
-	if (as_host->g_state == AS_READY && as_host->as_submit_id == 0)
-		as_schedule_submit(as_host); /* TODO: actually iterate over all hosts */
+	do {
+		if (current_host->g_state == AS_READY && current_host->as_submit_id == 0)
+			as_schedule_submit(current_host);
+	} while((current_host = current_host->next));
 
 	return g_queue_get_length(queue);
 }
@@ -622,6 +626,7 @@ as_songchange(const char *file, const char *artist, const char *track,
 void as_init(void)
 {
 	guint queue_length;
+	struct config_as_host *current_host = &file_config.as_hosts;
 
 	g_message("starting mpdscribble (" AS_CLIENT_ID " " AS_CLIENT_VERSION ")\n");
 
@@ -634,12 +639,14 @@ void as_init(void)
 
 	conn_setup();
 
-	file_config.as_hosts.g_session = NULL;
-	file_config.as_hosts.g_nowplay_url = NULL;
-	file_config.as_hosts.g_submit_url = NULL; /* XXX: this needs to get freed in file.c */
-	file_config.as_hosts.g_interval = 1;
-	file_config.as_hosts.g_state = AS_NOTHING;
-	as_schedule_handshake(&file_config.as_hosts); /* TODO: actually handshake all the hosts */
+	do {
+		current_host->g_session = NULL;
+		current_host->g_nowplay_url = NULL;
+		current_host->g_submit_url = NULL; /* XXX: this needs to get freed in file.c */
+		current_host->g_interval = 1;
+		current_host->g_state = AS_NOTHING;
+		as_schedule_handshake(current_host);
+	} while((current_host = current_host->next));
 }
 
 static gboolean
