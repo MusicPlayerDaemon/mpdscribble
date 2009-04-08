@@ -21,29 +21,13 @@
 #include "conn.h"
 #include "file.h"
 #include "as.h"
-#include "config.h"
-
-#include <libsoup/soup-uri.h>
-#include <libsoup/soup-session-async.h>
 
 #include <assert.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 
-struct global {
-	SoupSession *session;
-	char *base;
-	bool pending;
-	callback_t *callback;
-#ifdef HAVE_SOUP_24
-	SoupURI *proxy;
-#else
-	SoupUri *proxy;
-#endif
-};
-
-static struct global g;
+int g_thread_done = 0;
 
 static void
 #ifdef HAVE_SOUP_24
@@ -53,51 +37,61 @@ conn_callback(G_GNUC_UNUSED SoupSession * session,
 conn_callback(SoupMessage * msg, gpointer data)
 #endif
 {
-	assert(g.pending);
+	struct global *g = data;
+	assert(g->pending);
 
-	g.pending = false;
+	g->pending = false;
 
 	/* NOTE: does not support redirects */
 	if (SOUP_STATUS_IS_SUCCESSFUL(msg->status_code)) {
 #ifdef HAVE_SOUP_24
-		g.callback(msg->response_body->length,
-			   msg->response_body->data, data);
+		g->callback(msg->response_body->length,
+			   msg->response_body->data, g->data);
 #else
-		g.callback(msg->response.length, msg->response.body, data);
+		g->callback(msg->response.length, msg->response.body, g->data);
 #endif
 	} else
-		g.callback(0, NULL, data);
+		g->callback(0, NULL, g->data);
 }
 
-void conn_setup(void)
+struct global *conn_setup(void)
 {
-	g_type_init();
-	g_thread_init(NULL);
+	struct global *g = g_new(struct global, 1);
 
-	g.pending = false;
+	if(!g_thread_done) {
+		g_type_init();
+		g_thread_init(NULL);
+		g_thread_done = 1;
+	}
+
+	g->pending = false;
 	if (file_config.proxy != NULL)
-		g.proxy = soup_uri_new(file_config.proxy);
+		g->proxy = soup_uri_new(file_config.proxy);
 	else
-		g.proxy = NULL;
+		g->proxy = NULL;
+
+	return g;
 }
 
 int
-conn_initiate(char *url, callback_t * callback, char *post_data, void *data)
+conn_initiate(char *url, callback_t * callback, char *post_data, void *data, struct global *g)
 {
 	SoupMessage *msg;
 
-	assert(!g.pending);
+	assert(!g->pending);
 
-	g.callback = callback;
+	g->data = data;
 
-	g.base = url;
+	g->callback = callback;
 
-	g.session =
-	    soup_session_async_new_with_options(SOUP_SESSION_PROXY_URI, g.proxy,
+	g->base = url;
+
+	g->session =
+	    soup_session_async_new_with_options(SOUP_SESSION_PROXY_URI, g->proxy,
 						NULL);
 
 	if (post_data) {
-		msg = soup_message_new(SOUP_METHOD_POST, g.base);
+		msg = soup_message_new(SOUP_METHOD_POST, g->base);
 #ifdef HAVE_SOUP_24
 		soup_message_set_request
 		    (msg, "application/x-www-form-urlencoded",
@@ -120,22 +114,23 @@ conn_initiate(char *url, callback_t * callback, char *post_data, void *data)
 		soup_message_add_header(msg->request_headers, "Accept", "*/*");
 #endif
 	} else {
-		msg = soup_message_new(SOUP_METHOD_GET, g.base);
+		msg = soup_message_new(SOUP_METHOD_GET, g->base);
 	}
 
 	soup_message_set_flags(msg, SOUP_MESSAGE_NO_REDIRECT);
 
-	g.pending = true;
-	soup_session_queue_message(g.session, msg, conn_callback, data);
+	g->pending = true;
+	soup_session_queue_message(g->session, msg, conn_callback, g);
 
 	return CONN_OK;
 }
 
-bool conn_pending(void)
+bool conn_pending(struct global *g)
 {
-	return g.pending;
+	return g->pending;
 }
 
-void conn_cleanup(void)
+void conn_cleanup(struct global *g)
 {
+	free(g);
 }

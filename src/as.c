@@ -413,7 +413,7 @@ static void as_handshake(struct config_as_host *as_host)
 
 	//  notice ("handshake url:\n%s", url);
 
-	if (!conn_initiate(url->str, &as_handshake_callback, NULL, as_host)) {
+	if (!conn_initiate(url->str, &as_handshake_callback, NULL, as_host, as_host->conn)) {
 		g_warning("something went wrong when trying to connect, "
 			  "probably a bug\n");
 
@@ -474,7 +474,7 @@ as_send_now_playing(const char *artist, const char *track,
 	g_message("sending 'now playing' notification to '%s'\n", as_host->url);
 
 	if (!conn_initiate(as_host->g_nowplay_url, as_submit_callback,
-			   post_data->str, as_host)) {
+			   post_data->str, as_host, as_host->conn)) {
 		g_warning("failed to POST to %s\n", as_host->g_nowplay_url);
 
 		as_host->g_state = AS_READY;
@@ -562,7 +562,7 @@ static void as_submit(struct config_as_host *as_host)
 
 	g_submit_pending = count;
 	if (!conn_initiate(as_host->g_submit_url, &as_submit_callback,
-			   post_data->str, as_host)) {
+			   post_data->str, as_host, as_host->conn)) {
 		g_warning("something went wrong when trying to connect,"
 			  " probably a bug\n");
 
@@ -638,9 +638,8 @@ void as_init(void)
 	g_message("loaded %i song%s from cache\n",
 		  queue_length, queue_length == 1 ? "" : "s");
 
-	conn_setup();
-
 	do {
+		current_host->conn = conn_setup();
 		current_host->g_session = NULL;
 		current_host->g_nowplay_url = NULL;
 		current_host->g_submit_url = NULL;
@@ -698,6 +697,4 @@ void as_cleanup(void)
 
 	g_queue_foreach(queue, free_queue_song, NULL);
 	g_queue_free(queue);
-
-	conn_cleanup();
 }

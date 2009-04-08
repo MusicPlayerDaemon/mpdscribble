@@ -24,7 +24,25 @@
 #include <stdbool.h>
 #include <stddef.h>
 
+#include <libsoup/soup-uri.h>
+#include <libsoup/soup-session-async.h>
+
+#include "config.h"
+
 typedef void callback_t(size_t, const char *, void *);
+
+struct global {
+	SoupSession *session;
+	char *base;
+	void *data;
+	bool pending;
+	callback_t *callback;
+#ifdef HAVE_SOUP_24
+	SoupURI *proxy;
+#else
+	SoupUri *proxy;
+#endif
+};
 
 #define CONN_FAIL 0
 #define CONN_OK 1
@@ -32,10 +50,10 @@ typedef void callback_t(size_t, const char *, void *);
 #define conn_escape(X) curl_escape(X, 0)
 #define conn_free curl_free
 
-void conn_setup(void);
-void conn_cleanup(void);
+struct global *conn_setup(void);
+void conn_cleanup(struct global *g);
 
-int conn_initiate(char *url, callback_t * callback, char *post_data, void *data);
-bool conn_pending(void);
+int conn_initiate(char *url, callback_t * callback, char *post_data, void *data, struct global *g);
+bool conn_pending(struct global *g);
 
 #endif /* CONN_H */

@@ -331,6 +331,8 @@ int file_read_config(int argc, char **argv)
 static void
 free_as_host(struct config_as_host *current_host)
 {
+	if(current_host->conn)
+		conn_cleanup(current_host->conn);
 	if(current_host->url)
 		free(current_host->url);
 	if(current_host->username)
