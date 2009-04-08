@@ -207,6 +207,7 @@ static void as_handshake_callback(size_t length, const char *response, void *dat
 	bool ret;
 	struct config_as_host *as_host = data;
 
+	assert(as_host);
 	assert(as_host->g_state == AS_HANDSHAKING);
 	as_host->g_state = AS_NOTHING;
 

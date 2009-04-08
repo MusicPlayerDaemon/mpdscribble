@@ -57,6 +57,7 @@ conn_callback(SoupMessage * msg, gpointer data)
 
 	g.pending = false;
 
+	/* NOTE: does not support redirects */
 	if (SOUP_STATUS_IS_SUCCESSFUL(msg->status_code)) {
 #ifdef HAVE_SOUP_24
 		g.callback(msg->response_body->length,
