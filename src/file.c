@@ -328,11 +328,33 @@ int file_read_config(int argc, char **argv)
 	return 1;
 }
 
+static void
+free_as_host(struct config_as_host *current_host)
+{
+	if(current_host->url)
+		free(current_host->url);
+	if(current_host->username)
+		free(current_host->username);
+	if(current_host->password)
+		free(current_host->password);
+	if(current_host->g_session)
+		g_free(current_host->g_session);
+	if(current_host->g_nowplay_url)
+		g_free(current_host->g_nowplay_url);
+	if(current_host->g_submit_url)
+		g_free(current_host->g_submit_url);
+	if(current_host->next) {
+		free_as_host(current_host->next);
+		free(current_host->next);
+	}
+}
+
 void file_cleanup(void)
 {
 	g_free(file_config.host);
 	g_free(file_config.log);
 	g_free(file_config.conf);
 	g_free(file_config.cache);
-	/* XXX: Free linked list */
+
+	free_as_host(&file_config.as_hosts);
 }
