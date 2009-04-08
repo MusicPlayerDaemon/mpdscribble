@@ -53,14 +53,6 @@ static const char BADSESSION[] = "BADSESSION";
 static const char FAILED[] = "FAILED";
 
 typedef enum {
-	AS_NOTHING,
-	AS_HANDSHAKING,
-	AS_READY,
-	AS_SUBMITTING,
-	AS_BADAUTH,
-} as_state;
-
-typedef enum {
 	AS_COMMAND,
 	AS_SESSION,
 	AS_NOWPLAY,
@@ -73,18 +65,10 @@ typedef enum {
 	AS_SUBMIT_HANDSHAKE,
 } as_submitting;
 
-static char *g_session = NULL;
-static char *g_nowplay_url = NULL;
-static char *g_submit_url = NULL;
-static char *g_md5_response = NULL;
-static int g_interval = 1;
-static as_state g_state = AS_NOTHING;
 
 static struct song g_now_playing;
 static GQueue *queue;
 static unsigned g_submit_pending;
-
-static guint as_handshake_id, as_submit_id;
 
 static void
 add_var_internal(GString * s, char sep, const char *key,
@@ -134,17 +118,17 @@ as_submit(struct config_as_host *as_host);
 static void
 as_schedule_submit(struct config_as_host *as_host);
 
-static void as_increase_interval(void)
+static void as_increase_interval(struct config_as_host *as_host)
 {
-	if (g_interval < 60)
-		g_interval = 60;
+	if (as_host->g_interval < 60)
+		as_host->g_interval = 60;
 	else
-		g_interval <<= 1;
+		as_host->g_interval <<= 1;
 
-	if (g_interval > 60 * 60 * 2)
-		g_interval = 60 * 60 * 2;
+	if (as_host->g_interval > 60 * 60 * 2)
+		as_host->g_interval = 60 * 60 * 2;
 
-	g_warning("waiting %i seconds before trying again\n", g_interval);
+	g_warning("waiting %i seconds before trying again\n", as_host->g_interval);
 }
 
 static int as_parse_submit_response(const char *line, size_t length)
@@ -173,7 +157,7 @@ static int as_parse_submit_response(const char *line, size_t length)
 }
 
 static bool
-as_parse_handshake_response(const char *line)
+as_parse_handshake_response(const char *line, struct config_as_host *as_host)
 {
 	static const char *BANNED = "BANNED";
 	static const char *BADAUTH = "BADAUTH";
@@ -186,15 +170,15 @@ as_parse_handshake_response(const char *line)
 		return true;
 	} else if (!strncmp(line, BANNED, strlen(BANNED))) {
 		g_warning("handshake failed, we're banned (%s)\n", line);
-		g_state = AS_BADAUTH;
+		as_host->g_state = AS_BADAUTH;
 	} else if (!strncmp(line, BADAUTH, strlen(BADAUTH))) {
 		g_warning("handshake failed, username or password incorrect (%s)\n",
 			  line);
-		g_state = AS_BADAUTH;
+		as_host->g_state = AS_BADAUTH;
 	} else if (!strncmp(line, BADTIME, strlen(BADTIME))) {
 		g_warning("handshake failed, clock not synchronized (%s)\n",
 			  line);
-		g_state = AS_BADAUTH;
+		as_host->g_state = AS_BADAUTH;
 	} else if (!strncmp(line, FAILED, strlen(FAILED))) {
 		g_warning("handshake failed (%s)\n", line);
 	} else {
@@ -215,19 +199,20 @@ static void as_song_cleanup(struct song *s, int free_struct)
 		free(s);
 }
 
-static void as_handshake_callback(size_t length, const char *response, void *as_host)
+static void as_handshake_callback(size_t length, const char *response, void *data)
 {
 	as_handshaking state = AS_COMMAND;
 	char *newline;
 	char *next;
 	bool ret;
+	struct config_as_host *as_host = data;
 
-	assert(g_state == AS_HANDSHAKING);
-	g_state = AS_NOTHING;
+	assert(as_host->g_state == AS_HANDSHAKING);
+	as_host->g_state = AS_NOTHING;
 
 	if (!length) {
 		g_warning("handshake timed out\n");
-		as_increase_interval();
+		as_increase_interval(data);
 		as_schedule_handshake(as_host);
 		return;
 	}
@@ -236,10 +221,10 @@ static void as_handshake_callback(size_t length, const char *response, void *as_
 		next = g_strndup(response, newline - response);
 		switch (state) {
 		case AS_COMMAND:
-			ret = as_parse_handshake_response(next);
+			ret = as_parse_handshake_response(next, as_host);
 			if (!ret) {
 				g_free(next);
-				as_increase_interval();
+				as_increase_interval(data);
 				as_schedule_handshake(as_host);
 				return;
 			}
@@ -247,22 +232,22 @@ static void as_handshake_callback(size_t length, const char *response, void *as_
 			state = AS_SESSION;
 			break;
 		case AS_SESSION:
-			g_session = next;
+			as_host->g_session = next;
 			next = NULL;
-			g_debug("session: %s\n", g_session);
+			g_debug("session: %s\n", as_host->g_session);
 			state = AS_NOWPLAY;
 			break;
 		case AS_NOWPLAY:
-			g_nowplay_url = next;
+			as_host->g_nowplay_url = next;
 			next = NULL;
-			g_debug("now playing url: %s\n", g_nowplay_url);
+			g_debug("now playing url: %s\n", as_host->g_nowplay_url);
 			state = AS_SUBMIT;
 			break;
 		case AS_SUBMIT:
-			g_submit_url = next;
-			g_debug("submit url: %s\n", g_submit_url);
-			g_state = AS_READY;
-			g_interval = 1;
+			as_host->g_submit_url = next;
+			g_debug("submit url: %s\n", as_host->g_submit_url);
+			as_host->g_state = AS_READY;
+			as_host->g_interval = 1;
 
 			/* handshake was successful: see if we have
 			   songs to submit */
@@ -276,7 +261,7 @@ static void as_handshake_callback(size_t length, const char *response, void *as_
 
 	}
 
-	as_increase_interval();
+	as_increase_interval(as_host);
 	as_schedule_handshake(as_host);
 }
 
@@ -290,17 +275,18 @@ static void as_queue_remove_oldest(unsigned count)
 	}
 }
 
-static void as_submit_callback(size_t length, const char *response, void *as_host)
+static void as_submit_callback(size_t length, const char *response, void *data)
 {
 	char *newline;
+	struct config_as_host *as_host = data;
 
-	assert(g_state == AS_SUBMITTING);
-	g_state = AS_READY;
+	assert(as_host->g_state == AS_SUBMITTING);
+	as_host->g_state = AS_READY;
 
 	if (!length) {
 		g_submit_pending = 0;
 		g_warning("submit timed out\n");
-		as_increase_interval();
+		as_increase_interval(as_host);
 		as_schedule_submit(as_host);
 		return;
 	}
@@ -311,7 +297,7 @@ static void as_submit_callback(size_t length, const char *response, void *as_hos
 
 	switch (as_parse_submit_response(response, length)) {
 	case AS_SUBMIT_OK:
-		g_interval = 1;
+		as_host->g_interval = 1;
 
 		/* submission was accepted, so clean up the cache. */
 		if (g_submit_pending > 0) {
@@ -330,11 +316,11 @@ static void as_submit_callback(size_t length, const char *response, void *as_hos
 		as_submit(as_host);
 		break;
 	case AS_SUBMIT_FAILED:
-		as_increase_interval();
+		as_increase_interval(as_host);
 		as_schedule_submit(as_host);
 		break;
 	case AS_SUBMIT_HANDSHAKE:
-		g_state = AS_NOTHING;
+		as_host->g_state = AS_NOTHING;
 		as_schedule_handshake(as_host);
 		break;
 	}
@@ -406,7 +392,7 @@ static void as_handshake(struct config_as_host *as_host)
 	GString *url;
 	char *timestr, *md5;
 
-	g_state = AS_HANDSHAKING;
+	as_host->g_state = AS_HANDSHAKING;
 
 	timestr = as_timestamp();
 	md5 = as_md5(as_host->password, timestr);
@@ -430,8 +416,8 @@ static void as_handshake(struct config_as_host *as_host)
 		g_warning("something went wrong when trying to connect, "
 			  "probably a bug\n");
 
-		g_state = AS_NOTHING;
-		as_increase_interval();
+		as_host->g_state = AS_NOTHING;
+		as_increase_interval(as_host);
 		as_schedule_handshake(as_host);
 	}
 
@@ -441,9 +427,11 @@ static void as_handshake(struct config_as_host *as_host)
 static gboolean
 as_handshake_timer(gpointer data)
 {
-	assert(g_state == AS_NOTHING);
+	struct config_as_host *as_host = data;
 
-	as_handshake_id = 0;
+	assert(as_host->g_state == AS_NOTHING);
+
+	((struct config_as_host*)data)->as_handshake_id = 0;
 
 	as_handshake(data);
 	return false;
@@ -452,10 +440,10 @@ as_handshake_timer(gpointer data)
 static void
 as_schedule_handshake(struct config_as_host *as_host)
 {
-	assert(g_state == AS_NOTHING);
-	assert(as_handshake_id == 0);
+	assert(as_host->g_state == AS_NOTHING);
+	assert(as_host->as_handshake_id == 0);
 
-	as_handshake_id = g_timeout_add_seconds(g_interval,
+	as_host->as_handshake_id = g_timeout_add_seconds(as_host->g_interval,
 						as_handshake_timer, as_host);
 }
 
@@ -466,15 +454,15 @@ as_send_now_playing(const char *artist, const char *track,
 	GString *post_data;
 	char len[MAX_VAR_SIZE];
 
-	assert(g_state == AS_READY);
-	assert(as_submit_id == 0);
+	assert(as_host->g_state == AS_READY);
+	assert(as_host->as_submit_id == 0);
 
-	g_state = AS_SUBMITTING;
+	as_host->g_state = AS_SUBMITTING;
 
 	snprintf(len, MAX_VAR_SIZE, "%i", length);
 
 	post_data = g_string_new(NULL);
-	add_var(post_data, "s", g_session);
+	add_var(post_data, "s", as_host->g_session);
 	add_var(post_data, "a", artist);
 	add_var(post_data, "t", track);
 	add_var(post_data, "b", album);
@@ -484,12 +472,12 @@ as_send_now_playing(const char *artist, const char *track,
 
 	g_message("sending 'now playing' notification\n");
 
-	if (!conn_initiate(g_nowplay_url, as_submit_callback,
+	if (!conn_initiate(as_host->g_nowplay_url, as_submit_callback,
 			   post_data->str, as_host)) {
-		g_warning("failed to POST to %s\n", g_nowplay_url);
+		g_warning("failed to POST to %s\n", as_host->g_nowplay_url);
 
-		g_state = AS_READY;
-		as_increase_interval();
+		as_host->g_state = AS_READY;
+		as_increase_interval(as_host);
 		as_schedule_submit(as_host);
 	}
 
@@ -500,6 +488,8 @@ void
 as_now_playing(const char *artist, const char *track,
 	       const char *album, const char *mbid, const int length)
 {
+	struct config_as_host *as_host = &file_config.as_hosts;
+
 	as_song_cleanup(&g_now_playing, false);
 
 	g_now_playing.artist = g_strdup(artist);
@@ -508,8 +498,8 @@ as_now_playing(const char *artist, const char *track,
 	g_now_playing.mbid = g_strdup(mbid);
 	g_now_playing.length = length;
 
-	if (g_state == AS_READY && as_submit_id == 0)
-		as_schedule_submit(&file_config.as_hosts); /* TODO: actually iterate over all hosts */
+	if (as_host->g_state == AS_READY && as_host->as_submit_id == 0)
+		as_schedule_submit(as_host); /* TODO: actually iterate over all hosts */
 }
 
 static void as_submit(struct config_as_host *as_host)
@@ -519,8 +509,8 @@ static void as_submit(struct config_as_host *as_host)
 	GString *post_data;
 	char len[MAX_VAR_SIZE];
 
-	assert(g_state == AS_READY);
-	assert(as_submit_id == 0);
+	assert(as_host->g_state == AS_READY);
+	assert(as_host->as_submit_id == 0);
 
 	if (g_queue_is_empty(queue)) {
 		/* the submission queue is empty.  See if a "now playing" song is
@@ -537,11 +527,11 @@ static void as_submit(struct config_as_host *as_host)
 		return;
 	}
 
-	g_state = AS_SUBMITTING;
+	as_host->g_state = AS_SUBMITTING;
 
 	/* construct the handshake url. */
 	post_data = g_string_new(NULL);
-	add_var(post_data, "s", g_session);
+	add_var(post_data, "s", as_host->g_session);
 
 	for (GList *list = g_queue_peek_head_link(queue);
 	     list != NULL && count < MAX_SUBMIT_COUNT;
@@ -565,16 +555,16 @@ static void as_submit(struct config_as_host *as_host)
 
 	g_message("submitting %i song%s\n", count, count == 1 ? "" : "s");
 	g_debug("post data: %s\n", post_data->str);
-	g_debug("url: %s\n", g_submit_url);
+	g_debug("url: %s\n", as_host->g_submit_url);
 
 	g_submit_pending = count;
-	if (!conn_initiate(g_submit_url, &as_submit_callback,
+	if (!conn_initiate(as_host->g_submit_url, &as_submit_callback,
 			   post_data->str, as_host)) {
 		g_warning("something went wrong when trying to connect,"
 			  " probably a bug\n");
 
-		g_state = AS_READY;
-		as_increase_interval();
+		as_host->g_state = AS_READY;
+		as_increase_interval(as_host);
 		as_schedule_submit(as_host);
 	}
 
@@ -586,6 +576,7 @@ as_songchange(const char *file, const char *artist, const char *track,
 	      const char *album, const char *mbid, const int length,
 	      const char *time2)
 {
+	struct config_as_host *as_host = &file_config.as_hosts;
 	struct song *current;
 
 	/* from the 1.2 protocol draft:
@@ -622,8 +613,8 @@ as_songchange(const char *file, const char *artist, const char *track,
 
 	g_queue_push_tail(queue, current);
 
-	if (g_state == AS_READY && as_submit_id == 0)
-		as_schedule_submit(&file_config.as_hosts); /* TODO: actually iterate over all hosts */
+	if (as_host->g_state == AS_READY && as_host->as_submit_id == 0)
+		as_schedule_submit(as_host); /* TODO: actually iterate over all hosts */
 
 	return g_queue_get_length(queue);
 }
@@ -631,8 +622,6 @@ as_songchange(const char *file, const char *artist, const char *track,
 void as_init(void)
 {
 	guint queue_length;
-
-	assert(g_state == AS_NOTHING);
 
 	g_message("starting mpdscribble (" AS_CLIENT_ID " " AS_CLIENT_VERSION ")\n");
 
@@ -645,15 +634,20 @@ void as_init(void)
 
 	conn_setup();
 
+	file_config.as_hosts.g_session = NULL;
+	file_config.as_hosts.g_nowplay_url = NULL;
+	file_config.as_hosts.g_submit_url = NULL; /* XXX: this needs to get freed in file.c */
+	file_config.as_hosts.g_interval = 1;
+	file_config.as_hosts.g_state = AS_NOTHING;
 	as_schedule_handshake(&file_config.as_hosts); /* TODO: actually handshake all the hosts */
 }
 
 static gboolean
 as_submit_timer(gpointer data)
 {
-	assert(g_state == AS_READY);
+	assert(((struct config_as_host *)data)->g_state == AS_READY);
 
-	as_submit_id = 0;
+	((struct config_as_host *)data)->as_submit_id = 0;
 
 	as_submit(data);
 	return false;
@@ -662,11 +656,11 @@ as_submit_timer(gpointer data)
 static void
 as_schedule_submit(struct config_as_host *as_host)
 {
-	assert(as_submit_id == 0);
+	assert(as_host->as_submit_id == 0);
 	assert(!g_queue_is_empty(queue) ||
 	       (g_now_playing.artist != NULL && g_now_playing.track != NULL));
 
-	as_submit_id = g_timeout_add_seconds(g_interval,
+	as_host->as_submit_id = g_timeout_add_seconds(as_host->g_interval,
 					     as_submit_timer, as_host);
 }
 
@@ -694,9 +688,6 @@ void as_cleanup(void)
 
 	g_queue_foreach(queue, free_queue_song, NULL);
 	g_queue_free(queue);
-
-	g_free(g_submit_url);
-	g_free(g_md5_response);
 
 	conn_cleanup();
 }

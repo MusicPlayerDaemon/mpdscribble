@@ -24,11 +24,27 @@
 
 enum file_location { file_etc, file_home, file_unknown, };
 
+typedef enum {
+	AS_NOTHING,
+	AS_HANDSHAKING,
+	AS_READY,
+	AS_SUBMITTING,
+	AS_BADAUTH,
+} as_state;
+
 struct config_as_host {
 	char *url;
 	char *username;
 	char *password;
 	struct config_as_host *next; /* Linked list if more than one */
+	/* state stuff to get passed along in as.c */
+	guint as_handshake_id;
+	guint as_submit_id;
+	char *g_session;
+	char *g_nowplay_url;
+	char *g_submit_url;
+	int g_interval;
+	as_state g_state;
 };
 
 struct config {
