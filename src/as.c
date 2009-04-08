@@ -166,7 +166,7 @@ as_parse_handshake_response(const char *line, struct config_as_host *as_host)
 	/* FIXME: some code duplication between this
 	   and as_parse_submit_response. */
 	if (!strncmp(line, OK, strlen(OK))) {
-		g_message("handshake ok\n");
+		g_message("handshake ok for '%s'\n", as_host->url);
 		return true;
 	} else if (!strncmp(line, BANNED, strlen(BANNED))) {
 		g_warning("handshake failed, we're banned (%s)\n", line);
@@ -470,7 +470,7 @@ as_send_now_playing(const char *artist, const char *track,
 	add_var(post_data, "n", "");
 	add_var(post_data, "m", mbid);
 
-	g_message("sending 'now playing' notification\n");
+	g_message("sending 'now playing' notification to '%s'\n", as_host->url);
 
 	if (!conn_initiate(as_host->g_nowplay_url, as_submit_callback,
 			   post_data->str, as_host)) {
@@ -642,9 +642,11 @@ void as_init(void)
 	do {
 		current_host->g_session = NULL;
 		current_host->g_nowplay_url = NULL;
-		current_host->g_submit_url = NULL; /* XXX: this needs to get freed in file.c */
+		current_host->g_submit_url = NULL;
 		current_host->g_interval = 1;
 		current_host->g_state = AS_NOTHING;
+		current_host->as_submit_id = 0;
+		current_host->as_handshake_id = 0;
 		as_schedule_handshake(current_host);
 	} while((current_host = current_host->next));
 }
