@@ -24,7 +24,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 
-typedef void callback_t(size_t, const char *);
+typedef void callback_t(size_t, const char *, void *);
 
 #define CONN_FAIL 0
 #define CONN_OK 1
@@ -35,7 +35,7 @@ typedef void callback_t(size_t, const char *);
 void conn_setup(void);
 void conn_cleanup(void);
 
-int conn_initiate(char *url, callback_t * callback, char *post_data);
+int conn_initiate(char *url, callback_t * callback, char *post_data, void *data);
 bool conn_pending(void);
 
 #endif /* CONN_H */

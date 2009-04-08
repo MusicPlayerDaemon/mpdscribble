@@ -24,6 +24,13 @@
 
 enum file_location { file_etc, file_home, file_unknown, };
 
+struct config_as_host {
+	char *url;
+	char *username;
+	char *password;
+	struct config_as_host *next; /* Linked list if more than one */
+};
+
 struct config {
 	/** don't daemonize the mpdscribble process */
 	gboolean no_daemon;
@@ -32,8 +39,6 @@ struct config {
 
 	char *daemon_user;
 
-	char *username;
-	char *password;
 	char *log;
 	char *cache;
 	char *conf;
@@ -44,6 +49,8 @@ struct config {
 	int cache_interval;
 	int verbose;
 	enum file_location loc;
+
+	struct config_as_host as_hosts;
 };
 
 extern struct config file_config;

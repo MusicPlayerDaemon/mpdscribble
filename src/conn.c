@@ -48,9 +48,9 @@ static struct global g;
 static void
 #ifdef HAVE_SOUP_24
 conn_callback(G_GNUC_UNUSED SoupSession * session,
-	      SoupMessage * msg, G_GNUC_UNUSED gpointer data)
+	      SoupMessage * msg, gpointer data)
 #else
-conn_callback(SoupMessage * msg, G_GNUC_UNUSED gpointer data)
+conn_callback(SoupMessage * msg, gpointer data)
 #endif
 {
 	assert(g.pending);
@@ -60,12 +60,12 @@ conn_callback(SoupMessage * msg, G_GNUC_UNUSED gpointer data)
 	if (SOUP_STATUS_IS_SUCCESSFUL(msg->status_code)) {
 #ifdef HAVE_SOUP_24
 		g.callback(msg->response_body->length,
-			   msg->response_body->data);
+			   msg->response_body->data, data);
 #else
-		g.callback(msg->response.length, msg->response.body);
+		g.callback(msg->response.length, msg->response.body, data);
 #endif
 	} else
-		g.callback(0, NULL);
+		g.callback(0, NULL, data);
 }
 
 void conn_setup(void)
@@ -81,7 +81,7 @@ void conn_setup(void)
 }
 
 int
-conn_initiate(char *url, callback_t * callback, char *post_data)
+conn_initiate(char *url, callback_t * callback, char *post_data, void *data)
 {
 	SoupMessage *msg;
 
@@ -125,7 +125,7 @@ conn_initiate(char *url, callback_t * callback, char *post_data)
 	soup_message_set_flags(msg, SOUP_MESSAGE_NO_REDIRECT);
 
 	g.pending = true;
-	soup_session_queue_message(g.session, msg, conn_callback, NULL);
+	soup_session_queue_message(g.session, msg, conn_callback, data);
 
 	return CONN_OK;
 }

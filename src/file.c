@@ -49,6 +49,8 @@
 #define FILE_DEFAULT_PORT 6600
 #define FILE_DEFAULT_HOST "localhost"
 
+#define AS_HOST "http://post.audioscrobbler.com/"
+
 struct config file_config = {
 	.loc = file_unknown,
 };
@@ -193,8 +195,16 @@ load_config_file(const char *path)
 {
 	bool ret;
 	char *data1, *data2;
+	char **groups;
+	struct config_as_host *current_host = &file_config.as_hosts;
+	int i = -1;
 	GKeyFile *file;
 	GError *error = NULL;
+
+	/* initialize host, in case there are none */
+	current_host->url = NULL;
+	current_host->username = NULL;
+	current_host->password = NULL;
 
 	ret = g_file_get_contents(path, &data1, NULL, &error);
 	if (!ret)
@@ -216,8 +226,6 @@ load_config_file(const char *path)
 
 	load_string(file, "pidfile", &file_config.pidfile);
 	load_string(file, "daemon_user", &file_config.daemon_user);
-	load_string(file, "username", &file_config.username);
-	load_string(file, "password", &file_config.password);
 	load_string(file, "log", &file_config.log);
 	load_string(file, "cache", &file_config.cache);
 	load_string(file, "host", &file_config.host);
@@ -227,6 +235,37 @@ load_config_file(const char *path)
 	load_integer(file, "cache_interval",
 		     &file_config.cache_interval);
 	load_integer(file, "verbose", &file_config.verbose);
+
+	groups = g_key_file_get_groups(file, NULL);
+	while(groups[++i]) {
+		/* Use default host for mpdscribble group, for backward compatability */
+		if(strcmp(groups[i], "mpdscribble") == 0) {
+			current_host->url = strdup(AS_HOST);
+		} else {
+			current_host->url = strdup(groups[i]);
+		}
+
+		current_host->username = g_key_file_get_string(file, groups[i], "username", &error);
+		if (error != NULL)
+			g_error("%s\n", error->message);
+		if(current_host->username)
+			current_host->username = strdup(current_host->username);
+
+		current_host->password = g_key_file_get_string(file, groups[i], "password", &error);
+		if (error != NULL)
+			g_error("%s\n", error->message);
+		if(current_host->password)
+			current_host->password = strdup(current_host->password);
+
+		/* Only allocate a next element if there are more groups */
+		if(groups[i+1]) {
+			current_host->next = malloc(sizeof *current_host->next);
+			current_host = current_host->next;
+		} else {
+			current_host->next = NULL;
+		}
+	}
+	g_strfreev(groups);
 
 	g_key_file_free(file);
 }
@@ -257,11 +296,11 @@ int file_read_config(int argc, char **argv)
 	if (!file_config.conf)
 		g_error("cannot find configuration file\n");
 
-	if (file_config.username == NULL || *file_config.username == 0)
+	if (file_config.as_hosts.username == NULL || *file_config.as_hosts.username == 0)
 		g_error("no audioscrobbler username specified in %s\n",
 			file_config.conf);
 
-	if (file_config.password == NULL || *file_config.password == 0)
+	if (file_config.as_hosts.password == NULL || *file_config.as_hosts.password == 0)
 		g_error("no audioscrobbler password specified in %s\n",
 		      file_config.conf);
 
@@ -291,10 +330,9 @@ int file_read_config(int argc, char **argv)
 
 void file_cleanup(void)
 {
-	g_free(file_config.username);
-	g_free(file_config.password);
 	g_free(file_config.host);
 	g_free(file_config.log);
 	g_free(file_config.conf);
 	g_free(file_config.cache);
+	/* XXX: Free linked list */
 }
