@@ -76,7 +76,7 @@ static const GOptionEntry entries[] = {
 
 static void version(void)
 {
-	printf(blurb);
+	fputs(blurb, stdout);
 
 	printf
 	    ("mpdscribble comes with NO WARRANTY, to the extent permitted by law.\n"
