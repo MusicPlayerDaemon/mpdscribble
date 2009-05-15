@@ -58,14 +58,6 @@ struct config file_config = {
 	.loc = file_unknown,
 };
 
-static int file_atoi(const char *s)
-{
-	if (!s)
-		return 0;
-
-	return atoi(s);
-}
-
 static int file_exists(const char *filename)
 {
 	return g_file_test(filename, G_FILE_TEST_IS_REGULAR);
@@ -275,10 +267,6 @@ load_config_file(const char *path)
 
 int file_read_config(void)
 {
-	char *mpd_host = getenv("MPD_HOST");
-	char *mpd_port = getenv("MPD_PORT");
-	char *http_proxy = getenv("http_proxy");
-
 	if (file_config.conf == NULL)
 		file_config.conf = get_default_config_path();
 
@@ -299,19 +287,24 @@ int file_read_config(void)
 		      file_config.conf);
 
 	if (!file_config.host)
-		file_config.host = g_strdup(mpd_host);
+		file_config.host = g_strdup(getenv("MPD_HOST"));
 	if (!file_config.host)
 		file_config.host = g_strdup(FILE_DEFAULT_HOST);
 	if (!file_config.log)
 		file_config.log = get_default_log_path();
 	if (!file_config.cache)
 		file_config.cache = get_default_cache_path();
-	if (file_config.port == -1 && mpd_port)
-		file_config.port = file_atoi(mpd_port);
+
+	if (file_config.port == -1) {
+		const char *port = getenv("MPD_PORT");
+		if (port != NULL)
+			file_config.port = atoi(port);
+	}
+
 	if (file_config.port == -1)
 		file_config.port = FILE_DEFAULT_PORT;
 	if (!file_config.proxy)
-		file_config.proxy = http_proxy;
+		file_config.proxy = getenv("http_proxy");
 	if (file_config.sleep <= 0)
 		file_config.sleep = 1;
 	if (file_config.cache_interval == -1)
