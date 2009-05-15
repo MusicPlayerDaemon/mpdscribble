@@ -413,14 +413,8 @@ static void as_handshake(struct config_as_host *as_host)
 
 	//  notice ("handshake url:\n%s", url);
 
-	if (!conn_initiate(url->str, &as_handshake_callback, NULL, as_host, as_host->conn)) {
-		g_warning("something went wrong when trying to connect, "
-			  "probably a bug\n");
-
-		as_host->g_state = AS_NOTHING;
-		as_increase_interval(as_host);
-		as_schedule_handshake(as_host);
-	}
+	conn_initiate(url->str, &as_handshake_callback,
+		      NULL, as_host, as_host->conn);
 
 	g_string_free(url, true);
 }
@@ -473,14 +467,8 @@ as_send_now_playing(const char *artist, const char *track,
 
 	g_message("sending 'now playing' notification to '%s'\n", as_host->url);
 
-	if (!conn_initiate(as_host->g_nowplay_url, as_submit_callback,
-			   post_data->str, as_host, as_host->conn)) {
-		g_warning("failed to POST to %s\n", as_host->g_nowplay_url);
-
-		as_host->g_state = AS_READY;
-		as_increase_interval(as_host);
-		as_schedule_submit(as_host);
-	}
+	conn_initiate(as_host->g_nowplay_url, as_submit_callback,
+		      post_data->str, as_host, as_host->conn);
 
 	g_string_free(post_data, true);
 }
@@ -561,15 +549,8 @@ static void as_submit(struct config_as_host *as_host)
 	g_debug("url: %s\n", as_host->g_submit_url);
 
 	g_submit_pending = count;
-	if (!conn_initiate(as_host->g_submit_url, &as_submit_callback,
-			   post_data->str, as_host, as_host->conn)) {
-		g_warning("something went wrong when trying to connect,"
-			  " probably a bug\n");
-
-		as_host->g_state = AS_READY;
-		as_increase_interval(as_host);
-		as_schedule_submit(as_host);
-	}
+	conn_initiate(as_host->g_submit_url, &as_submit_callback,
+		      post_data->str, as_host, as_host->conn);
 
 	g_string_free(post_data, true);
 }

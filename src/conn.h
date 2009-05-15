@@ -37,7 +37,10 @@ struct global;
 struct global *conn_setup(void);
 void conn_cleanup(struct global *g);
 
-int conn_initiate(char *url, callback_t * callback, char *post_data, void *data, struct global *g);
+void
+conn_initiate(char *url, callback_t * callback, char *post_data,
+	      void *data, struct global *g);
+
 bool conn_pending(struct global *g);
 
 #endif /* CONN_H */

@@ -90,7 +90,7 @@ struct global *conn_setup(void)
 	return g;
 }
 
-int
+void
 conn_initiate(char *url, callback_t * callback, char *post_data, void *data, struct global *g)
 {
 	SoupMessage *msg;
@@ -138,8 +138,6 @@ conn_initiate(char *url, callback_t * callback, char *post_data, void *data, str
 
 	g->pending = true;
 	soup_session_queue_message(g->session, msg, conn_callback, g);
-
-	return CONN_OK;
 }
 
 bool conn_pending(struct global *g)
