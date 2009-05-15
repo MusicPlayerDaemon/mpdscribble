@@ -24,6 +24,7 @@
 #include "lmc.h"
 #include "as.h"
 #include "compat.h"
+#include "http_client.h"
 
 #include <glib.h>
 
@@ -215,6 +216,7 @@ int main(int argc, char **argv)
 	main_loop = g_main_loop_new(NULL, FALSE);
 
 	lmc_connect(file_config.host, file_config.port);
+	http_client_init();
 	as_init();
 
 	setup_signals();
@@ -239,6 +241,7 @@ int main(int argc, char **argv)
 	g_timer_destroy(timer);
 
 	as_cleanup();
+	http_client_finish();
 	lmc_disconnect();
 	file_cleanup();
 	log_deinit();

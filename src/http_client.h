@@ -25,16 +25,20 @@
 
 typedef void http_client_callback_t(size_t, const char *, void *);
 
-struct http_client;
+/**
+ * Perform global initialization on the HTTP client library.
+ */
+void
+http_client_init(void);
 
-struct http_client *
-http_client_new(void);
+/**
+ * Global deinitializaton.
+ */
+void
+http_client_finish(void);
 
 void
-http_client_free(struct http_client *g);
-
-void
-http_client_request(struct http_client *g, char *url, char *post_data,
+http_client_request(char *url, char *post_data,
 		    http_client_callback_t * callback, void *data);
 
 #endif /* CONN_H */

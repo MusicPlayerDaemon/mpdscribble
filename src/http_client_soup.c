@@ -32,45 +32,63 @@
 #include <stdio.h>
 #include <string.h>
 
-struct http_client {
-	SoupSession *session;
-	char *base;
-	void *data;
-	bool pending;
+struct http_request {
 	http_client_callback_t *callback;
+	void *callback_data;
+};
+
+static struct {
+	SoupSession *session;
 #ifdef HAVE_SOUP_24
 	SoupURI *proxy;
 #else
 	SoupUri *proxy;
 #endif
-};
 
-int g_thread_done = 0;
+	GList *requests;
+} http_client;
 
-struct http_client *
-http_client_new(void)
+void
+http_client_init(void)
 {
-	struct http_client *g = g_new(struct http_client, 1);
+	g_type_init();
+	g_thread_init(NULL);
 
-	if(!g_thread_done) {
-		g_type_init();
-		g_thread_init(NULL);
-		g_thread_done = 1;
-	}
-
-	g->pending = false;
 	if (file_config.proxy != NULL)
-		g->proxy = soup_uri_new(file_config.proxy);
+		http_client.proxy = soup_uri_new(file_config.proxy);
 	else
-		g->proxy = NULL;
+		http_client.proxy = NULL;
 
-	return g;
+	http_client.session =
+		soup_session_async_new_with_options(SOUP_SESSION_PROXY_URI,
+						    http_client.proxy, NULL);
+}
+
+static void
+http_request_free(struct http_request *request)
+{
+	g_free(request);
+}
+
+static void
+http_request_free_callback(gpointer data, G_GNUC_UNUSED gpointer user_data)
+{
+	struct http_request *request = data;
+
+	http_request_free(request);
 }
 
 void
-http_client_free(struct http_client *g)
+http_client_finish(void)
 {
-	free(g);
+	soup_session_abort(http_client.session);
+	g_object_unref(G_OBJECT(http_client.session));
+
+	g_list_foreach(http_client.requests, http_request_free_callback, NULL);
+	g_list_free(http_client.requests);
+
+	if (http_client.proxy != NULL)
+		soup_uri_free(http_client.proxy);
 }
 
 static void
@@ -81,43 +99,34 @@ http_client_soup_callback(G_GNUC_UNUSED SoupSession *session,
 http_client_soup_callback(SoupMessage *msg, gpointer data)
 #endif
 {
-	struct http_client *g = data;
-	assert(g->pending);
+	struct http_request *request = data;
 
-	g->pending = false;
+	http_client.requests = g_list_remove(http_client.requests, request);
 
 	/* NOTE: does not support redirects */
 	if (SOUP_STATUS_IS_SUCCESSFUL(msg->status_code)) {
 #ifdef HAVE_SOUP_24
-		g->callback(msg->response_body->length,
-			    msg->response_body->data, g->data);
+		request->callback(msg->response_body->length,
+				  msg->response_body->data, request->callback_data);
 #else
-		g->callback(msg->response.length, msg->response.body, g->data);
+		request->callback(msg->response.length, msg->response.body,
+				  request->callback_data);
 #endif
 	} else
-		g->callback(0, NULL, g->data);
+		request->callback(0, NULL, request->callback_data);
+
+	http_request_free(request);
 }
 
 void
-http_client_request(struct http_client *g, char *url, char *post_data,
+http_client_request(char *url, char *post_data,
 		    http_client_callback_t *callback, void *data)
 {
 	SoupMessage *msg;
-
-	assert(!g->pending);
-
-	g->data = data;
-
-	g->callback = callback;
-
-	g->base = url;
-
-	g->session =
-	    soup_session_async_new_with_options(SOUP_SESSION_PROXY_URI, g->proxy,
-						NULL);
+	struct http_request *request;
 
 	if (post_data) {
-		msg = soup_message_new(SOUP_METHOD_POST, g->base);
+		msg = soup_message_new(SOUP_METHOD_POST, url);
 #ifdef HAVE_SOUP_24
 		soup_message_set_request
 		    (msg, "application/x-www-form-urlencoded",
@@ -140,11 +149,15 @@ http_client_request(struct http_client *g, char *url, char *post_data,
 		soup_message_add_header(msg->request_headers, "Accept", "*/*");
 #endif
 	} else {
-		msg = soup_message_new(SOUP_METHOD_GET, g->base);
+		msg = soup_message_new(SOUP_METHOD_GET, url);
 	}
 
 	soup_message_set_flags(msg, SOUP_MESSAGE_NO_REDIRECT);
 
-	g->pending = true;
-	soup_session_queue_message(g->session, msg, http_client_soup_callback, g);
+	request = g_new(struct http_request, 1);
+	request->callback = callback;
+	request->callback_data = data;
+
+	soup_session_queue_message(http_client.session, msg,
+				   http_client_soup_callback, request);
 }

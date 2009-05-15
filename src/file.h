@@ -38,7 +38,6 @@ struct config_as_host {
 	char *password;
 	struct config_as_host *next; /* Linked list if more than one */
 	/* state stuff to get passed along in as.c */
-	struct http_client *http_client;
 	guint as_handshake_id;
 	guint as_submit_id;
 	char *g_session;
