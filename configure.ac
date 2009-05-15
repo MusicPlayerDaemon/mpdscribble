@@ -3,7 +3,7 @@ AC_INIT(mpdscribble, 0.18~git, mpdscribble)
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_SRCDIR([src/mpdscribble.c])
 AC_CONFIG_AUX_DIR(build)
-AM_INIT_AUTOMAKE([foreign 1.9 dist-bzip2])
+AM_INIT_AUTOMAKE([foreign 1.10 dist-bzip2])
 AM_CONFIG_HEADER([config.h])
 
 AC_PROG_CC_C99
