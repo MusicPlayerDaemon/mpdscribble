@@ -125,6 +125,15 @@ void lmc_connect(char *host, int port)
 
 void lmc_disconnect(void)
 {
+	if (reconnect_source_id != 0)
+		g_source_remove(reconnect_source_id);
+
+	if (update_source_id != 0)
+		g_source_remove(update_source_id);
+
+	if (idle_source_id != 0)
+		g_source_remove(idle_source_id);
+
 	if (g_mpd) {
 		mpd_closeConnection(g_mpd);
 		g_mpd = NULL;
