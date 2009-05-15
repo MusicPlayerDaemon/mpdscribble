@@ -54,9 +54,6 @@ if test "x$glib216" != "xyes"; then
 		[AC_MSG_ERROR([libgcrypt-config required])])
 fi
 
-PKG_CHECK_MODULES([libgobject],[gobject-2.0],,[AC_MSG_ERROR([libgobject-2.0 not found])])
-PKG_CHECK_MODULES([libgthread],[gthread-2.0],,[AC_MSG_ERROR([libgthread-2.0 not found])])
-
 PKG_CHECK_MODULES([libsoup],[libsoup-2.4],
 	found_soup_24=yes,
 	found_soup_24=no)

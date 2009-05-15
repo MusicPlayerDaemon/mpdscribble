@@ -28,11 +28,11 @@ src_mpdscribble_SOURCES = \
 	src/log.c src/log.h \
 	$(libmpdclient_SOURCES)
 
-AM_CPPFLAGS = $(libgobject_CFLAGS) $(libgthread_CFLAGS) $(libsoup_CFLAGS) \
+AM_CPPFLAGS = $(libsoup_CFLAGS) \
 	$(libgcrypt_CFLAGS) \
 	$(libglib_CFLAGS) \
 	-I$(srcdir)/src -I$(srcdir)/src/libmpdclient
-LDADD = $(libgobject_LIBS) $(libgthread_LIBS) $(libsoup_LIBS) \
+LDADD = $(libsoup_LIBS) \
 	$(libgcrypt_LIBS) \
 	$(libglib_LIBS)
 
