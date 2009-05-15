@@ -27,6 +27,7 @@
 #include <libsoup/soup-session-async.h>
 
 #include <assert.h>
+#include <stdbool.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -138,11 +139,6 @@ conn_initiate(char *url, callback_t * callback, char *post_data, void *data, str
 
 	g->pending = true;
 	soup_session_queue_message(g->session, msg, conn_callback, g);
-}
-
-bool conn_pending(struct global *g)
-{
-	return g->pending;
 }
 
 void conn_cleanup(struct global *g)
