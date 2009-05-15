@@ -21,7 +21,6 @@
 #define FILE_H
 
 #include <glib.h>
-#include "conn.h"
 
 enum file_location { file_etc, file_home, file_unknown, };
 
@@ -39,7 +38,7 @@ struct config_as_host {
 	char *password;
 	struct config_as_host *next; /* Linked list if more than one */
 	/* state stuff to get passed along in as.c */
-	struct global *conn;
+	struct http_client *http_client;
 	guint as_handshake_id;
 	guint as_submit_id;
 	char *g_session;

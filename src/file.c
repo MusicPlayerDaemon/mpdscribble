@@ -21,6 +21,7 @@
 #include "file.h"
 #include "cmdline.h"
 #include "config.h"
+#include "http_client.h"
 
 #include <glib.h>
 
@@ -331,8 +332,8 @@ int file_read_config(int argc, char **argv)
 static void
 free_as_host(struct config_as_host *current_host)
 {
-	if(current_host->conn)
-		conn_cleanup(current_host->conn);
+	if(current_host->http_client)
+		http_client_free(current_host->http_client);
 	if(current_host->url)
 		free(current_host->url);
 	if(current_host->username)

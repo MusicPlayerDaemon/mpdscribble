@@ -21,7 +21,7 @@
 #include "as.h"
 #include "file.h"
 #include "journal.h"
-#include "conn.h"
+#include "http_client.h"
 #include "config.h"
 #include "compat.h"
 
@@ -413,8 +413,8 @@ static void as_handshake(struct config_as_host *as_host)
 
 	//  notice ("handshake url:\n%s", url);
 
-	conn_initiate(url->str, &as_handshake_callback,
-		      NULL, as_host, as_host->conn);
+	http_client_request(as_host->http_client, url->str, NULL,
+			    &as_handshake_callback, as_host);
 
 	g_string_free(url, true);
 }
@@ -467,8 +467,9 @@ as_send_now_playing(const char *artist, const char *track,
 
 	g_message("sending 'now playing' notification to '%s'\n", as_host->url);
 
-	conn_initiate(as_host->g_nowplay_url, as_submit_callback,
-		      post_data->str, as_host, as_host->conn);
+	http_client_request(as_host->http_client, as_host->g_nowplay_url,
+			    post_data->str,
+			    as_submit_callback, as_host);
 
 	g_string_free(post_data, true);
 }
@@ -549,8 +550,9 @@ static void as_submit(struct config_as_host *as_host)
 	g_debug("url: %s\n", as_host->g_submit_url);
 
 	g_submit_pending = count;
-	conn_initiate(as_host->g_submit_url, &as_submit_callback,
-		      post_data->str, as_host, as_host->conn);
+	http_client_request(as_host->http_client, as_host->g_submit_url,
+			    post_data->str,
+			    &as_submit_callback, as_host);
 
 	g_string_free(post_data, true);
 }
@@ -620,7 +622,7 @@ void as_init(void)
 		  queue_length, queue_length == 1 ? "" : "s");
 
 	do {
-		current_host->conn = conn_setup();
+		current_host->http_client = http_client_new();
 		current_host->g_session = NULL;
 		current_host->g_nowplay_url = NULL;
 		current_host->g_submit_url = NULL;
