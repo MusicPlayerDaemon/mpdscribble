@@ -28,12 +28,6 @@ typedef void callback_t(size_t, const char *, void *);
 
 struct global;
 
-#define CONN_FAIL 0
-#define CONN_OK 1
-
-#define conn_escape(X) curl_escape(X, 0)
-#define conn_free curl_free
-
 struct global *conn_setup(void);
 void conn_cleanup(struct global *g);
 
