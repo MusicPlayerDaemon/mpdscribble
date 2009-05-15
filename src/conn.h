@@ -24,25 +24,9 @@
 #include <stdbool.h>
 #include <stddef.h>
 
-#include <libsoup/soup-uri.h>
-#include <libsoup/soup-session-async.h>
-
-#include "config.h"
-
 typedef void callback_t(size_t, const char *, void *);
 
-struct global {
-	SoupSession *session;
-	char *base;
-	void *data;
-	bool pending;
-	callback_t *callback;
-#ifdef HAVE_SOUP_24
-	SoupURI *proxy;
-#else
-	SoupUri *proxy;
-#endif
-};
+struct global;
 
 #define CONN_FAIL 0
 #define CONN_OK 1

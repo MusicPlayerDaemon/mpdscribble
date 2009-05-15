@@ -21,11 +21,28 @@
 #include "conn.h"
 #include "file.h"
 #include "as.h"
+#include "config.h"
+
+#include <libsoup/soup-uri.h>
+#include <libsoup/soup-session-async.h>
 
 #include <assert.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+
+struct global {
+	SoupSession *session;
+	char *base;
+	void *data;
+	bool pending;
+	callback_t *callback;
+#ifdef HAVE_SOUP_24
+	SoupURI *proxy;
+#else
+	SoupUri *proxy;
+#endif
+};
 
 int g_thread_done = 0;
 
