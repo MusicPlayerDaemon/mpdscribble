@@ -52,6 +52,10 @@
 #define AS_HOST "http://post.audioscrobbler.com/"
 
 struct config file_config = {
+	.port = -1,
+	.sleep = -1,
+	.cache_interval = -1,
+	.verbose = -1,
 	.loc = file_unknown,
 };
 
@@ -275,11 +279,6 @@ int file_read_config(int argc, char **argv)
 	char *mpd_host = getenv("MPD_HOST");
 	char *mpd_port = getenv("MPD_PORT");
 	char *http_proxy = getenv("http_proxy");
-
-	file_config.port = -1;
-	file_config.sleep = -1;
-	file_config.cache_interval = -1;
-	file_config.verbose = -1;
 
 	/* parse command-line options. */
 
