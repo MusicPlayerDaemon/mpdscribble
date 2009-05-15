@@ -19,7 +19,6 @@
 */
 
 #include "file.h"
-#include "cmdline.h"
 #include "config.h"
 
 #include <glib.h>
@@ -274,15 +273,11 @@ load_config_file(const char *path)
 	g_key_file_free(file);
 }
 
-int file_read_config(int argc, char **argv)
+int file_read_config(void)
 {
 	char *mpd_host = getenv("MPD_HOST");
 	char *mpd_port = getenv("MPD_PORT");
 	char *http_proxy = getenv("http_proxy");
-
-	/* parse command-line options. */
-
-	parse_cmdline(argc, argv);
 
 	if (file_config.conf == NULL)
 		file_config.conf = get_default_config_path();

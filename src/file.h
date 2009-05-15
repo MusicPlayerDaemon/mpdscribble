@@ -71,7 +71,7 @@ struct config {
 
 extern struct config file_config;
 
-int file_read_config(int argc, char **argv);
+int file_read_config(void);
 void file_cleanup(void);
 
 #endif /* FILE_H */
