@@ -52,17 +52,10 @@ if test "x$glib216" != "xyes"; then
 	# use libgcrypt's MD5 routines with GLib < 2.16
 	AC_PATH_PROG(LIBGCRYPT_CONFIG, libgcrypt-config,
 		[AC_MSG_ERROR([libgcrypt-config required])])
-	AC_SUBST(libgcrypt_CFLAGS, `$LIBGCRYPT_CONFIG --cflags`)
-	AC_SUBST(libgcrypt_LIBS, `$LIBGCRYPT_CONFIG --libs`)
 fi
 
 PKG_CHECK_MODULES([libgobject],[gobject-2.0],,[AC_MSG_ERROR([libgobject-2.0 not found])])
-AC_SUBST(libgobject_CFLAGS)
-AC_SUBST(libgobject_LIBS)
-
 PKG_CHECK_MODULES([libgthread],[gthread-2.0],,[AC_MSG_ERROR([libgthread-2.0 not found])])
-AC_SUBST(libgthread_CFLAGS)
-AC_SUBST(libgthread_LIBS)
 
 PKG_CHECK_MODULES([libsoup],[libsoup-2.4],
 	found_soup_24=yes,
@@ -73,8 +66,6 @@ else
 	PKG_CHECK_MODULES([libsoup],[libsoup-2.2],,
 		[AC_MSG_ERROR([libsoup (2.4 or 2.2) not found])])
 fi
-AC_SUBST(libsoup_CFLAGS)
-AC_SUBST(libsoup_LIBS)
 
 
 dnl
