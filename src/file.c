@@ -235,9 +235,9 @@ load_config_file(const char *path)
 	while(groups[++i]) {
 		/* Use default host for mpdscribble group, for backward compatability */
 		if(strcmp(groups[i], "mpdscribble") == 0) {
-			current_host->url = strdup(AS_HOST);
+			current_host->url = g_strdup(AS_HOST);
 		} else {
-			current_host->url = strdup(groups[i]);
+			current_host->url = g_strdup(groups[i]);
 		}
 
 		current_host->username = g_key_file_get_string(file, groups[i], "username", &error);
