@@ -416,3 +416,54 @@
    fun:nss_parse_service_list
    fun:__nss_database_lookup
 }
+
+{
+   openssl
+   Memcheck:Leak
+   fun:malloc
+   fun:CRYPTO_malloc
+   fun:engine_cleanup_add_last
+   fun:ENGINE_add
+   fun:ENGINE_load_dynamic
+}
+
+{
+   openssl
+   Memcheck:Leak
+   fun:malloc
+   fun:CRYPTO_malloc
+   fun:ENGINE_new
+   fun:ENGINE_load_dynamic
+}
+
+{
+   openssl
+   Memcheck:Leak
+   fun:malloc
+   fun:CRYPTO_malloc
+   fun:load_builtin_compressions
+   fun:SSL_COMP_get_compression_methods
+   fun:SSL_library_init
+}
+
+{
+   openssl
+   Memcheck:Leak
+   fun:malloc
+   fun:CRYPTO_malloc
+   fun:sk_new
+   fun:load_builtin_compressions
+   fun:SSL_COMP_get_compression_methods
+   fun:SSL_library_init
+}
+
+{
+   openssl
+   Memcheck:Leak
+   fun:malloc
+   fun:CRYPTO_malloc
+   fun:sk_new
+   fun:engine_cleanup_add_last
+   fun:ENGINE_add
+   fun:ENGINE_load_dynamic
+}
