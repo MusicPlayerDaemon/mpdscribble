@@ -162,7 +162,6 @@
    fun:g_slice_alloc
    fun:g_hash_table_new_full
    fun:g_get_language_names
-   fun:main
 }
 
 {
