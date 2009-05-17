@@ -63,6 +63,17 @@ AC_ARG_WITH(http-client,
 		[choose the HTTP client library (default=auto)]),,
 	with_http_client=auto)
 
+if test x$with_http_client = xcurl || test x$with_http_client = xauto; then
+	PKG_CHECK_MODULES([libcurl], [libcurl], found_curl=yes, found_curl=no)
+	if test x$found_curl = xyes; then
+		with_http_client=curl
+	elif test x$with_http_client = xcurl; then
+		AC_MSG_ERROR([libcurl not found])
+	fi
+fi
+
+AM_CONDITIONAL(HAVE_CURL, test x$with_http_client = xcurl)
+
 if test x$with_http_client = xsoup || test x$with_http_client = xauto; then
 	PKG_CHECK_MODULES([libsoup], [libsoup-2.4],
 		found_soup_24=yes, found_soup_24=no)

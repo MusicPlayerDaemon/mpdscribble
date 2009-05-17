@@ -1,6 +1,7 @@
 mpdscribble 0.18 - not yet released
   * improved detection of repeated songs
   * support MPD's new MusicBrainz tags
+  * CURL can be used instead of libsoup at compile time
 
 
 mpdscribble 0.17 - 2009-03-02

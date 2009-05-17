@@ -28,15 +28,19 @@ src_mpdscribble_SOURCES = \
 	src/log.c src/log.h \
 	$(libmpdclient_SOURCES)
 
+if HAVE_CURL
+src_mpdscribble_SOURCES += src/http_client_curl.c
+endif
+
 if HAVE_SOUP
 src_mpdscribble_SOURCES += src/http_client_soup.c
 endif
 
-AM_CPPFLAGS = $(libsoup_CFLAGS) \
+AM_CPPFLAGS = $(libcurl_CFLAGS) $(libsoup_CFLAGS) \
 	$(libgcrypt_CFLAGS) \
 	$(libglib_CFLAGS) \
 	-I$(srcdir)/src -I$(srcdir)/src/libmpdclient
-LDADD = $(libsoup_LIBS) \
+LDADD = $(libcurl_LIBS) $(libsoup_LIBS) \
 	$(libgcrypt_LIBS) \
 	$(libglib_LIBS)
 
