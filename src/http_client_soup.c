@@ -119,7 +119,7 @@ http_client_soup_callback(SoupMessage *msg, gpointer data)
 }
 
 void
-http_client_request(char *url, char *post_data,
+http_client_request(const char *url, const char *post_data,
 		    http_client_callback_t *callback, void *data)
 {
 	SoupMessage *msg;

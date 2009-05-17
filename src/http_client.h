@@ -38,7 +38,7 @@ void
 http_client_finish(void);
 
 void
-http_client_request(char *url, char *post_data,
+http_client_request(const char *url, const char *post_data,
 		    http_client_callback_t * callback, void *data);
 
 #endif /* CONN_H */
