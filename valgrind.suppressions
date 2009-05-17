@@ -467,3 +467,10 @@
    fun:ENGINE_add
    fun:ENGINE_load_dynamic
 }
+
+{
+   inet_ntoa
+   Memcheck:Leak
+   fun:malloc
+   fun:inet_ntoa
+}
