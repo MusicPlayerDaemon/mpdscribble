@@ -243,14 +243,10 @@ load_config_file(const char *path)
 		current_host->username = g_key_file_get_string(file, groups[i], "username", &error);
 		if (error != NULL)
 			g_error("%s\n", error->message);
-		if(current_host->username)
-			current_host->username = strdup(current_host->username);
 
 		current_host->password = g_key_file_get_string(file, groups[i], "password", &error);
 		if (error != NULL)
 			g_error("%s\n", error->message);
-		if(current_host->password)
-			current_host->password = strdup(current_host->password);
 
 		/* Only allocate a next element if there are more groups */
 		if(groups[i+1]) {
