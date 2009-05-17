@@ -20,13 +20,17 @@ src_mpdscribble_SOURCES = \
 	src/compat.h \
 	src/daemon.c src/daemon.h \
 	src/as.c src/as.h \
-	src/http_client_soup.c src/http_client.h \
+	src/http_client.h \
 	src/cmdline.c src/cmdline.h \
 	src/file.c src/file.h \
 	src/journal.c src/journal.h \
 	src/lmc.c src/lmc.h \
 	src/log.c src/log.h \
 	$(libmpdclient_SOURCES)
+
+if HAVE_SOUP
+src_mpdscribble_SOURCES += src/http_client_soup.c
+endif
 
 AM_CPPFLAGS = $(libsoup_CFLAGS) \
 	$(libgcrypt_CFLAGS) \

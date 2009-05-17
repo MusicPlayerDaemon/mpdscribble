@@ -54,14 +54,36 @@ if test "x$glib216" != "xyes"; then
 		[AC_MSG_ERROR([libgcrypt-config required])])
 fi
 
-PKG_CHECK_MODULES([libsoup],[libsoup-2.4],
-	found_soup_24=yes,
-	found_soup_24=no)
-if test x$found_soup_24 = xyes; then
-	AC_DEFINE([HAVE_SOUP_24], [1], [Defined if libsoup-2.4 instead of libsoup-2.2 is used])
-else
-	PKG_CHECK_MODULES([libsoup],[libsoup-2.2],,
-		[AC_MSG_ERROR([libsoup (2.4 or 2.2) not found])])
+dnl
+dnl HTTP client library
+dnl
+
+AC_ARG_WITH(http-client,
+	AS_HELP_STRING([--with-http-client=@<:@auto|soup@:>@],
+		[choose the HTTP client library (default=auto)]),,
+	with_http_client=auto)
+
+if test x$with_http_client = xsoup || test x$with_http_client = xauto; then
+	PKG_CHECK_MODULES([libsoup], [libsoup-2.4],
+		found_soup_24=yes, found_soup_24=no)
+	if test x$found_soup_24 = xyes; then
+		with_http_client=soup
+		AC_DEFINE([HAVE_SOUP_24], [1], [Defined if libsoup-2.4 instead of libsoup-2.2 is used])
+	else
+		PKG_CHECK_MODULES([libsoup], [libsoup-2.2],
+			found_soup_22=yes, found_soup_22=no)
+		if test x$found_soup_22 = xyes; then
+			with_http_client=soup
+		elif test x$with_http_client = xsoup; then
+			AC_MSG_ERROR([libsoup (2.4 or 2.2) not found])
+		fi
+	fi
+fi
+
+AM_CONDITIONAL(HAVE_SOUP, test x$with_http_client = xsoup)
+
+if test x$with_http_client = xauto; then
+	AC_MSG_ERROR([No HTTP client library was found])
 fi
 
 
