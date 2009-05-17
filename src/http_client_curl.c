@@ -224,8 +224,10 @@ http_request_done(struct http_request *request, CURLcode result)
 	if (result == CURLE_OK)
 		request->callback(request->body->len, request->body->str,
 				  request->callback_data);
-	else
+	else {
+		g_warning("curl failed: %s", request->error);
 		request->callback(0, NULL, request->callback_data);
+	}
 
 	/* remove it from the list and free resources */
 	http_client.requests = g_slist_remove(http_client.requests, request);
@@ -412,6 +414,7 @@ http_client_request(const char *url, const char *post_data,
 	curl_easy_setopt(request->curl, CURLOPT_WRITEDATA, request);
 	curl_easy_setopt(request->curl, CURLOPT_FAILONERROR, true);
 	curl_easy_setopt(request->curl, CURLOPT_ERRORBUFFER, request->error);
+	curl_easy_setopt(request->curl, CURLOPT_BUFFERSIZE, 2048);
 
 	if (file_config.proxy != NULL)
 		curl_easy_setopt(request->curl, CURLOPT_PROXY, file_config.proxy);

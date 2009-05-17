@@ -239,6 +239,7 @@ int main(int argc, char **argv)
 
 	g_message("shutting down\n");
 
+	g_source_remove(save_source_id);
 	g_main_loop_unref(main_loop);
 
 	g_timer_destroy(timer);
