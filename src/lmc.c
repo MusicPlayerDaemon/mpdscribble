@@ -87,7 +87,7 @@ lmc_reconnect(G_GNUC_UNUSED gpointer data)
 
 		mpd_sendPasswordCommand(g_mpd, password);
 		mpd_finishCommand(g_mpd);
-		free(password);
+		g_free(password);
 	}
 
 	if (g_mpd->error) {
