@@ -291,7 +291,7 @@ curl_source_prepare(G_GNUC_UNUSED GSource *source, G_GNUC_UNUSED gint *timeout_)
 {
 	http_client_update_fds();
 
-	return TRUE;
+	return FALSE;
 }
 
 /**
