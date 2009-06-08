@@ -38,6 +38,9 @@ struct http_request {
 	/** the CURL easy handle */
 	CURL *curl;
 
+	/** the POST request body */
+	char *post_data;
+
 	/** the response body */
 	GString *body;
 
@@ -74,6 +77,7 @@ http_request_free(struct http_request *request)
 	g_string_free(request->body, true);
 	curl_multi_remove_handle(http_client.multi, request->curl);
 	curl_easy_cleanup(request->curl);
+	g_free(request->post_data);
 	g_free(request);
 }
 
@@ -419,8 +423,12 @@ http_client_request(const char *url, const char *post_data,
 	if (file_config.proxy != NULL)
 		curl_easy_setopt(request->curl, CURLOPT_PROXY, file_config.proxy);
 
-	if (post_data != NULL)
-		curl_easy_setopt(request->curl, CURLOPT_POST, post_data);
+	request->post_data = g_strdup(post_data);
+	if (request->post_data != NULL) {
+		curl_easy_setopt(request->curl, CURLOPT_POST, true);
+		curl_easy_setopt(request->curl, CURLOPT_POSTFIELDS,
+				 request->post_data);
+	}
 
 	code = curl_easy_setopt(request->curl, CURLOPT_URL, url);
 	if (code != CURLE_OK) {
