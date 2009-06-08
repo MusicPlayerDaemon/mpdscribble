@@ -408,6 +408,7 @@ http_client_request(const char *url, const char *post_data,
 	struct http_request *request = g_new(struct http_request, 1);
 	CURLcode code;
 	CURLMcode mcode;
+	bool success;
 
 	request->callback = callback;
 	request->callback_data = data;
@@ -462,4 +463,17 @@ http_client_request(const char *url, const char *post_data,
 	request->body = g_string_sized_new(256);
 
 	http_client.requests = g_slist_prepend(http_client.requests, request);
+
+	/* initiate the transfer */
+
+	success = http_multi_perform();
+	if (!success) {
+		http_client.requests = g_slist_remove(http_client.requests,
+						      request);
+		http_request_free(request);
+		callback(0, NULL, data);
+		return;
+	}
+
+	http_multi_info_read();
 }
