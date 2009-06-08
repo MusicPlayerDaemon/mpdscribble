@@ -239,6 +239,27 @@ http_request_done(struct http_request *request, CURLcode result)
 }
 
 /**
+ * Check for finished HTTP responses.
+ */
+static void
+http_multi_info_read(void)
+{
+	CURLMsg *msg;
+	int msgs_in_queue;
+
+	while ((msg = curl_multi_info_read(http_client.multi,
+					   &msgs_in_queue)) != NULL) {
+		if (msg->msg == CURLMSG_DONE) {
+			struct http_request *request =
+				http_client_find_request(msg->easy_handle);
+			assert(request != NULL);
+
+			http_request_done(request, msg->data.result);
+		}
+	}
+}
+
+/**
  * The GSource prepare() method implementation.
  */
 static gboolean
@@ -275,8 +296,6 @@ curl_source_dispatch(G_GNUC_UNUSED GSource *source,
 {
 	CURLMcode mcode;
 	int running_handles;
-	CURLMsg *msg;
-	int msgs_in_queue;
 
 	/* give control to CURL */
 
@@ -288,18 +307,7 @@ curl_source_dispatch(G_GNUC_UNUSED GSource *source,
 		return true;
 	}
 
-	/* check for finished HTTP responses */
-
-	while ((msg = curl_multi_info_read(http_client.multi,
-					   &msgs_in_queue)) != NULL) {
-		if (msg->msg == CURLMSG_DONE) {
-			struct http_request *request =
-				http_client_find_request(msg->easy_handle);
-			assert(request != NULL);
-
-			http_request_done(request, msg->data.result);
-		}
-	}
+	http_multi_info_read();
 
 	return true;
 }
