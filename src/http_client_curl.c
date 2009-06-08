@@ -260,6 +260,26 @@ http_multi_info_read(void)
 }
 
 /**
+ * Give control to CURL.
+ */
+static bool
+http_multi_perform(void)
+{
+	CURLMcode mcode;
+	int running_handles;
+
+	mcode = curl_multi_perform(http_client.multi, &running_handles);
+	if (mcode != CURLM_OK && mcode != CURLM_CALL_MULTI_PERFORM) {
+		g_warning("curl_multi_perform() failed: %s\n",
+			  curl_multi_strerror(mcode));
+		http_client_abort_all_requests();
+		return false;
+	}
+
+	return true;
+}
+
+/**
  * The GSource prepare() method implementation.
  */
 static gboolean
@@ -294,20 +314,8 @@ curl_source_dispatch(G_GNUC_UNUSED GSource *source,
 		     G_GNUC_UNUSED GSourceFunc callback,
 		     G_GNUC_UNUSED gpointer user_data)
 {
-	CURLMcode mcode;
-	int running_handles;
-
-	/* give control to CURL */
-
-	mcode = curl_multi_perform(http_client.multi, &running_handles);
-	if (mcode != CURLM_OK && mcode != CURLM_CALL_MULTI_PERFORM) {
-		g_warning("curl_multi_perform() failed: %s\n",
-			  curl_multi_strerror(mcode));
-		http_client_abort_all_requests();
-		return true;
-	}
-
-	http_multi_info_read();
+	if (http_multi_perform())
+		http_multi_info_read();
 
 	return true;
 }
