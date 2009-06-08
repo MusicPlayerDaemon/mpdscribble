@@ -268,7 +268,11 @@ http_multi_perform(void)
 	CURLMcode mcode;
 	int running_handles;
 
-	mcode = curl_multi_perform(http_client.multi, &running_handles);
+	do {
+		mcode = curl_multi_perform(http_client.multi,
+					   &running_handles);
+	} while (mcode == CURLM_CALL_MULTI_PERFORM);
+
 	if (mcode != CURLM_OK && mcode != CURLM_CALL_MULTI_PERFORM) {
 		g_warning("curl_multi_perform() failed: %s\n",
 			  curl_multi_strerror(mcode));
