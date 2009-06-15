@@ -110,15 +110,15 @@ add_var_i(GString * s, const char *key, signed char idx, const char *val)
 }
 
 static void
-as_schedule_handshake(struct config_as_host *as_host);
+as_schedule_handshake(struct scrobbler_config *as_host);
 
 static void
-as_submit(struct config_as_host *as_host);
+as_submit(struct scrobbler_config *as_host);
 
 static void
-as_schedule_submit(struct config_as_host *as_host);
+as_schedule_submit(struct scrobbler_config *as_host);
 
-static void as_increase_interval(struct config_as_host *as_host)
+static void as_increase_interval(struct scrobbler_config *as_host)
 {
 	if (as_host->g_interval < 60)
 		as_host->g_interval = 60;
@@ -157,7 +157,7 @@ static int as_parse_submit_response(const char *line, size_t length)
 }
 
 static bool
-as_parse_handshake_response(const char *line, struct config_as_host *as_host)
+as_parse_handshake_response(const char *line, struct scrobbler_config *as_host)
 {
 	static const char *BANNED = "BANNED";
 	static const char *BADAUTH = "BADAUTH";
@@ -205,7 +205,7 @@ static void as_handshake_callback(size_t length, const char *response, void *dat
 	char *newline;
 	char *next;
 	bool ret;
-	struct config_as_host *as_host = data;
+	struct scrobbler_config *as_host = data;
 
 	assert(as_host);
 	assert(as_host->g_state == AS_HANDSHAKING);
@@ -279,7 +279,7 @@ static void as_queue_remove_oldest(unsigned count)
 static void as_submit_callback(size_t length, const char *response, void *data)
 {
 	char *newline;
-	struct config_as_host *as_host = data;
+	struct scrobbler_config *as_host = data;
 
 	assert(as_host->g_state == AS_SUBMITTING);
 	as_host->g_state = AS_READY;
@@ -388,7 +388,7 @@ static char *as_md5(const char *password, const char *timestamp)
 	return result;
 }
 
-static void as_handshake(struct config_as_host *as_host)
+static void as_handshake(struct scrobbler_config *as_host)
 {
 	GString *url;
 	char *timestr, *md5;
@@ -422,18 +422,18 @@ static void as_handshake(struct config_as_host *as_host)
 static gboolean
 as_handshake_timer(gpointer data)
 {
-	struct config_as_host *as_host = data;
+	struct scrobbler_config *as_host = data;
 
 	assert(as_host->g_state == AS_NOTHING);
 
-	((struct config_as_host*)data)->as_handshake_id = 0;
+	((struct scrobbler_config*)data)->as_handshake_id = 0;
 
 	as_handshake(data);
 	return false;
 }
 
 static void
-as_schedule_handshake(struct config_as_host *as_host)
+as_schedule_handshake(struct scrobbler_config *as_host)
 {
 	assert(as_host->g_state == AS_NOTHING);
 	assert(as_host->as_handshake_id == 0);
@@ -444,7 +444,7 @@ as_schedule_handshake(struct config_as_host *as_host)
 
 static void
 as_send_now_playing(const char *artist, const char *track,
-		    const char *album, const char *mbid, const int length, struct config_as_host *as_host)
+		    const char *album, const char *mbid, const int length, struct scrobbler_config *as_host)
 {
 	GString *post_data;
 	char len[MAX_VAR_SIZE];
@@ -478,7 +478,7 @@ void
 as_now_playing(const char *artist, const char *track,
 	       const char *album, const char *mbid, const int length)
 {
-	struct config_as_host *current_host = &file_config.as_hosts;
+	struct scrobbler_config *current_host = &file_config.as_hosts;
 
 	as_song_cleanup(&g_now_playing, false);
 
@@ -494,7 +494,7 @@ as_now_playing(const char *artist, const char *track,
 	} while((current_host = current_host->next));
 }
 
-static void as_submit(struct config_as_host *as_host)
+static void as_submit(struct scrobbler_config *as_host)
 {
 	//MAX_SUBMIT_COUNT
 	unsigned count = 0;
@@ -563,7 +563,7 @@ as_songchange(const char *file, const char *artist, const char *track,
 	      const char *time2)
 {
 	struct song *current;
-	struct config_as_host *current_host = &file_config.as_hosts;
+	struct scrobbler_config *current_host = &file_config.as_hosts;
 
 	/* from the 1.2 protocol draft:
 
@@ -610,7 +610,7 @@ as_songchange(const char *file, const char *artist, const char *track,
 void as_init(void)
 {
 	guint queue_length;
-	struct config_as_host *current_host = &file_config.as_hosts;
+	struct scrobbler_config *current_host = &file_config.as_hosts;
 
 	g_message("starting mpdscribble (" AS_CLIENT_ID " " AS_CLIENT_VERSION ")\n");
 
@@ -636,16 +636,16 @@ void as_init(void)
 static gboolean
 as_submit_timer(gpointer data)
 {
-	assert(((struct config_as_host *)data)->g_state == AS_READY);
+	assert(((struct scrobbler_config *)data)->g_state == AS_READY);
 
-	((struct config_as_host *)data)->as_submit_id = 0;
+	((struct scrobbler_config *)data)->as_submit_id = 0;
 
 	as_submit(data);
 	return false;
 }
 
 static void
-as_schedule_submit(struct config_as_host *as_host)
+as_schedule_submit(struct scrobbler_config *as_host)
 {
 	assert(as_host->as_submit_id == 0);
 	assert(!g_queue_is_empty(queue) ||

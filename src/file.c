@@ -191,7 +191,7 @@ load_config_file(const char *path)
 	bool ret;
 	char *data1, *data2;
 	char **groups;
-	struct config_as_host *current_host = &file_config.as_hosts;
+	struct scrobbler_config *current_host = &file_config.as_hosts;
 	int i = -1;
 	GKeyFile *file;
 	GError *error = NULL;
@@ -316,7 +316,7 @@ int file_read_config(void)
 }
 
 static void
-free_as_host(struct config_as_host *current_host)
+free_as_host(struct scrobbler_config *current_host)
 {
 	g_free(current_host->url);
 	g_free(current_host->username);

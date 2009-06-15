@@ -32,11 +32,11 @@ typedef enum {
 	AS_BADAUTH,
 } as_state;
 
-struct config_as_host {
+struct scrobbler_config {
 	char *url;
 	char *username;
 	char *password;
-	struct config_as_host *next; /* Linked list if more than one */
+	struct scrobbler_config *next; /* Linked list if more than one */
 	/* state stuff to get passed along in as.c */
 	guint as_handshake_id;
 	guint as_submit_id;
@@ -66,7 +66,7 @@ struct config {
 	int verbose;
 	enum file_location loc;
 
-	struct config_as_host as_hosts;
+	struct scrobbler_config as_hosts;
 };
 
 extern struct config file_config;
