@@ -18,7 +18,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 
-#include "as.h"
+#include "scrobbler.h"
 #include "file.h"
 #include "journal.h"
 #include "http_client.h"

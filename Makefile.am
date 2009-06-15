@@ -19,7 +19,7 @@ src_mpdscribble_SOURCES = \
 	src/mpdscribble.c \
 	src/compat.h \
 	src/daemon.c src/daemon.h \
-	src/as.c src/as.h \
+	src/scrobbler.c src/scrobbler.h \
 	src/http_client.h \
 	src/cmdline.c src/cmdline.h \
 	src/file.c src/file.h \

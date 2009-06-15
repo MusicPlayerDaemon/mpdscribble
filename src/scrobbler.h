@@ -18,8 +18,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 
-#ifndef AS_H
-#define AS_H
+#ifndef SCROBBLER_H
+#define SCROBBLER_H
 
 #include <stdio.h>
 
@@ -52,4 +52,4 @@ void as_save_cache(void);
 
 char *as_timestamp(void);
 
-#endif /* AS_H */
+#endif /* SCROBBLER_H */

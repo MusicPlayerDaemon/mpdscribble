@@ -23,7 +23,7 @@
 #include "file.h"
 #include "log.h"
 #include "lmc.h"
-#include "as.h"
+#include "scrobbler.h"
 #include "compat.h"
 #include "http_client.h"
 
