@@ -237,7 +237,11 @@ load_config_file(const char *path)
 		if(strcmp(groups[i], "mpdscribble") == 0) {
 			current_host->url = g_strdup(AS_HOST);
 		} else {
-			current_host->url = g_strdup(groups[i]);
+			current_host->url =
+				g_key_file_get_string(file, groups[i], "url",
+						      &error);
+			if (error != NULL)
+				g_error("%s\n", error->message);
 		}
 
 		current_host->username = g_key_file_get_string(file, groups[i], "username", &error);
