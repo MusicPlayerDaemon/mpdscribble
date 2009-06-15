@@ -21,8 +21,6 @@
 #ifndef SCROBBLER_H
 #define SCROBBLER_H
 
-#include <stdio.h>
-
 #define AS_CLIENT_ID "mdc"
 #define AS_CLIENT_VERSION VERSION
 
