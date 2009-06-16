@@ -34,4 +34,7 @@ struct song {
 void
 as_song_cleanup(struct song *s, int free_struct);
 
+void
+clear_song(struct song *s);
+
 #endif /* RECORD_H */

@@ -106,7 +106,7 @@ scrobbler_new(const struct scrobbler_config *config)
 	scrobbler->nowplay_url = NULL;
 	scrobbler->submit_url = NULL;
 
-	memset(&scrobbler->now_playing, 0, sizeof(scrobbler->now_playing));
+	clear_song(&scrobbler->now_playing);
 
 	return scrobbler;
 }

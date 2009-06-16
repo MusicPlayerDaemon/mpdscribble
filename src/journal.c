@@ -63,17 +63,6 @@ bool journal_write(GQueue *queue)
 	return true;
 }
 
-static void clear_song(struct song *s)
-{
-	s->artist = NULL;
-	s->track = NULL;
-	s->album = NULL;
-	s->mbid = NULL;
-	s->time = NULL;
-	s->length = 0;
-	s->source = "P";
-}
-
 static void
 journal_commit_song(GQueue *queue, struct song *song)
 {

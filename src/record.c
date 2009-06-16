@@ -33,3 +33,15 @@ as_song_cleanup(struct song *s, int free_struct)
 	if (free_struct)
 		g_free(s);
 }
+
+void
+clear_song(struct song *s)
+{
+	s->artist = NULL;
+	s->track = NULL;
+	s->album = NULL;
+	s->mbid = NULL;
+	s->time = NULL;
+	s->length = 0;
+	s->source = "P";
+}
