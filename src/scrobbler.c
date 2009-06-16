@@ -43,6 +43,9 @@
 #include <stdarg.h>
 #include <string.h>
 
+#define AS_CLIENT_ID "mdc"
+#define AS_CLIENT_VERSION VERSION
+
 #define MAX_VAR_SIZE 8192
 #define MAX_TIMESTAMP_SIZE 64
 

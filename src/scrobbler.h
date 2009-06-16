@@ -21,9 +21,6 @@
 #ifndef SCROBBLER_H
 #define SCROBBLER_H
 
-#define AS_CLIENT_ID "mdc"
-#define AS_CLIENT_VERSION VERSION
-
 void as_init(void);
 void as_cleanup(void);
 
