@@ -59,7 +59,7 @@ dnl HTTP client library
 dnl
 
 AC_ARG_WITH(http-client,
-	AS_HELP_STRING([--with-http-client=@<:@auto|soup@:>@],
+	AS_HELP_STRING([--with-http-client=@<:@auto|soup|curl@:>@],
 		[choose the HTTP client library (default=auto)]),,
 	with_http_client=auto)
 

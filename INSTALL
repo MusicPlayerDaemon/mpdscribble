@@ -6,7 +6,7 @@ Requirements
 
   * a C99 compliant compiler (e.g. gcc)
   * glib 2.6
-  * libsoup 2.2 or 2.4
+  * libsoup (2.2 or 2.4) or libcurl
 
 
 Compiling mpdscribble
