@@ -20,7 +20,7 @@
 
 #include "journal.h"
 #include "file.h"
-#include "scrobbler.h"
+#include "record.h"
 
 #include <stdlib.h>
 #include <stdio.h>

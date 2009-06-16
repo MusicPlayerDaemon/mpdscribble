@@ -19,6 +19,7 @@
 */
 
 #include "scrobbler.h"
+#include "record.h"
 #include "file.h"
 #include "journal.h"
 #include "http_client.h"
@@ -186,17 +187,6 @@ as_parse_handshake_response(const char *line, struct scrobbler_config *as_host)
 	}
 
 	return false;
-}
-
-static void as_song_cleanup(struct song *s, int free_struct)
-{
-	g_free(s->artist);
-	g_free(s->track);
-	g_free(s->album);
-	g_free(s->mbid);
-	g_free(s->time);
-	if (free_struct)
-		free(s);
 }
 
 static void as_handshake_callback(size_t length, const char *response, void *data)
