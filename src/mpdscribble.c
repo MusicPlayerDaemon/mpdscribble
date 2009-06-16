@@ -244,6 +244,7 @@ int main(int argc, char **argv)
 
 	g_timer_destroy(timer);
 
+	as_save_cache();
 	as_cleanup();
 	http_client_finish();
 	lmc_disconnect();
