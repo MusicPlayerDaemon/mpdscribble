@@ -220,7 +220,7 @@ int main(int argc, char **argv)
 
 	lmc_connect(file_config.host, file_config.port);
 	http_client_init();
-	as_init();
+	as_init(file_config.scrobblers);
 
 	setup_signals();
 

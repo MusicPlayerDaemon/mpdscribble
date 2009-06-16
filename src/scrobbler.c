@@ -705,7 +705,7 @@ scrobbler_new_callback(gpointer data, G_GNUC_UNUSED gpointer user_data)
 	scrobbler_schedule_handshake(scrobbler);
 }
 
-void as_init(void)
+void as_init(GSList *scrobbler_configs)
 {
 	guint queue_length;
 
@@ -718,7 +718,7 @@ void as_init(void)
 	g_message("loaded %i song%s from cache\n",
 		  queue_length, queue_length == 1 ? "" : "s");
 
-	g_slist_foreach(file_config.scrobblers, scrobbler_new_callback, NULL);
+	g_slist_foreach(scrobbler_configs, scrobbler_new_callback, NULL);
 }
 
 static gboolean

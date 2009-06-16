@@ -21,7 +21,9 @@
 #ifndef SCROBBLER_H
 #define SCROBBLER_H
 
-void as_init(void);
+#include <glib.h>
+
+void as_init(GSList *scrobbler_configs);
 void as_cleanup(void);
 
 void
