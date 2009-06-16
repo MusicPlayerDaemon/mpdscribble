@@ -24,27 +24,11 @@
 
 enum file_location { file_etc, file_home, file_unknown, };
 
-typedef enum {
-	AS_NOTHING,
-	AS_HANDSHAKING,
-	AS_READY,
-	AS_SUBMITTING,
-	AS_BADAUTH,
-} as_state;
-
 struct scrobbler_config {
 	char *url;
 	char *username;
 	char *password;
 	struct scrobbler_config *next; /* Linked list if more than one */
-	/* state stuff to get passed along in as.c */
-	guint as_handshake_id;
-	guint as_submit_id;
-	char *g_session;
-	char *g_nowplay_url;
-	char *g_submit_url;
-	int g_interval;
-	as_state g_state;
 };
 
 struct config {

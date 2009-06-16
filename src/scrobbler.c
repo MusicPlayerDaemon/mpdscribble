@@ -53,6 +53,14 @@ static const char OK[] = "OK";
 static const char BADSESSION[] = "BADSESSION";
 static const char FAILED[] = "FAILED";
 
+enum scrobbler_state {
+	SCROBBLER_STATE_NOTHING,
+	SCROBBLER_STATE_HANDSHAKE,
+	SCROBBLER_STATE_READY,
+	SCROBBLER_STATE_SUBMITTING,
+	SCROBBLER_STATE_BADAUTH,
+};
+
 typedef enum {
 	AS_COMMAND,
 	AS_SESSION,
@@ -66,10 +74,63 @@ typedef enum {
 	AS_SUBMIT_HANDSHAKE,
 } as_submitting;
 
+struct scrobbler {
+	const struct scrobbler_config *config;
 
+	enum scrobbler_state state;
+
+	unsigned interval;
+
+	guint handshake_source_id;
+	guint submit_source_id;
+
+	char *session;
+	char *nowplay_url;
+	char *submit_url;
+};
+
+static GSList *scrobblers;
 static struct song g_now_playing;
 static GQueue *queue;
 static unsigned g_submit_pending;
+
+/**
+ * Creates a new scrobbler object based on the specified
+ * configuration.
+ */
+static struct scrobbler *
+scrobbler_new(const struct scrobbler_config *config)
+{
+	struct scrobbler *scrobbler = g_new(struct scrobbler, 1);
+
+	scrobbler->config = config;
+	scrobbler->state = SCROBBLER_STATE_NOTHING;
+	scrobbler->interval = 1;
+	scrobbler->handshake_source_id = 0;
+	scrobbler->submit_source_id = 0;
+	scrobbler->session = NULL;
+	scrobbler->nowplay_url = NULL;
+	scrobbler->submit_url = NULL;
+
+	return scrobbler;
+}
+
+/**
+ * Frees a scrobbler object.
+ */
+static void
+scrobbler_free(struct scrobbler *scrobbler)
+{
+	if (scrobbler->handshake_source_id != 0)
+		g_source_remove(scrobbler->handshake_source_id);
+	if (scrobbler->submit_source_id != 0)
+		g_source_remove(scrobbler->submit_source_id);
+
+	g_free(scrobbler->session);
+	g_free(scrobbler->nowplay_url);
+	g_free(scrobbler->submit_url);
+	g_free(scrobbler);
+}
 
 static void
 add_var_internal(GString * s, char sep, const char *key,
@@ -111,28 +172,31 @@ add_var_i(GString * s, const char *key, signed char idx, const char *val)
 }
 
 static void
-as_schedule_handshake(struct scrobbler_config *as_host);
+scrobbler_schedule_handshake(struct scrobbler *scrobbler);
 
 static void
-as_submit(struct scrobbler_config *as_host);
+scrobbler_submit(struct scrobbler *scrobbler);
 
 static void
-as_schedule_submit(struct scrobbler_config *as_host);
+scrobbler_schedule_submit(struct scrobbler *scrobbler);
 
-static void as_increase_interval(struct scrobbler_config *as_host)
+static void
+scrobbler_increase_interval(struct scrobbler *scrobbler)
 {
-	if (as_host->g_interval < 60)
-		as_host->g_interval = 60;
+	if (scrobbler->interval < 60)
+		scrobbler->interval = 60;
 	else
-		as_host->g_interval <<= 1;
+		scrobbler->interval <<= 1;
 
-	if (as_host->g_interval > 60 * 60 * 2)
-		as_host->g_interval = 60 * 60 * 2;
+	if (scrobbler->interval > 60 * 60 * 2)
+		scrobbler->interval = 60 * 60 * 2;
 
-	g_warning("waiting %i seconds before trying again\n", as_host->g_interval);
+	g_warning("waiting %u seconds before trying again",
+		  scrobbler->interval);
 }
 
-static int as_parse_submit_response(const char *line, size_t length)
+static as_submitting
+scrobbler_parse_submit_response(const char *line, size_t length)
 {
 	if (length == sizeof(OK) - 1 && memcmp(line, OK, length) == 0) {
 		g_message("OK\n");
@@ -158,7 +222,7 @@ static int as_parse_submit_response(const char *line, size_t length)
 }
 
 static bool
-as_parse_handshake_response(const char *line, struct scrobbler_config *as_host)
+scrobbler_parse_handshake_response(struct scrobbler *scrobbler, const char *line)
 {
 	static const char *BANNED = "BANNED";
 	static const char *BADAUTH = "BADAUTH";
@@ -167,19 +231,19 @@ as_parse_handshake_response(const char *line, struct scrobbler_config *as_host)
 	/* FIXME: some code duplication between this
 	   and as_parse_submit_response. */
 	if (!strncmp(line, OK, strlen(OK))) {
-		g_message("handshake ok for '%s'\n", as_host->url);
+		g_message("handshake ok for '%s'\n", scrobbler->config->url);
 		return true;
 	} else if (!strncmp(line, BANNED, strlen(BANNED))) {
 		g_warning("handshake failed, we're banned (%s)\n", line);
-		as_host->g_state = AS_BADAUTH;
+		scrobbler->state = SCROBBLER_STATE_BADAUTH;
 	} else if (!strncmp(line, BADAUTH, strlen(BADAUTH))) {
 		g_warning("handshake failed, username or password incorrect (%s)\n",
 			  line);
-		as_host->g_state = AS_BADAUTH;
+		scrobbler->state = SCROBBLER_STATE_BADAUTH;
 	} else if (!strncmp(line, BADTIME, strlen(BADTIME))) {
 		g_warning("handshake failed, clock not synchronized (%s)\n",
 			  line);
-		as_host->g_state = AS_BADAUTH;
+		scrobbler->state = SCROBBLER_STATE_BADAUTH;
 	} else if (!strncmp(line, FAILED, strlen(FAILED))) {
 		g_warning("handshake failed (%s)\n", line);
 	} else {
@@ -189,22 +253,24 @@ as_parse_handshake_response(const char *line, struct scrobbler_config *as_host)
 	return false;
 }
 
-static void as_handshake_callback(size_t length, const char *response, void *data)
+static void
+scrobbler_handshake_callback(size_t length, const char *response, void *data)
 {
+	struct scrobbler *scrobbler = data;
 	as_handshaking state = AS_COMMAND;
 	char *newline;
 	char *next;
 	bool ret;
-	struct scrobbler_config *as_host = data;
 
-	assert(as_host);
-	assert(as_host->g_state == AS_HANDSHAKING);
-	as_host->g_state = AS_NOTHING;
+	assert(scrobbler != NULL);
+	assert(scrobbler->state == SCROBBLER_STATE_HANDSHAKE);
+
+	scrobbler->state = SCROBBLER_STATE_NOTHING;
 
 	if (!length) {
 		g_warning("handshake timed out\n");
-		as_increase_interval(data);
-		as_schedule_handshake(as_host);
+		scrobbler_increase_interval(scrobbler);
+		scrobbler_schedule_handshake(scrobbler);
 		return;
 	}
 
@@ -212,37 +278,37 @@ static void as_handshake_callback(size_t length, const char *response, void *dat
 		next = g_strndup(response, newline - response);
 		switch (state) {
 		case AS_COMMAND:
-			ret = as_parse_handshake_response(next, as_host);
+			ret = scrobbler_parse_handshake_response(scrobbler, next);
 			if (!ret) {
 				g_free(next);
-				as_increase_interval(data);
-				as_schedule_handshake(as_host);
+				scrobbler_increase_interval(scrobbler);
+				scrobbler_schedule_handshake(scrobbler);
 				return;
 			}
 
 			state = AS_SESSION;
 			break;
 		case AS_SESSION:
-			as_host->g_session = next;
+			scrobbler->session = next;
 			next = NULL;
-			g_debug("session: %s\n", as_host->g_session);
+			g_debug("session: %s", scrobbler->session);
 			state = AS_NOWPLAY;
 			break;
 		case AS_NOWPLAY:
-			as_host->g_nowplay_url = next;
+			scrobbler->nowplay_url = next;
 			next = NULL;
-			g_debug("now playing url: %s\n", as_host->g_nowplay_url);
+			g_debug("now playing url: %s", scrobbler->nowplay_url);
 			state = AS_SUBMIT;
 			break;
 		case AS_SUBMIT:
-			as_host->g_submit_url = next;
-			g_debug("submit url: %s\n", as_host->g_submit_url);
-			as_host->g_state = AS_READY;
-			as_host->g_interval = 1;
+			scrobbler->submit_url = next;
+			g_debug("submit url: %s", scrobbler->submit_url);
+			scrobbler->state = SCROBBLER_STATE_READY;
+			scrobbler->interval = 1;
 
 			/* handshake was successful: see if we have
 			   songs to submit */
-			as_submit(as_host);
+			scrobbler_submit(scrobbler);
 			return;
 		}
 
@@ -252,8 +318,8 @@ static void as_handshake_callback(size_t length, const char *response, void *dat
 
 	}
 
-	as_increase_interval(as_host);
-	as_schedule_handshake(as_host);
+	scrobbler_increase_interval(scrobbler);
+	scrobbler_schedule_handshake(scrobbler);
 }
 
 static void as_queue_remove_oldest(unsigned count)
@@ -266,19 +332,20 @@ static void as_queue_remove_oldest(unsigned count)
 	}
 }
 
-static void as_submit_callback(size_t length, const char *response, void *data)
+static void
+scrobbler_submit_callback(size_t length, const char *response, void *data)
 {
+	struct scrobbler *scrobbler = data;
 	char *newline;
-	struct scrobbler_config *as_host = data;
 
-	assert(as_host->g_state == AS_SUBMITTING);
-	as_host->g_state = AS_READY;
+	assert(scrobbler->state == SCROBBLER_STATE_SUBMITTING);
+	scrobbler->state = SCROBBLER_STATE_READY;
 
 	if (!length) {
 		g_submit_pending = 0;
 		g_warning("submit timed out\n");
-		as_increase_interval(as_host);
-		as_schedule_submit(as_host);
+		scrobbler_increase_interval(scrobbler);
+		scrobbler_schedule_submit(scrobbler);
 		return;
 	}
 
@@ -286,9 +353,9 @@ static void as_submit_callback(size_t length, const char *response, void *data)
 	if (newline != NULL)
 		length = newline - response;
 
-	switch (as_parse_submit_response(response, length)) {
+	switch (scrobbler_parse_submit_response(response, length)) {
 	case AS_SUBMIT_OK:
-		as_host->g_interval = 1;
+		scrobbler->interval = 1;
 
 		/* submission was accepted, so clean up the cache. */
 		if (g_submit_pending > 0) {
@@ -304,15 +371,15 @@ static void as_submit_callback(size_t length, const char *response, void *data)
 
 
 		/* submit the next chunk (if there is some left) */
-		as_submit(as_host);
+		scrobbler_submit(scrobbler);
 		break;
 	case AS_SUBMIT_FAILED:
-		as_increase_interval(as_host);
-		as_schedule_submit(as_host);
+		scrobbler_increase_interval(scrobbler);
+		scrobbler_schedule_submit(scrobbler);
 		break;
 	case AS_SUBMIT_HANDSHAKE:
-		as_host->g_state = AS_NOTHING;
-		as_schedule_handshake(as_host);
+		scrobbler->state = SCROBBLER_STATE_NOTHING;
+		scrobbler_schedule_handshake(scrobbler);
 		break;
 	}
 }
@@ -378,23 +445,24 @@ static char *as_md5(const char *password, const char *timestamp)
 	return result;
 }
 
-static void as_handshake(struct scrobbler_config *as_host)
+static void
+scrobbler_handshake(struct scrobbler *scrobbler)
 {
 	GString *url;
 	char *timestr, *md5;
 
-	as_host->g_state = AS_HANDSHAKING;
+	scrobbler->state = SCROBBLER_STATE_HANDSHAKE;
 
 	timestr = as_timestamp();
-	md5 = as_md5(as_host->password, timestr);
+	md5 = as_md5(scrobbler->config->password, timestr);
 
 	/* construct the handshake url. */
-	url = g_string_new(as_host->url);
+	url = g_string_new(scrobbler->config->url);
 	first_var(url, "hs", "true");
 	add_var(url, "p", "1.2");
 	add_var(url, "c", AS_CLIENT_ID);
 	add_var(url, "v", AS_CLIENT_VERSION);
-	add_var(url, "u", as_host->username);
+	add_var(url, "u", scrobbler->config->username);
 	add_var(url, "t", timestr);
 	add_var(url, "a", md5);
 
@@ -404,50 +472,52 @@ static void as_handshake(struct scrobbler_config *as_host)
 	//  notice ("handshake url:\n%s", url);
 
 	http_client_request(url->str, NULL,
-			    &as_handshake_callback, as_host);
+			    &scrobbler_handshake_callback, scrobbler);
 
 	g_string_free(url, true);
 }
 
 static gboolean
-as_handshake_timer(gpointer data)
+scrobbler_handshake_timer(gpointer data)
 {
-	struct scrobbler_config *as_host = data;
+	struct scrobbler *scrobbler = data;
 
-	assert(as_host->g_state == AS_NOTHING);
+	assert(scrobbler->state == SCROBBLER_STATE_NOTHING);
 
-	((struct scrobbler_config*)data)->as_handshake_id = 0;
+	scrobbler->handshake_source_id = 0;
 
-	as_handshake(data);
+	scrobbler_handshake(data);
 	return false;
 }
 
 static void
-as_schedule_handshake(struct scrobbler_config *as_host)
+scrobbler_schedule_handshake(struct scrobbler *scrobbler)
 {
-	assert(as_host->g_state == AS_NOTHING);
-	assert(as_host->as_handshake_id == 0);
+	assert(scrobbler->state == SCROBBLER_STATE_NOTHING);
+	assert(scrobbler->handshake_source_id == 0);
 
-	as_host->as_handshake_id = g_timeout_add_seconds(as_host->g_interval,
-						as_handshake_timer, as_host);
+	scrobbler->handshake_source_id =
+		g_timeout_add_seconds(scrobbler->interval,
+				      scrobbler_handshake_timer, scrobbler);
 }
 
 static void
-as_send_now_playing(const char *artist, const char *track,
-		    const char *album, const char *mbid, const int length, struct scrobbler_config *as_host)
+scrobbler_send_now_playing(struct scrobbler *scrobbler, const char *artist,
+			   const char *track, const char *album,
+			   const char *mbid, const int length)
 {
 	GString *post_data;
 	char len[MAX_VAR_SIZE];
 
-	assert(as_host->g_state == AS_READY);
-	assert(as_host->as_submit_id == 0);
+	assert(scrobbler->state == SCROBBLER_STATE_READY);
+	assert(scrobbler->submit_source_id == 0);
 
-	as_host->g_state = AS_SUBMITTING;
+	scrobbler->state = SCROBBLER_STATE_SUBMITTING;
 
 	snprintf(len, MAX_VAR_SIZE, "%i", length);
 
 	post_data = g_string_new(NULL);
-	add_var(post_data, "s", as_host->g_session);
+	add_var(post_data, "s", scrobbler->session);
 	add_var(post_data, "a", artist);
 	add_var(post_data, "t", track);
 	add_var(post_data, "b", album);
@@ -455,21 +525,31 @@ as_send_now_playing(const char *artist, const char *track,
 	add_var(post_data, "n", "");
 	add_var(post_data, "m", mbid);
 
-	g_message("sending 'now playing' notification to '%s'\n", as_host->url);
+	g_message("sending 'now playing' notification to '%s'",
+		  scrobbler->config->url);
 
-	http_client_request(as_host->g_nowplay_url,
+	http_client_request(scrobbler->nowplay_url,
 			    post_data->str,
-			    as_submit_callback, as_host);
+			    scrobbler_submit_callback, scrobbler);
 
 	g_string_free(post_data, true);
+}
+
+static void
+scrobbler_schedule_submit_callback(gpointer data,
+				   G_GNUC_UNUSED gpointer user_data)
+{
+	struct scrobbler *scrobbler = data;
+
+	if (scrobbler->state == SCROBBLER_STATE_READY &&
+	    scrobbler->submit_source_id == 0)
+		scrobbler_schedule_submit(scrobbler);
 }
 
 void
 as_now_playing(const char *artist, const char *track,
 	       const char *album, const char *mbid, const int length)
 {
-	struct scrobbler_config *current_host = &file_config.as_hosts;
-
 	as_song_cleanup(&g_now_playing, false);
 
 	g_now_playing.artist = g_strdup(artist);
@@ -478,42 +558,40 @@ as_now_playing(const char *artist, const char *track,
 	g_now_playing.mbid = g_strdup(mbid);
 	g_now_playing.length = length;
 
-	do {
-		if (current_host->g_state == AS_READY && current_host->as_submit_id == 0)
-			as_schedule_submit(current_host);
-	} while((current_host = current_host->next));
+	g_slist_foreach(scrobblers, scrobbler_schedule_submit_callback, NULL);
 }
 
-static void as_submit(struct scrobbler_config *as_host)
+static void
+scrobbler_submit(struct scrobbler *scrobbler)
 {
 	//MAX_SUBMIT_COUNT
 	unsigned count = 0;
 	GString *post_data;
 	char len[MAX_VAR_SIZE];
 
-	assert(as_host->g_state == AS_READY);
-	assert(as_host->as_submit_id == 0);
+	assert(scrobbler->state == SCROBBLER_STATE_READY);
+	assert(scrobbler->submit_source_id == 0);
 
 	if (g_queue_is_empty(queue)) {
 		/* the submission queue is empty.  See if a "now playing" song is
 		   scheduled - these should be sent after song submissions */
 		if (g_now_playing.artist != NULL && g_now_playing.track != NULL) {
-			as_send_now_playing(g_now_playing.artist,
-					    g_now_playing.track,
-					    g_now_playing.album,
-					    g_now_playing.mbid,
-					    g_now_playing.length,
-					    as_host);
+			scrobbler_send_now_playing(scrobbler,
+						   g_now_playing.artist,
+						   g_now_playing.track,
+						   g_now_playing.album,
+						   g_now_playing.mbid,
+						   g_now_playing.length);
 		}
 
 		return;
 	}
 
-	as_host->g_state = AS_SUBMITTING;
+	scrobbler->state = SCROBBLER_STATE_SUBMITTING;
 
 	/* construct the handshake url. */
 	post_data = g_string_new(NULL);
-	add_var(post_data, "s", as_host->g_session);
+	add_var(post_data, "s", scrobbler->session);
 
 	for (GList *list = g_queue_peek_head_link(queue);
 	     list != NULL && count < MAX_SUBMIT_COUNT;
@@ -537,12 +615,12 @@ static void as_submit(struct scrobbler_config *as_host)
 
 	g_message("submitting %i song%s\n", count, count == 1 ? "" : "s");
 	g_debug("post data: %s\n", post_data->str);
-	g_debug("url: %s\n", as_host->g_submit_url);
+	g_debug("url: %s", scrobbler->submit_url);
 
 	g_submit_pending = count;
-	http_client_request(as_host->g_submit_url,
+	http_client_request(scrobbler->submit_url,
 			    post_data->str,
-			    &as_submit_callback, as_host);
+			    &scrobbler_submit_callback, scrobbler);
 
 	g_string_free(post_data, true);
 }
@@ -553,7 +631,6 @@ as_songchange(const char *file, const char *artist, const char *track,
 	      const char *time2)
 {
 	struct song *current;
-	struct scrobbler_config *current_host = &file_config.as_hosts;
 
 	/* from the 1.2 protocol draft:
 
@@ -589,10 +666,7 @@ as_songchange(const char *file, const char *artist, const char *track,
 
 	g_queue_push_tail(queue, current);
 
-	do {
-		if (current_host->g_state == AS_READY && current_host->as_submit_id == 0)
-			as_schedule_submit(current_host);
-	} while((current_host = current_host->next));
+	g_slist_foreach(scrobblers, scrobbler_schedule_submit_callback, NULL);
 
 	return g_queue_get_length(queue);
 }
@@ -612,37 +686,35 @@ void as_init(void)
 		  queue_length, queue_length == 1 ? "" : "s");
 
 	do {
-		current_host->g_session = NULL;
-		current_host->g_nowplay_url = NULL;
-		current_host->g_submit_url = NULL;
-		current_host->g_interval = 1;
-		current_host->g_state = AS_NOTHING;
-		current_host->as_submit_id = 0;
-		current_host->as_handshake_id = 0;
-		as_schedule_handshake(current_host);
+		struct scrobbler *scrobbler = scrobbler_new(current_host);
+		scrobblers = g_slist_prepend(scrobblers, scrobbler);
+		scrobbler_schedule_handshake(scrobbler);
 	} while((current_host = current_host->next));
 }
 
 static gboolean
-as_submit_timer(gpointer data)
+scrobbler_submit_timer(gpointer data)
 {
-	assert(((struct scrobbler_config *)data)->g_state == AS_READY);
+	struct scrobbler *scrobbler = data;
 
-	((struct scrobbler_config *)data)->as_submit_id = 0;
+	assert(scrobbler->state == SCROBBLER_STATE_READY);
 
-	as_submit(data);
+	scrobbler->submit_source_id = 0;
+
+	scrobbler_submit(scrobbler);
 	return false;
 }
 
 static void
-as_schedule_submit(struct scrobbler_config *as_host)
+scrobbler_schedule_submit(struct scrobbler *scrobbler)
 {
-	assert(as_host->as_submit_id == 0);
+	assert(scrobbler->submit_source_id == 0);
 	assert(!g_queue_is_empty(queue) ||
 	       (g_now_playing.artist != NULL && g_now_playing.track != NULL));
 
-	as_host->as_submit_id = g_timeout_add_seconds(as_host->g_interval,
-					     as_submit_timer, as_host);
+	scrobbler->submit_source_id =
+		g_timeout_add_seconds(scrobbler->interval,
+				      scrobbler_submit_timer, scrobbler);
 }
 
 void as_save_cache(void)
@@ -661,9 +733,19 @@ free_queue_song(gpointer data, G_GNUC_UNUSED gpointer user_data)
 	as_song_cleanup(song, true);
 }
 
+static void
+scrobbler_free_callback(gpointer data, G_GNUC_UNUSED gpointer user_data)
+{
+	struct scrobbler *scrobbler = data;
+
+	scrobbler_free(scrobbler);
+}
+
 void as_cleanup(void)
 {
 	as_save_cache();
+
+	g_slist_foreach(scrobblers, scrobbler_free_callback, NULL);
 
 	as_song_cleanup(&g_now_playing, false);
 

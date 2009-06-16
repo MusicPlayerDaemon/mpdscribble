@@ -321,9 +321,6 @@ free_as_host(struct scrobbler_config *current_host)
 	g_free(current_host->url);
 	g_free(current_host->username);
 	g_free(current_host->password);
-	g_free(current_host->g_session);
-	g_free(current_host->g_nowplay_url);
-	g_free(current_host->g_submit_url);
 
 	if(current_host->next) {
 		free_as_host(current_host->next);
