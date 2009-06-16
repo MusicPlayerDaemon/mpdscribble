@@ -23,7 +23,7 @@
 #include <glib.h>
 
 void
-as_song_cleanup(struct song *s, int free_struct)
+as_song_cleanup(struct record *s, int free_struct)
 {
 	g_free(s->artist);
 	g_free(s->track);
@@ -35,13 +35,13 @@ as_song_cleanup(struct song *s, int free_struct)
 }
 
 void
-clear_song(struct song *s)
+record_clear(struct record *record)
 {
-	s->artist = NULL;
-	s->track = NULL;
-	s->album = NULL;
-	s->mbid = NULL;
-	s->time = NULL;
-	s->length = 0;
-	s->source = "P";
+	record->artist = NULL;
+	record->track = NULL;
+	record->album = NULL;
+	record->mbid = NULL;
+	record->time = NULL;
+	record->length = 0;
+	record->source = "P";
 }

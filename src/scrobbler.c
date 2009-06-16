@@ -81,7 +81,7 @@ struct scrobbler {
 	char *nowplay_url;
 	char *submit_url;
 
-	struct song now_playing;
+	struct record now_playing;
 };
 
 static GSList *scrobblers;
@@ -106,7 +106,7 @@ scrobbler_new(const struct scrobbler_config *config)
 	scrobbler->nowplay_url = NULL;
 	scrobbler->submit_url = NULL;
 
-	clear_song(&scrobbler->now_playing);
+	record_clear(&scrobbler->now_playing);
 
 	return scrobbler;
 }
@@ -332,7 +332,7 @@ static void as_queue_remove_oldest(unsigned count)
 	assert(count > 0);
 
 	while (count--) {
-		struct song *tmp = g_queue_pop_head(queue);
+		struct record *tmp = g_queue_pop_head(queue);
 		as_song_cleanup(tmp, 1);
 	}
 }
@@ -545,7 +545,7 @@ static void
 scrobbler_schedule_now_playing_callback(gpointer data, gpointer user_data)
 {
 	struct scrobbler *scrobbler = data;
-	struct song *song = user_data;
+	struct record *song = user_data;
 
 	if (scrobbler->state != SCROBBLER_STATE_READY)
 		return;
@@ -577,7 +577,7 @@ void
 as_now_playing(const char *artist, const char *track,
 	       const char *album, const char *mbid, const int length)
 {
-	struct song song;
+	struct record song;
 
 	song.artist = g_strdup(artist);
 	song.track = g_strdup(track);
@@ -625,7 +625,7 @@ scrobbler_submit(struct scrobbler *scrobbler)
 	for (GList *list = g_queue_peek_head_link(queue);
 	     list != NULL && count < MAX_SUBMIT_COUNT;
 	     list = g_list_next(list)) {
-		struct song *song = list->data;
+		struct record *song = list->data;
 
 		snprintf(len, MAX_VAR_SIZE, "%i", song->length);
 
@@ -659,7 +659,7 @@ as_songchange(const char *file, const char *artist, const char *track,
 	      const char *album, const char *mbid, const int length,
 	      const char *time2)
 {
-	struct song *current;
+	struct record *current;
 
 	/* from the 1.2 protocol draft:
 
@@ -680,7 +680,7 @@ as_songchange(const char *file, const char *artist, const char *track,
 		return -1;
 	}
 
-	current = g_new(struct song, 1);
+	current = g_new(struct record, 1);
 	current->artist = g_strdup(artist);
 	current->track = g_strdup(track);
 	current->album = g_strdup(album);
@@ -759,7 +759,7 @@ void as_save_cache(void)
 static void
 free_queue_song(gpointer data, G_GNUC_UNUSED gpointer user_data)
 {
-	struct song *song = data;
+	struct record *song = data;
 	as_song_cleanup(song, true);
 }
 

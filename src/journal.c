@@ -30,16 +30,16 @@
 static int journal_file_empty;
 
 static void
-journal_write_song(gpointer data, gpointer user_data)
+journal_write_record(gpointer data, gpointer user_data)
 {
-	struct song *song = data;
+	struct record *record = data;
 	FILE *file = user_data;
 
 	fprintf(file,
 		"a = %s\nt = %s\nb = %s\nm = %s\n"
-		"i = %s\nl = %i\no = %s\n\n", song->artist,
-		song->track, song->album, song->mbid, song->time,
-		song->length, song->source);
+		"i = %s\nl = %i\no = %s\n\n", record->artist,
+		record->track, record->album, record->mbid, record->time,
+		record->length, record->source);
 }
 
 bool journal_write(GQueue *queue)
@@ -56,7 +56,7 @@ bool journal_write(GQueue *queue)
 		return false;
 	}
 
-	g_queue_foreach(queue, journal_write_song, handle);
+	g_queue_foreach(queue, journal_write_record, handle);
 
 	fclose(handle);
 
@@ -64,21 +64,21 @@ bool journal_write(GQueue *queue)
 }
 
 static void
-journal_commit_song(GQueue *queue, struct song *song)
+journal_commit_record(GQueue *queue, struct record *record)
 {
-	if (song->artist != NULL && song->track != NULL) {
-		/* append song to the queue; reuse allocated strings */
+	if (record->artist != NULL && record->track != NULL) {
+		/* append record to the queue; reuse allocated strings */
 
-		g_queue_push_tail(queue, g_memdup(song, sizeof(*song)));
+		g_queue_push_tail(queue, g_memdup(record, sizeof(*record)));
 
 		journal_file_empty = false;
 	} else {
-		/* free and clear the song, it was not used */
+		/* free and clear the record, it was not used */
 
-		as_song_cleanup(song, false);
+		as_song_cleanup(record, false);
 	}
 
-	clear_song(song);
+	record_clear(record);
 }
 
 /* g_time_val_from_iso8601() was introduced in GLib 2.12 */
@@ -138,7 +138,7 @@ void journal_read(GQueue *queue)
 {
 	FILE *file;
 	char line[1024];
-	struct song sng;
+	struct record record;
 
 	journal_file_empty = true;
 
@@ -149,7 +149,7 @@ void journal_read(GQueue *queue)
 		return;
 	}
 
-	clear_song(&sng);
+	record_clear(&record);
 
 	while (fgets(line, sizeof(line), file) != NULL) {
 		char *key, *value;
@@ -168,23 +168,23 @@ void journal_read(GQueue *queue)
 		value = g_strstrip(value);
 
 		if (!strcmp("a", key)) {
-			journal_commit_song(queue, &sng);
-			sng.artist = g_strdup(value);
+			journal_commit_record(queue, &record);
+			record.artist = g_strdup(value);
 		} else if (!strcmp("t", key))
-			sng.track = g_strdup(value);
+			record.track = g_strdup(value);
 		else if (!strcmp("b", key))
-			sng.album = g_strdup(value);
+			record.album = g_strdup(value);
 		else if (!strcmp("m", key))
-			sng.mbid = g_strdup(value);
+			record.mbid = g_strdup(value);
 		else if (!strcmp("i", key))
-			sng.time = parse_timestamp(value);
+			record.time = parse_timestamp(value);
 		else if (!strcmp("l", key))
-			sng.length = atoi(value);
+			record.length = atoi(value);
 		else if (strcmp("o", key) == 0 && value[0] == 'R')
-			sng.source = "R";
+			record.source = "R";
 	}
 
 	fclose(file);
 
-	journal_commit_song(queue, &sng);
+	journal_commit_record(queue, &record);
 }

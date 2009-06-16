@@ -21,7 +21,7 @@
 #ifndef RECORD_H
 #define RECORD_H
 
-struct song {
+struct record {
 	char *artist;
 	char *track;
 	char *album;
@@ -32,9 +32,9 @@ struct song {
 };
 
 void
-as_song_cleanup(struct song *s, int free_struct);
+as_song_cleanup(struct record *s, int free_struct);
 
 void
-clear_song(struct song *s);
+record_clear(struct record *record);
 
 #endif /* RECORD_H */
