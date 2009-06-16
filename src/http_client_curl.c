@@ -433,7 +433,7 @@ http_client_request(const char *url, const char *post_data,
 	/* .. and set it up */
 
 	curl_easy_setopt(request->curl, CURLOPT_USERAGENT,
-			 "mpdscribble " VERSION);
+			 "mpdscribble/" VERSION);
 	curl_easy_setopt(request->curl, CURLOPT_WRITEFUNCTION,
 			 http_request_writefunction);
 	curl_easy_setopt(request->curl, CURLOPT_WRITEDATA, request);
