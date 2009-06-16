@@ -367,8 +367,7 @@ scrobbler_submit_callback(size_t length, const char *response, void *data)
 			as_queue_remove_oldest(g_submit_pending);
 			g_submit_pending = 0;
 		} else {
-			assert(scrobbler->now_playing.artist != NULL &&
-			       scrobbler->now_playing.track != NULL);
+			assert(record_is_defined(&scrobbler->now_playing));
 
 			record_deinit(&scrobbler->now_playing);
 			memset(&scrobbler->now_playing, 0,
@@ -603,15 +602,13 @@ scrobbler_submit(struct scrobbler *scrobbler)
 	if (g_queue_is_empty(queue)) {
 		/* the submission queue is empty.  See if a "now playing" song is
 		   scheduled - these should be sent after song submissions */
-		if (scrobbler->now_playing.artist != NULL &&
-		    scrobbler->now_playing.track != NULL) {
+		if (record_is_defined(&scrobbler->now_playing))
 			scrobbler_send_now_playing(scrobbler,
 						   scrobbler->now_playing.artist,
 						   scrobbler->now_playing.track,
 						   scrobbler->now_playing.album,
 						   scrobbler->now_playing.mbid,
 						   scrobbler->now_playing.length);
-		}
 
 		return;
 	}
@@ -739,8 +736,7 @@ scrobbler_schedule_submit(struct scrobbler *scrobbler)
 {
 	assert(scrobbler->submit_source_id == 0);
 	assert(!g_queue_is_empty(queue) ||
-	       (scrobbler->now_playing.artist != NULL &&
-		scrobbler->now_playing.track != NULL));
+	       record_is_defined(&scrobbler->now_playing));
 
 	scrobbler->submit_source_id =
 		g_timeout_add_seconds(scrobbler->interval,

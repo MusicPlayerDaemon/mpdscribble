@@ -21,6 +21,9 @@
 #ifndef RECORD_H
 #define RECORD_H
 
+#include <stdbool.h>
+#include <stddef.h>
+
 struct record {
 	char *artist;
 	char *track;
@@ -46,5 +49,14 @@ record_free(struct record *record);
 
 void
 record_clear(struct record *record);
+
+/**
+ * Does this record object have a defined and usable value?
+ */
+static inline bool
+record_is_defined(const struct record *record)
+{
+	return record->artist != NULL && record->track != NULL;
+}
 
 #endif /* RECORD_H */
