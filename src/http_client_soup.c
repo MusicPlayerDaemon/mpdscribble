@@ -20,7 +20,7 @@
 
 #include "http_client.h"
 #include "file.h"
-#include "as.h"
+#include "scrobbler.h"
 #include "config.h"
 
 #include <libsoup/soup-uri.h>
