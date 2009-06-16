@@ -28,7 +28,6 @@ struct scrobbler_config {
 	char *url;
 	char *username;
 	char *password;
-	struct scrobbler_config *next; /* Linked list if more than one */
 };
 
 struct config {
@@ -50,7 +49,7 @@ struct config {
 	int verbose;
 	enum file_location loc;
 
-	struct scrobbler_config as_hosts;
+	GSList *scrobblers;
 };
 
 extern struct config file_config;

@@ -185,21 +185,42 @@ static void load_integer(GKeyFile * file, const char *name, int *value_r)
 	*value_r = value;
 }
 
+static struct scrobbler_config *
+load_scrobbler_config(GKeyFile *file, const char *group)
+{
+	struct scrobbler_config *scrobbler = g_new(struct scrobbler_config, 1);
+	GError *error = NULL;
+
+	/* Use default host for mpdscribble group, for backward compatability */
+	if(strcmp(group, "mpdscribble") == 0) {
+		scrobbler->url = g_strdup(AS_HOST);
+	} else {
+		scrobbler->url = g_key_file_get_string(file, group, "url",
+						    &error);
+		if (error != NULL)
+			g_error("%s\n", error->message);
+	}
+
+	scrobbler->username = g_key_file_get_string(file, group, "username", &error);
+	if (error != NULL)
+		g_error("%s\n", error->message);
+
+	scrobbler->password = g_key_file_get_string(file, group, "password", &error);
+	if (error != NULL)
+		g_error("%s\n", error->message);
+
+	return scrobbler;
+}
+
 static void
 load_config_file(const char *path)
 {
 	bool ret;
 	char *data1, *data2;
 	char **groups;
-	struct scrobbler_config *current_host = &file_config.as_hosts;
 	int i = -1;
 	GKeyFile *file;
 	GError *error = NULL;
-
-	/* initialize host, in case there are none */
-	current_host->url = NULL;
-	current_host->username = NULL;
-	current_host->password = NULL;
 
 	ret = g_file_get_contents(path, &data1, NULL, &error);
 	if (!ret)
@@ -233,32 +254,12 @@ load_config_file(const char *path)
 
 	groups = g_key_file_get_groups(file, NULL);
 	while(groups[++i]) {
-		/* Use default host for mpdscribble group, for backward compatability */
-		if(strcmp(groups[i], "mpdscribble") == 0) {
-			current_host->url = g_strdup(AS_HOST);
-		} else {
-			current_host->url =
-				g_key_file_get_string(file, groups[i], "url",
-						      &error);
-			if (error != NULL)
-				g_error("%s\n", error->message);
-		}
-
-		current_host->username = g_key_file_get_string(file, groups[i], "username", &error);
-		if (error != NULL)
-			g_error("%s\n", error->message);
-
-		current_host->password = g_key_file_get_string(file, groups[i], "password", &error);
-		if (error != NULL)
-			g_error("%s\n", error->message);
-
-		/* Only allocate a next element if there are more groups */
-		if(groups[i+1]) {
-			current_host->next = malloc(sizeof *current_host->next);
-			current_host = current_host->next;
-		} else {
-			current_host->next = NULL;
-		}
+		struct scrobbler_config *scrobbler =
+			load_scrobbler_config(file, groups[i]);
+		if (scrobbler != NULL)
+			file_config.scrobblers =
+				g_slist_prepend(file_config.scrobblers,
+						scrobbler);
 	}
 	g_strfreev(groups);
 
@@ -278,13 +279,9 @@ int file_read_config(void)
 	if (!file_config.conf)
 		g_error("cannot find configuration file\n");
 
-	if (file_config.as_hosts.username == NULL || *file_config.as_hosts.username == 0)
-		g_error("no audioscrobbler username specified in %s\n",
+	if (file_config.scrobblers == NULL)
+		g_error("No audioscrobbler host configured in %s",
 			file_config.conf);
-
-	if (file_config.as_hosts.password == NULL || *file_config.as_hosts.password == 0)
-		g_error("no audioscrobbler password specified in %s\n",
-		      file_config.conf);
 
 	if (!file_config.host)
 		file_config.host = g_strdup(getenv("MPD_HOST"));
@@ -316,16 +313,14 @@ int file_read_config(void)
 }
 
 static void
-free_as_host(struct scrobbler_config *current_host)
+scrobbler_config_free_callback(gpointer data, G_GNUC_UNUSED gpointer user_data)
 {
-	g_free(current_host->url);
-	g_free(current_host->username);
-	g_free(current_host->password);
+	struct scrobbler_config *scrobbler = data;
 
-	if(current_host->next) {
-		free_as_host(current_host->next);
-		g_free(current_host->next);
-	}
+	g_free(scrobbler->url);
+	g_free(scrobbler->username);
+	g_free(scrobbler->password);
+	g_free(scrobbler);
 }
 
 void file_cleanup(void)
@@ -335,5 +330,6 @@ void file_cleanup(void)
 	g_free(file_config.conf);
 	g_free(file_config.cache);
 
-	free_as_host(&file_config.as_hosts);
+	g_slist_foreach(file_config.scrobblers,
+			scrobbler_config_free_callback, NULL);
 }

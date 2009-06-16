@@ -692,10 +692,19 @@ as_songchange(const char *file, const char *artist, const char *track,
 	return g_queue_get_length(queue);
 }
 
+static void
+scrobbler_new_callback(gpointer data, G_GNUC_UNUSED gpointer user_data)
+{
+	const struct scrobbler_config *config = data;
+	struct scrobbler *scrobbler = scrobbler_new(config);
+
+	scrobblers = g_slist_prepend(scrobblers, scrobbler);
+	scrobbler_schedule_handshake(scrobbler);
+}
+
 void as_init(void)
 {
 	guint queue_length;
-	struct scrobbler_config *current_host = &file_config.as_hosts;
 
 	g_message("starting mpdscribble (" AS_CLIENT_ID " " AS_CLIENT_VERSION ")\n");
 
@@ -706,11 +715,7 @@ void as_init(void)
 	g_message("loaded %i song%s from cache\n",
 		  queue_length, queue_length == 1 ? "" : "s");
 
-	do {
-		struct scrobbler *scrobbler = scrobbler_new(current_host);
-		scrobblers = g_slist_prepend(scrobblers, scrobbler);
-		scrobbler_schedule_handshake(scrobbler);
-	} while((current_host = current_host->next));
+	g_slist_foreach(file_config.scrobblers, scrobbler_new_callback, NULL);
 }
 
 static gboolean
