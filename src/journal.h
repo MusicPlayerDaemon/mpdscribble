@@ -25,9 +25,7 @@
 
 #include <stdbool.h>
 
-struct song;
-
-bool journal_write(GQueue *queue);
-void journal_read(GQueue *queue);
+bool journal_write(const char *path, GQueue *queue);
+void journal_read(const char *path, GQueue *queue);
 
 #endif

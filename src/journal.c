@@ -19,7 +19,6 @@
 */
 
 #include "journal.h"
-#include "file.h"
 #include "record.h"
 
 #include <stdlib.h>
@@ -42,17 +41,16 @@ journal_write_record(gpointer data, gpointer user_data)
 		record->length, record->source);
 }
 
-bool journal_write(GQueue *queue)
+bool journal_write(const char *path, GQueue *queue)
 {
 	FILE *handle;
 
 	if (g_queue_is_empty(queue) && journal_file_empty)
 		return false;
 
-	handle = fopen(file_config.cache, "wb");
+	handle = fopen(path, "wb");
 	if (!handle) {
-		g_warning("failed to open %s: %s\n",
-			  file_config.cache, strerror(errno));
+		g_warning("failed to open %s: %s\n", path, strerror(errno));
 		return false;
 	}
 
@@ -134,7 +132,7 @@ parse_timestamp(const char *p)
 	return g_strdup(p);
 }
 
-void journal_read(GQueue *queue)
+void journal_read(const char *path, GQueue *queue)
 {
 	FILE *file;
 	char line[1024];
@@ -142,10 +140,9 @@ void journal_read(GQueue *queue)
 
 	journal_file_empty = true;
 
-	file = fopen(file_config.cache, "r");
+	file = fopen(path, "r");
 	if (file == NULL) {
-		g_warning("Failed to open %s: %s\n",
-			  file_config.cache, strerror(errno));
+		g_warning("Failed to open %s: %s", path, strerror(errno));
 		return;
 	}
 

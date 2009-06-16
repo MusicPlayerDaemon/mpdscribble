@@ -712,7 +712,7 @@ void as_init(GSList *scrobbler_configs)
 	g_message("starting mpdscribble (" AS_CLIENT_ID " " AS_CLIENT_VERSION ")\n");
 
 	queue = g_queue_new();
-	journal_read(queue);
+	journal_read(file_config.cache, queue);
 
 	queue_length = g_queue_get_length(queue);
 	g_message("loaded %i song%s from cache\n",
@@ -748,7 +748,7 @@ scrobbler_schedule_submit(struct scrobbler *scrobbler)
 
 void as_save_cache(void)
 {
-	if (journal_write(queue)) {
+	if (journal_write(file_config.cache, queue)) {
 		guint queue_length = g_queue_get_length(queue);
 		g_message("saved %i song%s to cache\n",
 			  queue_length, queue_length == 1 ? "" : "s");
