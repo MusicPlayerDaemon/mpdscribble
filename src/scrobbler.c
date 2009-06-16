@@ -776,6 +776,7 @@ void as_cleanup(void)
 	as_save_cache();
 
 	g_slist_foreach(scrobblers, scrobbler_free_callback, NULL);
+	g_slist_free(scrobblers);
 
 	g_queue_foreach(queue, free_queue_song, NULL);
 	g_queue_free(queue);
