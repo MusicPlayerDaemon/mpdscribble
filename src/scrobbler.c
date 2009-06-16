@@ -62,13 +62,6 @@ enum scrobbler_state {
 };
 
 typedef enum {
-	AS_COMMAND,
-	AS_SESSION,
-	AS_NOWPLAY,
-	AS_SUBMIT,
-} as_handshaking;
-
-typedef enum {
 	AS_SUBMIT_OK,
 	AS_SUBMIT_FAILED,
 	AS_SUBMIT_HANDSHAKE,
@@ -253,13 +246,28 @@ scrobbler_parse_handshake_response(struct scrobbler *scrobbler, const char *line
 	return false;
 }
 
+static char *
+next_line(const char **input_r, const char *end)
+{
+	const char *input = *input_r;
+	const char *newline = memchr(input, '\n', end - input);
+	char *line;
+
+	if (newline == NULL)
+		return g_strdup("");
+
+	line = g_strndup(input, newline - input);
+	*input_r = newline + 1;
+
+	return line;
+}
+
 static void
 scrobbler_handshake_callback(size_t length, const char *response, void *data)
 {
 	struct scrobbler *scrobbler = data;
-	as_handshaking state = AS_COMMAND;
-	char *newline;
-	char *next;
+	const char *end = response + length;
+	char *line;
 	bool ret;
 
 	assert(scrobbler != NULL);
@@ -274,52 +282,44 @@ scrobbler_handshake_callback(size_t length, const char *response, void *data)
 		return;
 	}
 
-	while ((newline = memchr(response, '\n', length)) != NULL) {
-		next = g_strndup(response, newline - response);
-		switch (state) {
-		case AS_COMMAND:
-			ret = scrobbler_parse_handshake_response(scrobbler, next);
-			if (!ret) {
-				g_free(next);
-				scrobbler_increase_interval(scrobbler);
-				scrobbler_schedule_handshake(scrobbler);
-				return;
-			}
-
-			state = AS_SESSION;
-			break;
-		case AS_SESSION:
-			scrobbler->session = next;
-			next = NULL;
-			g_debug("session: %s", scrobbler->session);
-			state = AS_NOWPLAY;
-			break;
-		case AS_NOWPLAY:
-			scrobbler->nowplay_url = next;
-			next = NULL;
-			g_debug("now playing url: %s", scrobbler->nowplay_url);
-			state = AS_SUBMIT;
-			break;
-		case AS_SUBMIT:
-			scrobbler->submit_url = next;
-			g_debug("submit url: %s", scrobbler->submit_url);
-			scrobbler->state = SCROBBLER_STATE_READY;
-			scrobbler->interval = 1;
-
-			/* handshake was successful: see if we have
-			   songs to submit */
-			scrobbler_submit(scrobbler);
-			return;
-		}
-
-		g_free(next);
-		length = response + length - (newline + 1);
-		response = newline + 1;
-
+	line = next_line(&response, end);
+	ret = scrobbler_parse_handshake_response(scrobbler, line);
+	g_free(line);
+	if (!ret) {
+		scrobbler_increase_interval(scrobbler);
+		scrobbler_schedule_handshake(scrobbler);
+		return;
 	}
 
-	scrobbler_increase_interval(scrobbler);
-	scrobbler_schedule_handshake(scrobbler);
+	scrobbler->session = next_line(&response, end);
+	g_debug("session: %s", scrobbler->session);
+
+	scrobbler->nowplay_url = next_line(&response, end);
+	g_debug("now playing url: %s", scrobbler->nowplay_url);
+
+	scrobbler->submit_url = next_line(&response, end);
+	g_debug("submit url: %s", scrobbler->submit_url);
+
+	if (*scrobbler->nowplay_url == 0 || *scrobbler->submit_url == 0) {
+		g_free(scrobbler->session);
+		scrobbler->session = NULL;
+
+		g_free(scrobbler->nowplay_url);
+		scrobbler->nowplay_url = NULL;
+
+		g_free(scrobbler->submit_url);
+		scrobbler->submit_url = NULL;
+
+		scrobbler_increase_interval(scrobbler);
+		scrobbler_schedule_handshake(scrobbler);
+		return;
+	}
+
+	scrobbler->state = SCROBBLER_STATE_READY;
+	scrobbler->interval = 1;
+
+	/* handshake was successful: see if we have songs to submit */
+	scrobbler_submit(scrobbler);
 }
 
 static void as_queue_remove_oldest(unsigned count)
