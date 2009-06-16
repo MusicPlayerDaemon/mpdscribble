@@ -80,10 +80,11 @@ struct scrobbler {
 	char *session;
 	char *nowplay_url;
 	char *submit_url;
+
+	struct song now_playing;
 };
 
 static GSList *scrobblers;
-static struct song g_now_playing;
 static GQueue *queue;
 static unsigned g_submit_pending;
 
@@ -105,6 +106,8 @@ scrobbler_new(const struct scrobbler_config *config)
 	scrobbler->nowplay_url = NULL;
 	scrobbler->submit_url = NULL;
 
+	memset(&scrobbler->now_playing, 0, sizeof(scrobbler->now_playing));
+
 	return scrobbler;
 }
 
@@ -114,6 +117,8 @@ scrobbler_new(const struct scrobbler_config *config)
 static void
 scrobbler_free(struct scrobbler *scrobbler)
 {
+	as_song_cleanup(&scrobbler->now_playing, false);
+
 	if (scrobbler->handshake_source_id != 0)
 		g_source_remove(scrobbler->handshake_source_id);
 	if (scrobbler->submit_source_id != 0)
@@ -362,11 +367,12 @@ scrobbler_submit_callback(size_t length, const char *response, void *data)
 			as_queue_remove_oldest(g_submit_pending);
 			g_submit_pending = 0;
 		} else {
-			assert(g_now_playing.artist != NULL &&
-			       g_now_playing.track != NULL);
+			assert(scrobbler->now_playing.artist != NULL &&
+			       scrobbler->now_playing.track != NULL);
 
-			as_song_cleanup(&g_now_playing, false);
-			memset(&g_now_playing, 0, sizeof(g_now_playing));
+			as_song_cleanup(&scrobbler->now_playing, false);
+			memset(&scrobbler->now_playing, 0,
+			       sizeof(scrobbler->now_playing));
 		}
 
 
@@ -536,6 +542,27 @@ scrobbler_send_now_playing(struct scrobbler *scrobbler, const char *artist,
 }
 
 static void
+scrobbler_schedule_now_playing_callback(gpointer data, gpointer user_data)
+{
+	struct scrobbler *scrobbler = data;
+	struct song *song = user_data;
+
+	if (scrobbler->state != SCROBBLER_STATE_READY)
+		return;
+
+	as_song_cleanup(&scrobbler->now_playing, false);
+
+	scrobbler->now_playing.artist = g_strdup(song->artist);
+	scrobbler->now_playing.track = g_strdup(song->track);
+	scrobbler->now_playing.album = g_strdup(song->album);
+	scrobbler->now_playing.mbid = g_strdup(song->mbid);
+	scrobbler->now_playing.length = song->length;
+
+	if (scrobbler->submit_source_id == 0)
+		scrobbler_schedule_submit(scrobbler);
+}
+
+static void
 scrobbler_schedule_submit_callback(gpointer data,
 				   G_GNUC_UNUSED gpointer user_data)
 {
@@ -550,15 +577,16 @@ void
 as_now_playing(const char *artist, const char *track,
 	       const char *album, const char *mbid, const int length)
 {
-	as_song_cleanup(&g_now_playing, false);
+	struct song song;
 
-	g_now_playing.artist = g_strdup(artist);
-	g_now_playing.track = g_strdup(track);
-	g_now_playing.album = g_strdup(album);
-	g_now_playing.mbid = g_strdup(mbid);
-	g_now_playing.length = length;
+	song.artist = g_strdup(artist);
+	song.track = g_strdup(track);
+	song.album = g_strdup(album);
+	song.mbid = g_strdup(mbid);
+	song.length = length;
 
-	g_slist_foreach(scrobblers, scrobbler_schedule_submit_callback, NULL);
+	g_slist_foreach(scrobblers,
+			scrobbler_schedule_now_playing_callback, &song);
 }
 
 static void
@@ -575,13 +603,14 @@ scrobbler_submit(struct scrobbler *scrobbler)
 	if (g_queue_is_empty(queue)) {
 		/* the submission queue is empty.  See if a "now playing" song is
 		   scheduled - these should be sent after song submissions */
-		if (g_now_playing.artist != NULL && g_now_playing.track != NULL) {
+		if (scrobbler->now_playing.artist != NULL &&
+		    scrobbler->now_playing.track != NULL) {
 			scrobbler_send_now_playing(scrobbler,
-						   g_now_playing.artist,
-						   g_now_playing.track,
-						   g_now_playing.album,
-						   g_now_playing.mbid,
-						   g_now_playing.length);
+						   scrobbler->now_playing.artist,
+						   scrobbler->now_playing.track,
+						   scrobbler->now_playing.album,
+						   scrobbler->now_playing.mbid,
+						   scrobbler->now_playing.length);
 		}
 
 		return;
@@ -710,7 +739,8 @@ scrobbler_schedule_submit(struct scrobbler *scrobbler)
 {
 	assert(scrobbler->submit_source_id == 0);
 	assert(!g_queue_is_empty(queue) ||
-	       (g_now_playing.artist != NULL && g_now_playing.track != NULL));
+	       (scrobbler->now_playing.artist != NULL &&
+		scrobbler->now_playing.track != NULL));
 
 	scrobbler->submit_source_id =
 		g_timeout_add_seconds(scrobbler->interval,
@@ -746,8 +776,6 @@ void as_cleanup(void)
 	as_save_cache();
 
 	g_slist_foreach(scrobblers, scrobbler_free_callback, NULL);
-
-	as_song_cleanup(&g_now_playing, false);
 
 	g_queue_foreach(queue, free_queue_song, NULL);
 	g_queue_free(queue);
