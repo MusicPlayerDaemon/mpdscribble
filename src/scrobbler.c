@@ -544,18 +544,13 @@ static void
 scrobbler_schedule_now_playing_callback(gpointer data, gpointer user_data)
 {
 	struct scrobbler *scrobbler = data;
-	struct record *song = user_data;
+	const struct record *song = user_data;
 
 	if (scrobbler->state != SCROBBLER_STATE_READY)
 		return;
 
 	record_deinit(&scrobbler->now_playing);
-
-	scrobbler->now_playing.artist = g_strdup(song->artist);
-	scrobbler->now_playing.track = g_strdup(song->track);
-	scrobbler->now_playing.album = g_strdup(song->album);
-	scrobbler->now_playing.mbid = g_strdup(song->mbid);
-	scrobbler->now_playing.length = song->length;
+	record_copy(&scrobbler->now_playing, song);
 
 	if (scrobbler->submit_source_id == 0)
 		scrobbler_schedule_submit(scrobbler);

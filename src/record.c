@@ -23,6 +23,26 @@
 #include <glib.h>
 
 void
+record_copy(struct record *dest, const struct record *src)
+{
+	dest->artist = g_strdup(src->artist);
+	dest->track = g_strdup(src->track);
+	dest->album = g_strdup(src->album);
+	dest->mbid = g_strdup(src->mbid);
+	dest->time = g_strdup(src->time);
+	dest->length = src->length;
+	dest->source = src->source;
+}
+
+struct record *
+record_dup(const struct record *src)
+{
+	struct record *dest = g_new(struct record, 1);
+	record_copy(dest, src);
+	return dest;
+}
+
+void
 record_deinit(struct record *record)
 {
 	g_free(record->artist);

@@ -35,6 +35,19 @@ struct record {
 };
 
 /**
+ * Copies attributes from one record to another.  Does not free
+ * existing values in the destination record.
+ */
+void
+record_copy(struct record *dest, const struct record *src);
+
+/**
+ * Duplicates a record object.
+ */
+struct record *
+record_dup(const struct record *src);
+
+/**
  * Deinitializes a record object, freeing all members.
  */
 void
