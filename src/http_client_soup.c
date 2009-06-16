@@ -20,7 +20,6 @@
 
 #include "http_client.h"
 #include "file.h"
-#include "scrobbler.h"
 #include "config.h"
 
 #include <libsoup/soup-uri.h>
@@ -132,7 +131,7 @@ http_client_request(const char *url, const char *post_data,
 		    (msg, "application/x-www-form-urlencoded",
 		     SOUP_MEMORY_COPY, post_data, strlen(post_data));
 		soup_message_headers_append(msg->request_headers, "User-Agent",
-					    AS_CLIENT_ID "/" AS_CLIENT_VERSION);
+					    "mpdscribble/" VERSION);
 		soup_message_headers_append(msg->request_headers, "Pragma",
 					    "no-cache");
 		soup_message_headers_append(msg->request_headers, "Accept",
@@ -143,7 +142,7 @@ http_client_request(const char *url, const char *post_data,
 		     SOUP_BUFFER_SYSTEM_OWNED, g_strdup(post_data),
 		     strlen(post_data));
 		soup_message_add_header(msg->request_headers, "User-Agent",
-					AS_CLIENT_ID "/" AS_CLIENT_VERSION);
+					"mpdscribble/" VERSION);
 		soup_message_add_header(msg->request_headers, "Pragma",
 					"no-cache");
 		soup_message_add_header(msg->request_headers, "Accept", "*/*");
