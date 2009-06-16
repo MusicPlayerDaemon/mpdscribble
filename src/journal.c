@@ -75,11 +75,7 @@ journal_commit_song(GQueue *queue, struct song *song)
 	} else {
 		/* free and clear the song, it was not used */
 
-		g_free(song->artist);
-		g_free(song->track);
-		g_free(song->album);
-		g_free(song->mbid);
-		g_free(song->time);
+		as_song_cleanup(song, false);
 	}
 
 	clear_song(song);
