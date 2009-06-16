@@ -75,7 +75,7 @@ journal_commit_record(GQueue *queue, struct record *record)
 	} else {
 		/* free and clear the record, it was not used */
 
-		as_song_cleanup(record, false);
+		record_deinit(record);
 	}
 
 	record_clear(record);

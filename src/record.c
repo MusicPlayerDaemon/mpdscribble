@@ -23,15 +23,20 @@
 #include <glib.h>
 
 void
-as_song_cleanup(struct record *s, int free_struct)
+record_deinit(struct record *record)
 {
-	g_free(s->artist);
-	g_free(s->track);
-	g_free(s->album);
-	g_free(s->mbid);
-	g_free(s->time);
-	if (free_struct)
-		g_free(s);
+	g_free(record->artist);
+	g_free(record->track);
+	g_free(record->album);
+	g_free(record->mbid);
+	g_free(record->time);
+}
+
+void
+record_free(struct record *record)
+{
+	record_deinit(record);
+	g_free(record);
 }
 
 void

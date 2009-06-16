@@ -31,8 +31,18 @@ struct record {
 	const char *source;
 };
 
+/**
+ * Deinitializes a record object, freeing all members.
+ */
 void
-as_song_cleanup(struct record *s, int free_struct);
+record_deinit(struct record *record);
+
+/**
+ * Frees a record object: free all members with record_deinit(), and
+ * free the record pointer itself.
+ */
+void
+record_free(struct record *record);
 
 void
 record_clear(struct record *record);

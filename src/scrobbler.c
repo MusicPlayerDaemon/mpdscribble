@@ -117,7 +117,7 @@ scrobbler_new(const struct scrobbler_config *config)
 static void
 scrobbler_free(struct scrobbler *scrobbler)
 {
-	as_song_cleanup(&scrobbler->now_playing, false);
+	record_deinit(&scrobbler->now_playing);
 
 	if (scrobbler->handshake_source_id != 0)
 		g_source_remove(scrobbler->handshake_source_id);
@@ -333,7 +333,7 @@ static void as_queue_remove_oldest(unsigned count)
 
 	while (count--) {
 		struct record *tmp = g_queue_pop_head(queue);
-		as_song_cleanup(tmp, 1);
+		record_free(tmp);
 	}
 }
 
@@ -370,7 +370,7 @@ scrobbler_submit_callback(size_t length, const char *response, void *data)
 			assert(scrobbler->now_playing.artist != NULL &&
 			       scrobbler->now_playing.track != NULL);
 
-			as_song_cleanup(&scrobbler->now_playing, false);
+			record_deinit(&scrobbler->now_playing);
 			memset(&scrobbler->now_playing, 0,
 			       sizeof(scrobbler->now_playing));
 		}
@@ -550,7 +550,7 @@ scrobbler_schedule_now_playing_callback(gpointer data, gpointer user_data)
 	if (scrobbler->state != SCROBBLER_STATE_READY)
 		return;
 
-	as_song_cleanup(&scrobbler->now_playing, false);
+	record_deinit(&scrobbler->now_playing);
 
 	scrobbler->now_playing.artist = g_strdup(song->artist);
 	scrobbler->now_playing.track = g_strdup(song->track);
@@ -760,7 +760,7 @@ static void
 free_queue_song(gpointer data, G_GNUC_UNUSED gpointer user_data)
 {
 	struct record *song = data;
-	as_song_cleanup(song, true);
+	record_free(song);
 }
 
 static void
