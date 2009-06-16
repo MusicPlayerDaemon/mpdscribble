@@ -649,7 +649,7 @@ scrobbler_submit(struct scrobbler *scrobbler)
 	g_string_free(post_data, true);
 }
 
-int
+void
 as_songchange(const char *file, const char *artist, const char *track,
 	      const char *album, const char *mbid, const int length,
 	      const char *time2)
@@ -666,13 +666,13 @@ as_songchange(const char *file, const char *artist, const char *track,
 	if (!(artist && strlen(artist))) {
 		g_warning("empty artist, not submitting; "
 			  "please check the tags on %s\n", file);
-		return -1;
+		return;
 	}
 
 	if (!(track && strlen(track))) {
 		g_warning("empty title, not submitting; "
 			  "please check the tags on %s", file);
-		return -1;
+		return;
 	}
 
 	current = g_new(struct record, 1);
@@ -691,8 +691,6 @@ as_songchange(const char *file, const char *artist, const char *track,
 	g_queue_push_tail(queue, current);
 
 	g_slist_foreach(scrobblers, scrobbler_schedule_submit_callback, NULL);
-
-	return g_queue_get_length(queue);
 }
 
 static void

@@ -30,7 +30,7 @@ void
 as_now_playing(const char *artist, const char *track,
 	       const char *album, const char *mbid, const int length);
 
-int
+void
 as_songchange(const char *file, const char *artist, const char *track,
 	      const char *album, const char *mbid, const int length,
 	      const char *time);

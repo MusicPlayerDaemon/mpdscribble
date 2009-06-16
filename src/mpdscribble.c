@@ -172,24 +172,20 @@ void
 song_ended(const struct mpd_song *song)
 {
 	int elapsed = g_timer_elapsed(timer, NULL);
-	int q;
 
 	if (!played_long_enough(elapsed, song->time))
 		return;
 
 	/* FIXME:
 	   libmpdclient doesn't have any way to fetch the musicbrainz id. */
-	q = as_songchange(song->file, song->artist,
-			  song->title,
-			  song->album, song->musicbrainz_trackid,
-			  song->time >
-			  0 ? song->time : (int)
-			  g_timer_elapsed(timer,
-					  NULL),
-			  NULL);
-	if (q != -1)
-		g_message("added (%s - %s) to submit queue at position %i\n",
-			  song->artist, song->title, q);
+	as_songchange(song->file, song->artist,
+		      song->title,
+		      song->album, song->musicbrainz_trackid,
+		      song->time >
+		      0 ? song->time : (int)
+		      g_timer_elapsed(timer,
+				      NULL),
+		      NULL);
 }
 
 int main(int argc, char **argv)
