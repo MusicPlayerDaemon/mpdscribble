@@ -49,10 +49,6 @@ Specify log file. /var/log/mpdscribble/mpdscribble.log is used by default.
 The special value "syslog" makes mpdscribble use the local syslog
 daemon.  "-" means log to stderr.
 .TP
-.B \-\-cache FILE
-Specify Last.fm cache file. /var/cache/mpdscribble/mpdscribble.cache is used
-by default.
-.TP
 .B \-\-conf FILE
 Read configuration options from file. /etc/mpdscribble.conf
 is used by default.
@@ -69,9 +65,6 @@ HTTP proxy URL.
 .TP
 .B \-\-sleep INTERVAL
 Specify how often mpdscribble should query MPD (in seconds, default is 1).
-.TP
-.B \-\-cache\-interval INTERVAL
-Specify how often mpdscribble should write its cache file (in seconds, default is 600).
 .TP
 .B \-\-verbose LEVEL
 Specify how verbosely mpdscribble should log.  Possible values are 0

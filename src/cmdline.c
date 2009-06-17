@@ -58,19 +58,12 @@ static const GOptionEntry entries[] = {
 	  "run daemon as this user", NULL },
 	{ "log", 0, 0, G_OPTION_ARG_STRING, &file_config.log,
 	  "log file or 'syslog'", NULL },
-	{ "cache", 0, 0, G_OPTION_ARG_STRING, &file_config.cache,
-	  "cache file name", NULL },
 	{ "host", 0, 0, G_OPTION_ARG_STRING, &file_config.host,
 	  "MPD host name to connect to, or Unix domain socket path", NULL },
 	{ "port", 0, 0, G_OPTION_ARG_INT, &file_config.port,
 	  "MPD port to connect to", NULL },
 	{ "proxy", 0, 0, G_OPTION_ARG_STRING, &file_config.host,
 	  "HTTP proxy URI", NULL },
-	{ "sleep", 0, 0, G_OPTION_ARG_INT, &file_config.sleep,
-	  "update interval (default 1 second)", NULL },
-	{ "cache-interval", 0, 0, G_OPTION_ARG_INT,
-	  &file_config.cache_interval,
-	  "write cache every i seconds (default 600 seconds)", NULL },
 	{ .long_name = NULL }
 };
 
