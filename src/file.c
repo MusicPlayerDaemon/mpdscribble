@@ -145,45 +145,49 @@ get_default_cache_path(void)
 #endif
 }
 
-static void load_string(GKeyFile * file, const char *name, char **value_r)
+static bool
+load_string(GKeyFile *file, const char *name, char **value_r)
 {
 	GError *error = NULL;
 	char *value;
 
 	if (*value_r != NULL)
 		/* already set by command line */
-		return;
+		return false;
 
 	value = g_key_file_get_string(file, PACKAGE, name, &error);
 	if (error != NULL) {
 		if (error->code != G_KEY_FILE_ERROR_KEY_NOT_FOUND)
 			g_error("%s\n", error->message);
 		g_error_free(error);
-		return;
+		return false;
 	}
 
 	g_free(*value_r);
 	*value_r = value;
+	return true;
 }
 
-static void load_integer(GKeyFile * file, const char *name, int *value_r)
+static bool
+load_integer(GKeyFile * file, const char *name, int *value_r)
 {
 	GError *error = NULL;
 	int value;
 
 	if (*value_r != -1)
 		/* already set by command line */
-		return;
+		return false;
 
 	value = g_key_file_get_integer(file, PACKAGE, name, &error);
 	if (error != NULL) {
 		if (error->code != G_KEY_FILE_ERROR_KEY_NOT_FOUND)
 			g_error("%s\n", error->message);
 		g_error_free(error);
-		return;
+		return false;
 	}
 
 	*value_r = value;
+	return true;
 }
 
 static struct scrobbler_config *
