@@ -194,6 +194,12 @@ load_scrobbler_config(GKeyFile *file, const char *group)
 
 	/* Use default host for mpdscribble group, for backward compatability */
 	if(strcmp(group, "mpdscribble") == 0) {
+		if (g_key_file_get_string(file, group, "username", NULL) == NULL)
+			/* the default section does not contain a
+			   username: don't set up the last.fm default
+			   scrobbler */
+			return NULL;
+
 		scrobbler->url = g_strdup(AS_HOST);
 	} else {
 		scrobbler->url = g_key_file_get_string(file, group, "url",
