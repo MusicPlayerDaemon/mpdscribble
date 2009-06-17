@@ -223,8 +223,10 @@ load_scrobbler_config(GKeyFile *file, const char *group)
 
 		g_free(username);
 
+		scrobbler->name = g_strdup("last.fm");
 		scrobbler->url = g_strdup(AS_HOST);
 	} else {
+		scrobbler->name = g_strdup(group);
 		scrobbler->url = g_key_file_get_string(file, group, "url",
 						    &error);
 		if (error != NULL)
@@ -353,6 +355,7 @@ scrobbler_config_free_callback(gpointer data, G_GNUC_UNUSED gpointer user_data)
 {
 	struct scrobbler_config *scrobbler = data;
 
+	g_free(scrobbler->name);
 	g_free(scrobbler->url);
 	g_free(scrobbler->username);
 	g_free(scrobbler->password);

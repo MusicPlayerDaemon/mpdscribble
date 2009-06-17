@@ -24,6 +24,12 @@
 #include <glib.h>
 
 struct scrobbler_config {
+	/**
+	 * The name of the mpdscribble.conf section.  It is used in
+	 * log messages.
+	 */
+	char *name;
+
 	char *url;
 	char *username;
 	char *password;
