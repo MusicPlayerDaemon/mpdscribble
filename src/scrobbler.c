@@ -574,16 +574,19 @@ void
 as_now_playing(const char *artist, const char *track,
 	       const char *album, const char *mbid, const int length)
 {
-	struct record song;
+	struct record record;
 
-	song.artist = g_strdup(artist);
-	song.track = g_strdup(track);
-	song.album = g_strdup(album);
-	song.mbid = g_strdup(mbid);
-	song.length = length;
+	record.artist = g_strdup(artist);
+	record.track = g_strdup(track);
+	record.album = g_strdup(album);
+	record.mbid = g_strdup(mbid);
+	record.time = NULL;
+	record.length = length;
 
 	g_slist_foreach(scrobblers,
-			scrobbler_schedule_now_playing_callback, &song);
+			scrobbler_schedule_now_playing_callback, &record);
+
+	record_deinit(&record);
 }
 
 static void
