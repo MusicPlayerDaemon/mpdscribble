@@ -45,9 +45,6 @@
 #define AS_CLIENT_ID "mdc"
 #define AS_CLIENT_VERSION VERSION
 
-#define MAX_VAR_SIZE 8192
-#define MAX_TIMESTAMP_SIZE 64
-
 /* don't submit more than this amount of songs in a batch. */
 #define MAX_SUBMIT_COUNT 10
 
@@ -537,14 +534,14 @@ scrobbler_send_now_playing(struct scrobbler *scrobbler, const char *artist,
 			   const char *mbid, const int length)
 {
 	GString *post_data;
-	char len[MAX_VAR_SIZE];
+	char len[16];
 
 	assert(scrobbler->state == SCROBBLER_STATE_READY);
 	assert(scrobbler->submit_source_id == 0);
 
 	scrobbler->state = SCROBBLER_STATE_SUBMITTING;
 
-	snprintf(len, MAX_VAR_SIZE, "%i", length);
+	snprintf(len, sizeof(len), "%i", length);
 
 	post_data = g_string_new(NULL);
 	add_var(post_data, "s", scrobbler->session);
@@ -606,7 +603,6 @@ scrobbler_submit(struct scrobbler *scrobbler)
 	//MAX_SUBMIT_COUNT
 	unsigned count = 0;
 	GString *post_data;
-	char len[MAX_VAR_SIZE];
 
 	assert(scrobbler->state == SCROBBLER_STATE_READY);
 	assert(scrobbler->submit_source_id == 0);
@@ -635,8 +631,9 @@ scrobbler_submit(struct scrobbler *scrobbler)
 	     list != NULL && count < MAX_SUBMIT_COUNT;
 	     list = g_list_next(list)) {
 		struct record *song = list->data;
+		char len[16];
 
-		snprintf(len, MAX_VAR_SIZE, "%i", song->length);
+		snprintf(len, sizeof(len), "%i", song->length);
 
 		add_var_i(post_data, "a", count, song->artist);
 		add_var_i(post_data, "t", count, song->track);
