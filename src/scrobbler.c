@@ -581,13 +581,11 @@ scrobbler_schedule_now_playing_callback(gpointer data, gpointer user_data)
 	struct scrobbler *scrobbler = data;
 	const struct record *song = user_data;
 
-	if (scrobbler->state != SCROBBLER_STATE_READY)
-		return;
-
 	record_deinit(&scrobbler->now_playing);
 	record_copy(&scrobbler->now_playing, song);
 
-	if (scrobbler->submit_source_id == 0)
+	if (scrobbler->state == SCROBBLER_STATE_READY &&
+	    scrobbler->submit_source_id == 0)
 		scrobbler_schedule_submit(scrobbler);
 }
 
