@@ -209,6 +209,15 @@ load_scrobbler_config(GKeyFile *file, const char *group)
 	if (error != NULL)
 		g_error("%s\n", error->message);
 
+	scrobbler->journal = g_key_file_get_string(file, group, "journal", NULL);
+	if (scrobbler->journal == NULL && strcmp(group, "mpdscribble") == 0) {
+		/* mpdscribble <= 0.17 compatibility */
+		scrobbler->journal = g_key_file_get_string(file, group,
+							   "cache", NULL);
+		if (scrobbler->journal == NULL)
+			scrobbler->journal = get_default_cache_path();
+	}
+
 	return scrobbler;
 }
 
@@ -243,7 +252,6 @@ load_config_file(const char *path)
 	load_string(file, "pidfile", &file_config.pidfile);
 	load_string(file, "daemon_user", &file_config.daemon_user);
 	load_string(file, "log", &file_config.log);
-	load_string(file, "cache", &file_config.cache);
 	load_string(file, "host", &file_config.host);
 	load_integer(file, "port", &file_config.port);
 	load_string(file, "proxy", &file_config.proxy);
@@ -289,8 +297,6 @@ int file_read_config(void)
 		file_config.host = g_strdup(FILE_DEFAULT_HOST);
 	if (!file_config.log)
 		file_config.log = get_default_log_path();
-	if (!file_config.cache)
-		file_config.cache = get_default_cache_path();
 
 	if (file_config.port == -1) {
 		const char *port = getenv("MPD_PORT");
@@ -320,6 +326,7 @@ scrobbler_config_free_callback(gpointer data, G_GNUC_UNUSED gpointer user_data)
 	g_free(scrobbler->url);
 	g_free(scrobbler->username);
 	g_free(scrobbler->password);
+	g_free(scrobbler->journal);
 	g_free(scrobbler);
 }
 
@@ -328,7 +335,6 @@ void file_cleanup(void)
 	g_free(file_config.host);
 	g_free(file_config.log);
 	g_free(file_config.conf);
-	g_free(file_config.cache);
 
 	g_slist_foreach(file_config.scrobblers,
 			scrobbler_config_free_callback, NULL);

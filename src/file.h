@@ -28,6 +28,12 @@ struct scrobbler_config {
 	char *url;
 	char *username;
 	char *password;
+
+	/**
+	 * The path of the journal file.  It contains records which
+	 * have not been submitted yet.
+	 */
+	char *journal;
 };
 
 struct config {
@@ -39,7 +45,6 @@ struct config {
 	char *daemon_user;
 
 	char *log;
-	char *cache;
 	char *conf;
 	char *host;
 	char *proxy;
