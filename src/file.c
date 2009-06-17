@@ -19,6 +19,7 @@
 */
 
 #include "file.h"
+#include "scrobbler.h"
 #include "config.h"
 
 #include <glib.h>

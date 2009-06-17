@@ -23,6 +23,18 @@
 
 #include <glib.h>
 
+struct scrobbler_config {
+	char *url;
+	char *username;
+	char *password;
+
+	/**
+	 * The path of the journal file.  It contains records which
+	 * have not been submitted yet.
+	 */
+	char *journal;
+};
+
 void as_init(GSList *scrobbler_configs);
 void as_cleanup(void);
 

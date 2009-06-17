@@ -20,7 +20,6 @@
 
 #include "scrobbler.h"
 #include "record.h"
-#include "file.h"
 #include "journal.h"
 #include "http_client.h"
 #include "config.h"

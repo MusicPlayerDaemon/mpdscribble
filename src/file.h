@@ -24,18 +24,6 @@
 
 enum file_location { file_etc, file_home, file_unknown, };
 
-struct scrobbler_config {
-	char *url;
-	char *username;
-	char *password;
-
-	/**
-	 * The path of the journal file.  It contains records which
-	 * have not been submitted yet.
-	 */
-	char *journal;
-};
-
 struct config {
 	/** don't daemonize the mpdscribble process */
 	gboolean no_daemon;
