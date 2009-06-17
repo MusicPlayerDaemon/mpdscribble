@@ -54,7 +54,7 @@
 struct config file_config = {
 	.port = -1,
 	.sleep = -1,
-	.cache_interval = -1,
+	.journal_interval = 600,
 	.verbose = -1,
 	.loc = file_unknown,
 };
@@ -267,8 +267,10 @@ load_config_file(const char *path)
 	load_integer(file, "port", &file_config.port);
 	load_string(file, "proxy", &file_config.proxy);
 	load_integer(file, "sleep", &file_config.sleep);
-	load_integer(file, "cache_interval",
-		     &file_config.cache_interval);
+	if (!load_integer(file, "journal_interval",
+			  &file_config.journal_interval))
+		load_integer(file, "cache_interval",
+			     &file_config.journal_interval);
 	load_integer(file, "verbose", &file_config.verbose);
 
 	groups = g_key_file_get_groups(file, NULL);
@@ -321,8 +323,6 @@ int file_read_config(void)
 		file_config.proxy = getenv("http_proxy");
 	if (file_config.sleep <= 0)
 		file_config.sleep = 1;
-	if (file_config.cache_interval == -1)
-		file_config.cache_interval = 600;
 	if (file_config.verbose == -1)
 		file_config.verbose = 1;
 

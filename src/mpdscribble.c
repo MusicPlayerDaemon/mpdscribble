@@ -114,7 +114,7 @@ static void song_changed(const struct mpd_song *song)
  * Regularly save the cache.
  */
 static gboolean
-timer_save_cache(G_GNUC_UNUSED gpointer data)
+timer_save_journal(G_GNUC_UNUSED gpointer data)
 {
 	as_save_cache();
 	return true;
@@ -224,8 +224,8 @@ int main(int argc, char **argv)
 
 	/* set up timeouts */
 
-	save_source_id = g_timeout_add_seconds(file_config.cache_interval,
-					       timer_save_cache, NULL);
+	save_source_id = g_timeout_add_seconds(file_config.journal_interval,
+					       timer_save_journal, NULL);
 
 	/* run the main loop */
 

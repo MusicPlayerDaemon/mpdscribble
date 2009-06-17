@@ -38,7 +38,13 @@ struct config {
 	char *proxy;
 	int port;
 	int sleep;
-	int cache_interval;
+
+	/**
+	 * The interval in seconds after which the journal is saved to
+	 * the file system.
+	 */
+	unsigned journal_interval;
+
 	int verbose;
 	enum file_location loc;
 
