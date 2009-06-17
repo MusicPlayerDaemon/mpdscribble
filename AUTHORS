@@ -1,7 +1,20 @@
 The current mpdscribble development team
 ========================================
 
+Avuton Olrich <avuton@gmail.com>
+	release manager
+
 Max Kellermann <max@duempel.org>
+	lead developer
+
+Slava Semushin <php-coder@altlinux.ru>
+	miscellaneous fixes
+
+Stephen Paul Weber <singpolyma@singpolyma.net>
+	multi-scrobbler support
+
+Christoph Leuzinger <christoph.leuzinger@westworks.ch>
+	protocol 1.2
 
 
 Former mpdscribble developers
