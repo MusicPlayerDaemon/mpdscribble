@@ -210,31 +210,35 @@ scrobbler_increase_interval(struct scrobbler *scrobbler)
 	if (scrobbler->interval > 60 * 60 * 2)
 		scrobbler->interval = 60 * 60 * 2;
 
-	g_warning("waiting %u seconds before trying again",
-		  scrobbler->interval);
+	g_warning("[%s] waiting %u seconds before trying again",
+		  scrobbler->config->name, scrobbler->interval);
 }
 
 static as_submitting
-scrobbler_parse_submit_response(const char *line, size_t length)
+scrobbler_parse_submit_response(const char *scrobbler_name,
+				const char *line, size_t length)
 {
 	if (length == sizeof(OK) - 1 && memcmp(line, OK, length) == 0) {
-		g_message("OK\n");
+		g_message("[%s] OK", scrobbler_name);
+
 		return AS_SUBMIT_OK;
 	} else if (length == sizeof(BADSESSION) - 1 &&
 		   memcmp(line, BADSESSION, length) == 0) {
-		g_warning("invalid session\n");
+		g_warning("[%s] invalid session", scrobbler_name);
 
 		return AS_SUBMIT_HANDSHAKE;
 	} else if (length == sizeof(FAILED) - 1 &&
 		   memcmp(line, FAILED, length) == 0) {
 		if (length > strlen(FAILED))
-			g_warning("submission rejected: %.*s\n",
+			g_warning("[%s] submission rejected: %.*s",
+				  scrobbler_name,
 				  (int)(length - strlen(FAILED)),
 				  line + strlen(FAILED));
 		else
-			g_warning("submission rejected\n");
+			g_warning("[%s] submission rejected", scrobbler_name);
 	} else {
-		g_warning("unknown response: %.*s", (int)length, line);
+		g_warning("[%s] unknown response: %.*s",
+			  scrobbler_name, (int)length, line);
 	}
 
 	return AS_SUBMIT_FAILED;
@@ -250,23 +254,28 @@ scrobbler_parse_handshake_response(struct scrobbler *scrobbler, const char *line
 	/* FIXME: some code duplication between this
 	   and as_parse_submit_response. */
 	if (!strncmp(line, OK, strlen(OK))) {
-		g_message("handshake ok for '%s'\n", scrobbler->config->url);
+		g_message("[%s] handshake successful",
+			  scrobbler->config->name);
 		return true;
 	} else if (!strncmp(line, BANNED, strlen(BANNED))) {
-		g_warning("handshake failed, we're banned (%s)\n", line);
+		g_warning("[%s] handshake failed, we're banned (%s)",
+			  scrobbler->config->name, line);
 		scrobbler->state = SCROBBLER_STATE_BADAUTH;
 	} else if (!strncmp(line, BADAUTH, strlen(BADAUTH))) {
-		g_warning("handshake failed, username or password incorrect (%s)\n",
-			  line);
+		g_warning("[%s] handshake failed, "
+			  "username or password incorrect (%s)",
+			  scrobbler->config->name, line);
 		scrobbler->state = SCROBBLER_STATE_BADAUTH;
 	} else if (!strncmp(line, BADTIME, strlen(BADTIME))) {
-		g_warning("handshake failed, clock not synchronized (%s)\n",
-			  line);
+		g_warning("[%s] handshake failed, clock not synchronized (%s)",
+			  scrobbler->config->name, line);
 		scrobbler->state = SCROBBLER_STATE_BADAUTH;
 	} else if (!strncmp(line, FAILED, strlen(FAILED))) {
-		g_warning("handshake failed (%s)\n", line);
+		g_warning("[%s] handshake failed (%s)",
+			  scrobbler->config->name, line);
 	} else {
-		g_warning("error parsing handshake response (%s)\n", line);
+		g_warning("[%s] error parsing handshake response (%s)",
+			  scrobbler->config->name, line);
 	}
 
 	return false;
@@ -302,7 +311,7 @@ scrobbler_handshake_callback(size_t length, const char *response, void *data)
 	scrobbler->state = SCROBBLER_STATE_NOTHING;
 
 	if (!length) {
-		g_warning("handshake timed out\n");
+		g_warning("[%s] handshake timed out", scrobbler->config->name);
 		scrobbler_increase_interval(scrobbler);
 		scrobbler_schedule_handshake(scrobbler);
 		return;
@@ -318,13 +327,16 @@ scrobbler_handshake_callback(size_t length, const char *response, void *data)
 	}
 
 	scrobbler->session = next_line(&response, end);
-	g_debug("session: %s", scrobbler->session);
+	g_debug("[%s] session: %s",
+		scrobbler->config->name, scrobbler->session);
 
 	scrobbler->nowplay_url = next_line(&response, end);
-	g_debug("now playing url: %s", scrobbler->nowplay_url);
+	g_debug("[%s] now playing url: %s",
+		scrobbler->config->name, scrobbler->nowplay_url);
 
 	scrobbler->submit_url = next_line(&response, end);
-	g_debug("submit url: %s", scrobbler->submit_url);
+	g_debug("[%s] submit url: %s",
+		scrobbler->config->name, scrobbler->submit_url);
 
 	if (*scrobbler->nowplay_url == 0 || *scrobbler->submit_url == 0) {
 		g_free(scrobbler->session);
@@ -370,7 +382,7 @@ scrobbler_submit_callback(size_t length, const char *response, void *data)
 
 	if (!length) {
 		scrobbler->pending = 0;
-		g_warning("submit timed out\n");
+		g_warning("[%s] submit timed out", scrobbler->config->name);
 		scrobbler_increase_interval(scrobbler);
 		scrobbler_schedule_submit(scrobbler);
 		return;
@@ -380,7 +392,8 @@ scrobbler_submit_callback(size_t length, const char *response, void *data)
 	if (newline != NULL)
 		length = newline - response;
 
-	switch (scrobbler_parse_submit_response(response, length)) {
+	switch (scrobbler_parse_submit_response(scrobbler->config->name,
+						response, length)) {
 	case AS_SUBMIT_OK:
 		scrobbler->interval = 1;
 
@@ -552,8 +565,8 @@ scrobbler_send_now_playing(struct scrobbler *scrobbler, const char *artist,
 	add_var(post_data, "n", "");
 	add_var(post_data, "m", mbid);
 
-	g_message("sending 'now playing' notification to '%s'",
-		  scrobbler->config->url);
+	g_message("[%s] sending 'now playing' notification",
+		  scrobbler->config->name);
 
 	http_client_request(scrobbler->nowplay_url,
 			    post_data->str,
@@ -648,9 +661,11 @@ scrobbler_submit(struct scrobbler *scrobbler)
 		count++;
 	}
 
-	g_message("submitting %i song%s\n", count, count == 1 ? "" : "s");
-	g_debug("post data: %s\n", post_data->str);
-	g_debug("url: %s", scrobbler->submit_url);
+	g_message("[%s] submitting %i song%s",
+		  scrobbler->config->name, count, count == 1 ? "" : "s");
+	g_debug("[%s] post data: %s", scrobbler->config->name, post_data->str);
+	g_debug("[%s] url: %s",
+		scrobbler->config->name, scrobbler->submit_url);
 
 	scrobbler->pending = count;
 	http_client_request(scrobbler->submit_url,
@@ -777,7 +792,8 @@ scrobbler_save_callback(gpointer data, G_GNUC_UNUSED gpointer user_data)
 
 	if (journal_write(scrobbler->config->journal, scrobbler->queue)) {
 		guint queue_length = g_queue_get_length(scrobbler->queue);
-		g_message("saved %i song%s to %s\n",
+		g_message("[%s] saved %i song%s to %s",
+			  scrobbler->config->name,
 			  queue_length, queue_length == 1 ? "" : "s",
 			  scrobbler->config->journal);
 	}
