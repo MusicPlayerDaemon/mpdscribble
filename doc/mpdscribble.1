@@ -81,12 +81,6 @@ Supported configuration options:
 .B pidfile = FILE
 Write the process id to this file.
 .TP
-.B username = USERNAME
-Your audioscrobbler username.
-.TP
-.B password = MD5SUM
-Your Last.fm password, either cleartext or its MD5 sum.
-.TP
 .B log = FILE
 The file to which mpdscribble should output debugging information.
 The special value "syslog" makes mpdscribble use the local syslog
@@ -115,6 +109,25 @@ debugging messages.
 .TP 
 .B sleep = INTERVAL
 How long mpdscribble should wait between MPD status queries.
+.SH SCROBBLERS
+These options are followed by at least one scrobbler section (choose a
+unique section name like "libre.fm" which only appears in the log
+file; the name "mpdscribble" is reserved).
+.TP
+.B url = URL
+The handshake URL of the scrobbler.  Example:
+"http://post.audioscrobbler.com/", "http://turtle.libre.fm/"
+.TP
+.B username = USERNAME
+Your audioscrobbler username.
+.TP
+.B password = MD5SUM
+Your Last.fm password, either cleartext or its MD5 sum.
+.TP
+.B journal = FILE
+The file where mpdscribble should store its journal in case you do not
+have a connection to the scrobbler.  This option used to be called
+"cache".
 .SH FILES
 .I /etc/mpdscribble.conf
 .RS
