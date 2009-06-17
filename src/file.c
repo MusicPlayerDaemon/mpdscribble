@@ -190,6 +190,21 @@ load_integer(GKeyFile * file, const char *name, int *value_r)
 	return true;
 }
 
+static bool
+load_unsigned(GKeyFile *file, const char *name, unsigned *value_r)
+{
+	int value = -1;
+
+	if (!load_integer(file, name, &value))
+		return false;
+
+	if (value < 0)
+		g_error("Setting '%s' must not be negative", name);
+
+	*value_r = (unsigned)value;
+	return true;
+}
+
 static struct scrobbler_config *
 load_scrobbler_config(GKeyFile *file, const char *group)
 {
@@ -267,10 +282,10 @@ load_config_file(const char *path)
 	load_integer(file, "port", &file_config.port);
 	load_string(file, "proxy", &file_config.proxy);
 	load_integer(file, "sleep", &file_config.sleep);
-	if (!load_integer(file, "journal_interval",
-			  &file_config.journal_interval))
-		load_integer(file, "cache_interval",
-			     &file_config.journal_interval);
+	if (!load_unsigned(file, "journal_interval",
+			   &file_config.journal_interval))
+		load_unsigned(file, "cache_interval",
+			      &file_config.journal_interval);
 	load_integer(file, "verbose", &file_config.verbose);
 
 	groups = g_key_file_get_groups(file, NULL);
