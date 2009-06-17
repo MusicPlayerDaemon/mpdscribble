@@ -332,4 +332,5 @@ void file_cleanup(void)
 
 	g_slist_foreach(file_config.scrobblers,
 			scrobbler_config_free_callback, NULL);
+	g_slist_free(file_config.scrobblers);
 }
