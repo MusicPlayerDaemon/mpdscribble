@@ -121,7 +121,7 @@ get_default_cache_path(void)
 		return g_strdup(FILE_CACHE);
 
 	case file_unknown:
-		g_error("please specify where to put the cache file\n");
+		return NULL;
 	}
 
 	assert(false);

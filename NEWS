@@ -6,7 +6,7 @@ mpdscribble 0.18 - not yet released
   * support multiple scrobbler services (such as libre.fm)
   * schedule "now playing" after successful handshake
   * default to syslog
-  * "cache" renamed to "journal"
+  * "cache" renamed to "journal" (optional now)
 
 
 mpdscribble 0.17 - 2009-03-02
