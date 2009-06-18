@@ -53,9 +53,26 @@ static const char BADSESSION[] = "BADSESSION";
 static const char FAILED[] = "FAILED";
 
 enum scrobbler_state {
+	/**
+	 * mpdscribble has started, and doesn't have a session yet.
+	 * Handshake to be submitted.
+	 */
 	SCROBBLER_STATE_NOTHING,
+
+	/**
+	 * Handshake is in progress, waiting for the server's
+	 * response.
+	 */
 	SCROBBLER_STATE_HANDSHAKE,
+
+	/**
+	 * We have a session, and we're ready to submit.
+	 */
 	SCROBBLER_STATE_READY,
+
+	/**
+	 * Submission in progress, waiting for the server's response.
+	 */
 	SCROBBLER_STATE_SUBMITTING,
 };
 
