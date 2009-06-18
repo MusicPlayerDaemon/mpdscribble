@@ -499,7 +499,7 @@ scrobbler_handshake(struct scrobbler *scrobbler)
 	/* construct the handshake url. */
 	url = g_string_new(scrobbler->config->url);
 	first_var(url, "hs", "true");
-	add_var(url, "p", "1.2");
+	add_var(url, "p", "1.2.1");
 	add_var(url, "c", AS_CLIENT_ID);
 	add_var(url, "v", AS_CLIENT_VERSION);
 	add_var(url, "u", scrobbler->config->username);
