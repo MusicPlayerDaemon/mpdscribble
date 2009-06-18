@@ -57,7 +57,6 @@ enum scrobbler_state {
 	SCROBBLER_STATE_HANDSHAKE,
 	SCROBBLER_STATE_READY,
 	SCROBBLER_STATE_SUBMITTING,
-	SCROBBLER_STATE_BADAUTH,
 };
 
 typedef enum {
@@ -260,16 +259,13 @@ scrobbler_parse_handshake_response(struct scrobbler *scrobbler, const char *line
 	} else if (!strncmp(line, BANNED, strlen(BANNED))) {
 		g_warning("[%s] handshake failed, we're banned (%s)",
 			  scrobbler->config->name, line);
-		scrobbler->state = SCROBBLER_STATE_BADAUTH;
 	} else if (!strncmp(line, BADAUTH, strlen(BADAUTH))) {
 		g_warning("[%s] handshake failed, "
 			  "username or password incorrect (%s)",
 			  scrobbler->config->name, line);
-		scrobbler->state = SCROBBLER_STATE_BADAUTH;
 	} else if (!strncmp(line, BADTIME, strlen(BADTIME))) {
 		g_warning("[%s] handshake failed, clock not synchronized (%s)",
 			  scrobbler->config->name, line);
-		scrobbler->state = SCROBBLER_STATE_BADAUTH;
 	} else if (!strncmp(line, FAILED, strlen(FAILED))) {
 		g_warning("[%s] handshake failed (%s)",
 			  scrobbler->config->name, line);
