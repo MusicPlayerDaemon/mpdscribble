@@ -45,9 +45,9 @@ Write the process id to this file.
 Change to this system user after daemonization.
 .TP
 .B \-\-log FILE
-Specify log file. /var/log/mpdscribble/mpdscribble.log is used by default.
-The special value "syslog" makes mpdscribble use the local syslog
-daemon.  "-" means log to stderr.
+Specify log file.  The special value "syslog" makes mpdscribble use
+the local syslog daemon (which is the default).  "-" means log to
+stderr.
 .TP
 .B \-\-conf FILE
 Read configuration options from file. /etc/mpdscribble.conf
@@ -84,7 +84,7 @@ Write the process id to this file.
 .B log = FILE
 The file to which mpdscribble should output debugging information.
 The special value "syslog" makes mpdscribble use the local syslog
-daemon.  "-" means log to stderr.
+daemon (which is the default).  "-" means log to stderr.
 .TP
 .B cache = FILE
 The file where mpdscribble should store its Last.fm cache in case

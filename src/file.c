@@ -39,10 +39,8 @@
 #ifndef G_OS_WIN32
 
 #define FILE_CACHE "/var/cache/mpdscribble/mpdscribble.cache"
-#define FILE_LOG "/var/log/mpdscribble/mpdscribble.log"
 #define FILE_HOME_CONF "~/.mpdscribble/mpdscribble.conf"
 #define FILE_HOME_CACHE "~/.mpdscribble/mpdscribble.cache"
-#define FILE_HOME_LOG "~/.mpdscribble/mpdscribble.log"
 
 #endif
 
@@ -105,19 +103,7 @@ static char *
 get_default_log_path(void)
 {
 #ifndef G_OS_WIN32
-	switch (file_config.loc) {
-	case file_home:
-		return file_expand_tilde(FILE_HOME_LOG);
-
-	case file_etc:
-		return g_strdup(FILE_LOG);
-
-	case file_unknown:
-		g_error("please specify where to put the log file\n");
-	}
-
-	assert(false);
-	return NULL;
+	return g_strdup("syslog");
 #else
 	return g_strdup("-");
 #endif
