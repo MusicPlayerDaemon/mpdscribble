@@ -7,6 +7,7 @@ mpdscribble 0.18 - not yet released
   * schedule "now playing" after successful handshake
   * default to syslog
   * "cache" renamed to "journal" (optional now)
+  * deprecated the "sleep" option
 
 
 mpdscribble 0.17 - 2009-03-02

@@ -63,9 +63,6 @@ Specify which port the MPD listens on.
 .B \-\-proxy URL
 HTTP proxy URL.
 .TP
-.B \-\-sleep INTERVAL
-Specify how often mpdscribble should query MPD (in seconds, default is 1).
-.TP
 .B \-\-verbose LEVEL
 Specify how verbosely mpdscribble should log.  Possible values are 0
 to 3, defaulting to 1.
@@ -102,9 +99,6 @@ log only critical errors (e.g. "out of memory"); "1" also logs
 non-critical errors (e.g. "server unreachable"); "2" logs
 informational messages (e.g. "new song"); "3" prints a lot of
 debugging messages.
-.TP 
-.B sleep = INTERVAL
-How long mpdscribble should wait between MPD status queries.
 .SH SCROBBLERS
 These options are followed by at least one scrobbler section (choose a
 unique section name like "libre.fm" which only appears in the log
