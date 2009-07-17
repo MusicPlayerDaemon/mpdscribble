@@ -91,6 +91,11 @@ if test x$with_http_client = xsoup || test x$with_http_client = xauto; then
 	fi
 fi
 
+if test x$with_http_client = xsoup; then
+	PKG_CHECK_MODULES([libgthread], [gthread-2.0],,
+		[AC_MSG_ERROR(gthread-2.0 not found)])
+fi
+
 AM_CONDITIONAL(HAVE_SOUP, test x$with_http_client = xsoup)
 
 if test x$with_http_client = xauto; then

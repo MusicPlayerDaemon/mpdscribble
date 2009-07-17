@@ -38,10 +38,12 @@ src_mpdscribble_SOURCES += src/http_client_soup.c
 endif
 
 AM_CPPFLAGS = $(libcurl_CFLAGS) $(libsoup_CFLAGS) \
+	$(libgthread_CFLAGS) \
 	$(libgcrypt_CFLAGS) \
 	$(libglib_CFLAGS) \
 	-I$(srcdir)/src -I$(srcdir)/src/libmpdclient
 LDADD = $(libcurl_LIBS) $(libsoup_LIBS) \
+	$(libgthread_LIBS) \
 	$(libgcrypt_LIBS) \
 	$(libglib_LIBS)
 

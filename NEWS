@@ -1,4 +1,5 @@
 mpdscribble 0.19 - not yet released
+  * soup: explicitly link with libgthread
 
 
 mpdscribble 0.18 - 2009-07-08
