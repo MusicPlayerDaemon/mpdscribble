@@ -384,6 +384,26 @@ http_client_finish(void)
 	curl_global_cleanup();
 }
 
+char *
+http_client_uri_escape(const char *src)
+{
+#if GLIB_CHECK_VERSION(2,16,0)
+	/* if GLib is recent enough, prefer that over CURL
+	   functions */
+	return g_uri_escape_string(src, NULL, false);
+#else
+	/* curl_escape() is deprecated, but for some reason,
+	   curl_easy_escape() wants to have a CURL object, which we
+	   don't have right now */
+	char *tmp = curl_escape(src, 0);
+	/* call g_strdup(), because the caller expects a pointer which
+	   can be freed with g_free() */
+	char *dest = g_strdup(tmp == NULL ? src : tmp);
+	curl_free(tmp);
+	return dest;
+#endif
+}
+
 /**
  * Called by curl when new data is available.
  */

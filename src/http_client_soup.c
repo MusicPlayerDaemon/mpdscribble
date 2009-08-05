@@ -90,6 +90,18 @@ http_client_finish(void)
 		soup_uri_free(http_client.proxy);
 }
 
+char *
+http_client_uri_escape(const char *src)
+{
+#if GLIB_CHECK_VERSION(2,16,0)
+	/* if GLib is recent enough, prefer that over SOUP
+	   functions */
+	return g_uri_escape_string(src, NULL, false);
+#else
+	return soup_uri_encode(src, "&");
+#endif
+}
+
 static void
 #ifdef HAVE_SOUP_24
 http_client_soup_callback(G_GNUC_UNUSED SoupSession *session,

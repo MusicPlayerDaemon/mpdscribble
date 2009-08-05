@@ -37,6 +37,13 @@ http_client_init(void);
 void
 http_client_finish(void);
 
+/**
+ * Escapes URI parameters with '%'.  Free the return value with
+ * g_free().
+ */
+char *
+http_client_uri_escape(const char *src);
+
 void
 http_client_request(const char *url, const char *post_data,
 		    http_client_callback_t * callback, void *data);
