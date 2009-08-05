@@ -1,4 +1,4 @@
-mpdscribble 0.19 - not yet released
+mpdscribble 0.18.1 - not yet released
   * soup: explicitly link with libgthread
   * curl: use curl_escape() on GLib < 2.16
 
