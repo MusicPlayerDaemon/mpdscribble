@@ -142,7 +142,12 @@ void journal_read(const char *path, GQueue *queue)
 
 	file = fopen(path, "r");
 	if (file == NULL) {
-		g_warning("Failed to open %s: %s", path, strerror(errno));
+		if (errno != ENOENT)
+			/* ENOENT is ignored silently, because the
+			   user might be starting mpdscribble for the
+			   first time */
+			g_warning("Failed to open %s: %s",
+				  path, strerror(errno));
 		return;
 	}
 
