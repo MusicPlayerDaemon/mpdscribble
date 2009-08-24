@@ -50,7 +50,7 @@ bool journal_write(const char *path, GQueue *queue)
 
 	handle = fopen(path, "wb");
 	if (!handle) {
-		g_warning("failed to open %s: %s\n", path, strerror(errno));
+		g_warning("Failed to save %s: %s\n", path, strerror(errno));
 		return false;
 	}
 
@@ -146,7 +146,7 @@ void journal_read(const char *path, GQueue *queue)
 			/* ENOENT is ignored silently, because the
 			   user might be starting mpdscribble for the
 			   first time */
-			g_warning("Failed to open %s: %s",
+			g_warning("Failed to load %s: %s",
 				  path, strerror(errno));
 		return;
 	}
