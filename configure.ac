@@ -70,6 +70,8 @@ if test x$with_http_client = xcurl || test x$with_http_client = xauto; then
 	elif test x$with_http_client = xcurl; then
 		AC_MSG_ERROR([libcurl not found])
 	fi
+elif test x$with_http_client != xsoup; then
+	AC_MSG_ERROR([unknown HTTP client specified])
 fi
 
 AM_CONDITIONAL(HAVE_CURL, test x$with_http_client = xcurl)
