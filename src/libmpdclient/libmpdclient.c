@@ -353,7 +353,7 @@ mpd_connect(mpd_Connection *connection, const char * host, int port)
 			snprintf(connection->errorStr,
 				 sizeof(connection->errorStr),
 				 "problems creating socket: %s",
-				 strerror(errno));
+				 g_strerror(errno));
 			connection->error = MPD_ERROR_SYSTEM;
 			continue;
 		}
@@ -364,7 +364,7 @@ mpd_connect(mpd_Connection *connection, const char * host, int port)
 			snprintf(connection->errorStr,
 				 sizeof(connection->errorStr),
 				 "problems connecting to \"%s\" on port"
-				 " %i: %s", host, port, strerror(errno));
+				 " %i: %s", host, port, g_strerror(errno));
 			connection->error = MPD_ERROR_CONNPORT;
 
 			closesocket(connection->sock);
@@ -389,7 +389,7 @@ mpd_connect(mpd_Connection *connection, const char * host, int port)
 			snprintf(connection->errorStr,
 				 sizeof(connection->errorStr),
 				 "problems connecting to \"%s\" on port %i: %s",
-				 host, port, strerror(-ret));
+				 host, port, g_strerror(-ret));
 			connection->error = MPD_ERROR_CONNPORT;
 		}
 

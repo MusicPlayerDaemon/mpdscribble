@@ -2,6 +2,7 @@ mpdscribble 0.18.1 - not yet released
   * soup: explicitly link with libgthread
   * curl: use curl_escape() on GLib < 2.16
   * journal: don't warn if journal file is missing
+  * use g_strerror() instead of strerror()
 
 
 mpdscribble 0.18 - 2009-07-08

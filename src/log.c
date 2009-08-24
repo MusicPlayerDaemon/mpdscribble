@@ -97,7 +97,8 @@ log_init_file(const char *path)
 	} else {
 		log_file = fopen(path, "ab");
 		if (log_file == NULL)
-			g_error("cannot open %s: %s\n", path, strerror(errno));
+			g_error("cannot open %s: %s\n",
+				path, g_strerror(errno));
 	}
 
 	setvbuf(log_file, NULL, _IONBF, 0);
