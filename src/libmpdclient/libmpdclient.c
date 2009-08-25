@@ -34,6 +34,7 @@
 #include "resolver.h"
 #include "str_pool.h"
 
+#include <glib.h>
 #include <assert.h>
 #include <errno.h>
 #include <ctype.h>
