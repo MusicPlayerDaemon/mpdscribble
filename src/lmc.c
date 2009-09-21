@@ -166,15 +166,6 @@ lmc_current(struct mpd_song **song_r, int *elapsed_r)
 		return MPD_STATUS_STATE_UNKNOWN;
 	}
 
-	if (status->error) {
-		/* FIXME: clearing stuff doesn't seem to help, it keeps printing the
-		   same error over and over, so just let's just ignore these errors
-		   for now. */
-		//      warning ("mpd status error: %s\n", status->error);
-		//      mpd_executeCommand(g_mpd, "clearerror");
-		mpd_clearError(g_mpd);
-	}
-
 	state = status->state;
 	*elapsed_r = status->elapsedTime;
 
