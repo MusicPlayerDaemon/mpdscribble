@@ -1,4 +1,0 @@
-*) fix SO_RCVTIMEOUT, first check that it works, also, try to use fcntl where
-	available
-
-*) check for socklen_t

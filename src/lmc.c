@@ -31,9 +31,9 @@
 #include <string.h>
 #include <unistd.h>
 
-static mpd_Connection *g_mpd = NULL;
+static struct mpd_connection *g_mpd;
 static bool idle_supported, idle_notified;
-static int last_id = -1;
+static unsigned last_id = -1;
 static struct mpd_song *current_song;
 static bool was_paused;
 
@@ -53,11 +53,12 @@ lmc_schedule_idle(void);
 
 static void lmc_failure(void)
 {
-	char *msg = g_strescape(g_mpd->errorStr, NULL);
+	char *msg = g_strescape(mpd_connection_get_error_message(g_mpd), NULL);
 
-	g_warning("mpd error (%i): %s\n", g_mpd->error, msg);
+	g_warning("mpd error (%u): %s\n",
+		  mpd_connection_get_error(g_mpd), msg);
 	g_free(msg);
-	mpd_closeConnection(g_mpd);
+	mpd_connection_free(g_mpd);
 	g_mpd = NULL;
 }
 
@@ -67,14 +68,16 @@ lmc_reconnect(G_GNUC_UNUSED gpointer data)
 	char *at = strchr(g_host, '@');
 	char *host = g_host;
 	char *password = NULL;
+	bool success;
+	const unsigned *version;
 
 	if (at) {
 		host = at + 1;
 		password = g_strndup(g_host, at - g_host);
 	}
 
-	g_mpd = mpd_newConnection(host, g_port, 10);
-	if (g_mpd->error) {
+	g_mpd = mpd_connection_new(host, g_port, 10);
+	if (mpd_connection_get_error(g_mpd) != MPD_ERROR_SUCCESS) {
 		lmc_failure();
 		g_free(password);
 		return true;
@@ -85,18 +88,18 @@ lmc_reconnect(G_GNUC_UNUSED gpointer data)
 	if (password) {
 		g_debug("sending MPD password\n");
 
-		mpd_sendPasswordCommand(g_mpd, password);
-		mpd_finishCommand(g_mpd);
+		success = mpd_run_password(g_mpd, password);
 		g_free(password);
+		if (!success) {
+			lmc_failure();
+			return true;
+		}
+
 	}
 
-	if (g_mpd->error) {
-		lmc_failure();
-		return true;
-	}
-
+	version = mpd_connection_get_server_version(g_mpd);
 	g_message("connected to mpd %i.%i.%i at %s:%i\n",
-		  g_mpd->version[0], g_mpd->version[1], g_mpd->version[2],
+		  version[0], version[1], version[2],
 		  host, g_port);
 
 	lmc_schedule_update();
@@ -136,79 +139,65 @@ void lmc_disconnect(void)
 		g_source_remove(idle_source_id);
 
 	if (g_mpd) {
-		mpd_closeConnection(g_mpd);
+		mpd_connection_free(g_mpd);
 		g_mpd = NULL;
 	}
 
 	if (current_song != NULL) {
-		mpd_freeSong(current_song);
+		mpd_song_free(current_song);
 		current_song = NULL;
 	}
 }
 
-static int
-lmc_current(struct mpd_song **song_r, int *elapsed_r)
+static enum mpd_state
+lmc_current(struct mpd_song **song_r, unsigned *elapsed_r)
 {
-	mpd_Status *status;
-	int state;
-	struct mpd_InfoEntity *entity;
+	struct mpd_status *status;
+	enum mpd_state state;
+	struct mpd_song *song;
 
 	assert(g_mpd != NULL);
 
-	mpd_sendCommandListOkBegin(g_mpd);
-	mpd_sendStatusCommand(g_mpd);
-	mpd_sendCurrentSongCommand(g_mpd);
-	mpd_sendCommandListEnd(g_mpd);
+	mpd_command_list_begin(g_mpd, true);
+	mpd_send_status(g_mpd);
+	mpd_send_current_song(g_mpd);
+	mpd_command_list_end(g_mpd);
 
-	status = mpd_getStatus(g_mpd);
+	status = mpd_recv_status(g_mpd);
 	if (!status) {
 		lmc_failure();
-		return MPD_STATUS_STATE_UNKNOWN;
+		return MPD_STATE_UNKNOWN;
 	}
 
-	state = status->state;
-	*elapsed_r = status->elapsedTime;
+	state = mpd_status_get_state(status);
+	*elapsed_r = mpd_status_get_elapsed_time(status);
 
-	mpd_freeStatus(status);
+	mpd_status_free(status);
 
-	if (state != MPD_STATUS_STATE_PLAY) {
-		mpd_finishCommand(g_mpd);
+	if (state != MPD_STATE_PLAY) {
+		mpd_response_finish(g_mpd);
 		return state;
 	}
 
-	if (g_mpd->error) {
+	if (!mpd_response_next(g_mpd)) {
 		lmc_failure();
-		return MPD_STATUS_STATE_UNKNOWN;
+		return MPD_STATE_UNKNOWN;
 	}
 
-	mpd_nextListOkCommand(g_mpd);
-
-	while ((entity = mpd_getNextInfoEntity(g_mpd)) != NULL
-	       && entity->type != MPD_INFO_ENTITY_TYPE_SONG) {
-		mpd_freeInfoEntity(entity);
+	song = mpd_recv_song(g_mpd);
+	if (song == NULL) {
+		mpd_response_finish(g_mpd);
+		return MPD_STATE_UNKNOWN;
 	}
 
-	if (entity == NULL) {
-		mpd_finishCommand(g_mpd);
-		return MPD_STATUS_STATE_UNKNOWN;
-	}
-
-	if (g_mpd->error) {
-		mpd_freeInfoEntity(entity);
+	if (!mpd_response_finish(g_mpd)) {
+		mpd_song_free(song);
 		lmc_failure();
-		return MPD_STATUS_STATE_UNKNOWN;
+		return MPD_STATE_UNKNOWN;
 	}
 
-	mpd_finishCommand(g_mpd);
-	if (g_mpd->error) {
-		mpd_freeInfoEntity(entity);
-		lmc_failure();
-		return MPD_STATUS_STATE_UNKNOWN;
-	}
-
-	*song_r = mpd_songDup(entity->info.song);
-	mpd_freeInfoEntity(entity);
-	return MPD_STATUS_STATE_PLAY;
+	*song_r = song;
+	return MPD_STATE_PLAY;
 }
 
 /**
@@ -218,12 +207,13 @@ static gboolean
 lmc_update(G_GNUC_UNUSED gpointer data)
 {
 	struct mpd_song *prev;
-	int state, elapsed = -1;
+	enum mpd_state state;
+	unsigned elapsed = 0;
 
 	prev = current_song;
 	state = lmc_current(&current_song, &elapsed);
 
-	if (state == MPD_STATUS_STATE_PAUSE) {
+	if (state == MPD_STATE_PAUSE) {
 		if (!was_paused)
 			song_paused();
 		was_paused = true;
@@ -235,39 +225,41 @@ lmc_update(G_GNUC_UNUSED gpointer data)
 		}
 
 		return true;
-	} else if (state != MPD_STATUS_STATE_PLAY) {
+	} else if (state != MPD_STATE_PLAY) {
 		current_song = NULL;
 		last_id = -1;
 		was_paused = false;
-	} else if (current_song->artist == NULL ||
-		   current_song->title == NULL) {
-		if (current_song->id != last_id) {
+	} else if (mpd_song_get_tag(current_song, MPD_TAG_ARTIST, 0) == NULL ||
+		   mpd_song_get_tag(current_song, MPD_TAG_TITLE, 0) == NULL) {
+		if (mpd_song_get_id(current_song) != last_id) {
 			g_message("new song detected with tags missing (%s)\n",
-				  current_song->file);
-			last_id = current_song->id;
+				  mpd_song_get_uri(current_song));
+			last_id = mpd_song_get_id(current_song);
 		}
 
-		mpd_freeSong(current_song);
+		mpd_song_free(current_song);
 		current_song = NULL;
 	}
 
 	if (was_paused) {
-		if (current_song != NULL && current_song->id == last_id)
+		if (current_song != NULL &&
+		    mpd_song_get_id(current_song) == last_id)
 			song_continued();
 		was_paused = false;
 	}
 
 	/* submit the previous song */
 	if (prev != NULL &&
-	    (current_song == NULL || prev->id != current_song->id))
+	    (current_song == NULL ||
+	     mpd_song_get_id(prev) != mpd_song_get_id(current_song)))
 		song_ended(prev);
 
 	if (current_song != NULL) {
-		if (current_song->id != last_id) {
+		if (mpd_song_get_id(current_song) != last_id) {
 			/* new song. */
 
 			song_started(current_song);
-			last_id = current_song->id;
+			last_id = mpd_song_get_id(current_song);
 		} else {
 			/* still playing the previous song */
 
@@ -276,7 +268,7 @@ lmc_update(G_GNUC_UNUSED gpointer data)
 	}
 
 	if (prev != NULL)
-		mpd_freeSong(prev);
+		mpd_song_free(prev);
 
 	if (g_mpd == NULL) {
 		lmc_schedule_reconnect();
@@ -302,35 +294,25 @@ lmc_schedule_update(void)
 						 lmc_update, NULL);
 }
 
-static void
-lmc_idle_callback(G_GNUC_UNUSED struct _mpd_Connection *connection,
-		  unsigned flags, G_GNUC_UNUSED void *userdata)
-{
-	assert(g_mpd == connection);
-
-	/* we only care about the "player" event */
-
-	if (flags & IDLE_PLAYER)
-		idle_notified = true;
-}
-
 static gboolean
 lmc_idle(G_GNUC_UNUSED GIOChannel *source,
 	 G_GNUC_UNUSED GIOCondition condition,
 	 G_GNUC_UNUSED gpointer data)
 {
+	bool success;
+	enum mpd_idle idle;
+
 	assert(idle_source_id != 0);
 	assert(g_mpd != NULL);
-	assert(g_mpd->error == MPD_ERROR_SUCCESS);
+	assert(mpd_connection_get_error(g_mpd) == MPD_ERROR_SUCCESS);
 
 	idle_source_id = 0;
 
-	/* an even on the MPD connection socket: end idle mode and
-	   query result */
-	mpd_stopIdle(g_mpd);
+	idle = mpd_recv_idle(g_mpd);
+	success = mpd_response_finish(g_mpd);
 
-	if (g_mpd->error == MPD_ERROR_ACK &&
-	    g_mpd->errorCode == MPD_ACK_ERROR_UNKNOWN_CMD) {
+	if (!success && mpd_connection_get_error(g_mpd) == MPD_ERROR_SERVER &&
+	    mpd_connection_get_server_error(g_mpd) == MPD_SERVER_ERROR_UNKNOWN_CMD) {
 		/* MPD does not recognize the "idle" command - disable
 		   it for this connection */
 
@@ -342,13 +324,13 @@ lmc_idle(G_GNUC_UNUSED GIOChannel *source,
 		return false;
 	}
 
-	if (g_mpd->error != MPD_ERROR_SUCCESS) {
+	if (!success) {
 		lmc_failure();
 		lmc_schedule_reconnect();
 		return false;
 	}
 
-	if (idle_notified)
+	if (idle & MPD_IDLE_PLAYER)
 		/* there was a change: query MPD */
 		lmc_schedule_update();
 	else
@@ -368,21 +350,7 @@ lmc_schedule_idle(void)
 
 	idle_notified = false;
 
-	mpd_startIdle(g_mpd, lmc_idle_callback, NULL);
-	if (g_mpd->error == MPD_ERROR_ACK &&
-	    g_mpd->errorCode == MPD_ACK_ERROR_UNKNOWN_CMD) {
-		/* MPD does not recognize the "idle" command - disable
-		   it for this connection */
-
-		g_message("MPD does not support the 'idle' command - "
-			  "falling back to polling\n");
-
-		idle_supported = false;
-		lmc_schedule_update();
-		return;
-	}
-
-	if (g_mpd->error != MPD_ERROR_SUCCESS) {
+	if (!mpd_send_idle_mask(g_mpd, MPD_IDLE_PLAYER)) {
 		lmc_failure();
 		lmc_schedule_reconnect();
 		return;
@@ -390,7 +358,7 @@ lmc_schedule_idle(void)
 
 	/* add a GLib watch on the libmpdclient socket */
 
-	channel = g_io_channel_unix_new(g_mpd->sock);
+	channel = g_io_channel_unix_new(mpd_connection_get_fd(g_mpd));
 	idle_source_id = g_io_add_watch(channel, G_IO_IN, lmc_idle, NULL);
 	g_io_channel_unref(channel);
 }

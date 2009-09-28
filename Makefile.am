@@ -9,12 +9,6 @@ EXTRA_DIST = autogen.sh
 
 bin_PROGRAMS = src/mpdscribble
 
-libmpdclient_SOURCES = \
-	src/libmpdclient/str_pool.c src/libmpdclient/str_pool.h \
-	src/libmpdclient/resolver.c src/libmpdclient/resolver.h \
-	src/libmpdclient/song.c src/libmpdclient/song.h \
-	src/libmpdclient/libmpdclient.c src/libmpdclient/libmpdclient.h
-
 src_mpdscribble_SOURCES = \
 	src/mpdscribble.c \
 	src/compat.h \
@@ -26,8 +20,7 @@ src_mpdscribble_SOURCES = \
 	src/file.c src/file.h \
 	src/journal.c src/journal.h \
 	src/lmc.c src/lmc.h \
-	src/log.c src/log.h \
-	$(libmpdclient_SOURCES)
+	src/log.c src/log.h
 
 if HAVE_CURL
 src_mpdscribble_SOURCES += src/http_client_curl.c
@@ -38,11 +31,13 @@ src_mpdscribble_SOURCES += src/http_client_soup.c
 endif
 
 AM_CPPFLAGS = $(libcurl_CFLAGS) $(libsoup_CFLAGS) \
+	$(LIBMPDCLIENT_CFLAGS) \
 	$(libgthread_CFLAGS) \
 	$(libgcrypt_CFLAGS) \
 	$(libglib_CFLAGS) \
 	-I$(srcdir)/src -I$(srcdir)/src/libmpdclient
 LDADD = $(libcurl_LIBS) $(libsoup_LIBS) \
+	$(LIBMPDCLIENT_LIBS) \
 	$(libgthread_LIBS) \
 	$(libgcrypt_LIBS) \
 	$(libglib_LIBS)

@@ -41,6 +41,9 @@ dnl
 dnl libraries
 dnl
 
+PKG_CHECK_MODULES([LIBMPDCLIENT], [libmpdclient >= 2.0],,
+	[AC_MSG_ERROR([libmpdclient2 is required])])
+
 PKG_CHECK_MODULES([libglib],
 	[glib-2.0 >= 2.16],
 	[glib216=yes], [glib216=no])

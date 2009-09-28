@@ -1,4 +1,5 @@
 mpdscribble 0.19 - not yet released
+  * using libmpdclient 2.0 instead of built-in libmpdclient
 
 
 mpdscribble 0.18.1 - 2009-08-29

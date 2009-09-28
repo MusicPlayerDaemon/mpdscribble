@@ -95,19 +95,24 @@ static bool
 song_repeated(const struct mpd_song *song, int elapsed, int prev_elapsed)
 {
 	return elapsed < 60 && prev_elapsed > elapsed &&
-		played_long_enough(prev_elapsed - elapsed, song->time);
+		played_long_enough(prev_elapsed - elapsed,
+				   mpd_song_get_duration(song));
 }
 
 static void song_changed(const struct mpd_song *song)
 {
-	g_message("new song detected (%s - %s), id: %i, pos: %i\n",
-		  song->artist, song->title, song->id, song->pos);
+	g_message("new song detected (%s - %s), id: %u, pos: %u\n",
+		  mpd_song_get_tag(song, MPD_TAG_ARTIST, 0),
+		  mpd_song_get_tag(song, MPD_TAG_TITLE, 0),
+		  mpd_song_get_id(song), mpd_song_get_pos(song));
 
 	g_timer_start(timer);
 
-	as_now_playing(song->artist, song->title, song->album,
-		       song->musicbrainz_trackid,
-		       song->time);
+	as_now_playing(mpd_song_get_tag(song, MPD_TAG_ARTIST, 0),
+		       mpd_song_get_tag(song, MPD_TAG_TITLE, 0),
+		       mpd_song_get_tag(song, MPD_TAG_ALBUM, 0),
+		       mpd_song_get_tag(song, MPD_TAG_MUSICBRAINZ_TRACKID, 0),
+		       mpd_song_get_duration(song));
 }
 
 /**
@@ -173,18 +178,19 @@ song_ended(const struct mpd_song *song)
 {
 	int elapsed = g_timer_elapsed(timer, NULL);
 
-	if (!played_long_enough(elapsed, song->time))
+	if (!played_long_enough(elapsed, mpd_song_get_duration(song)))
 		return;
 
 	/* FIXME:
 	   libmpdclient doesn't have any way to fetch the musicbrainz id. */
-	as_songchange(song->file, song->artist,
-		      song->title,
-		      song->album, song->musicbrainz_trackid,
-		      song->time >
-		      0 ? song->time : (int)
-		      g_timer_elapsed(timer,
-				      NULL),
+	as_songchange(mpd_song_get_uri(song),
+		      mpd_song_get_tag(song, MPD_TAG_ARTIST, 0),
+		      mpd_song_get_tag(song, MPD_TAG_TITLE, 0),
+		      mpd_song_get_tag(song, MPD_TAG_ALBUM, 0),
+		      mpd_song_get_tag(song, MPD_TAG_MUSICBRAINZ_TRACKID, 0),
+		      mpd_song_get_duration(song) > 0
+		      ? mpd_song_get_duration(song)
+		      : g_timer_elapsed(timer, NULL),
 		      NULL);
 }
 
