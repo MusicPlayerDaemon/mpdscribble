@@ -308,7 +308,7 @@ lmc_idle(G_GNUC_UNUSED GIOChannel *source,
 
 	idle_source_id = 0;
 
-	idle = mpd_recv_idle(g_mpd);
+	idle = mpd_recv_idle(g_mpd, false);
 	success = mpd_response_finish(g_mpd);
 
 	if (!success && mpd_connection_get_error(g_mpd) == MPD_ERROR_SERVER &&
