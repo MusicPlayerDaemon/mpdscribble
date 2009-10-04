@@ -65,42 +65,20 @@ static void lmc_failure(void)
 static gboolean
 lmc_reconnect(G_GNUC_UNUSED gpointer data)
 {
-	char *at = strchr(g_host, '@');
-	char *host = g_host;
-	char *password = NULL;
-	bool success;
 	const unsigned *version;
 
-	if (at) {
-		host = at + 1;
-		password = g_strndup(g_host, at - g_host);
-	}
-
-	g_mpd = mpd_connection_new(host, g_port, 0);
+	g_mpd = mpd_connection_new(g_host, g_port, 0);
 	if (mpd_connection_get_error(g_mpd) != MPD_ERROR_SUCCESS) {
 		lmc_failure();
-		g_free(password);
 		return true;
 	}
 
 	idle_supported = true;
 
-	if (password) {
-		g_debug("sending MPD password\n");
-
-		success = mpd_run_password(g_mpd, password);
-		g_free(password);
-		if (!success) {
-			lmc_failure();
-			return true;
-		}
-
-	}
-
 	version = mpd_connection_get_server_version(g_mpd);
 	g_message("connected to mpd %i.%i.%i at %s:%i\n",
 		  version[0], version[1], version[2],
-		  host, g_port);
+		  g_host, g_port);
 
 	lmc_schedule_update();
 
