@@ -153,7 +153,11 @@ lmc_current(struct mpd_song **song_r, unsigned *elapsed_r)
 	mpd_status_free(status);
 
 	if (state != MPD_STATE_PLAY) {
-		mpd_response_finish(g_mpd);
+		if (!mpd_response_finish(g_mpd)) {
+			lmc_failure();
+			return MPD_STATE_UNKNOWN;
+		}
+
 		return state;
 	}
 
@@ -164,7 +168,11 @@ lmc_current(struct mpd_song **song_r, unsigned *elapsed_r)
 
 	song = mpd_recv_song(g_mpd);
 	if (song == NULL) {
-		mpd_response_finish(g_mpd);
+		if (!mpd_response_finish(g_mpd)) {
+			lmc_failure();
+			return MPD_STATE_UNKNOWN;
+		}
+
 		return MPD_STATE_UNKNOWN;
 	}
 
