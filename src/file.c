@@ -44,9 +44,6 @@
 
 #endif
 
-#define FILE_DEFAULT_PORT 6600
-#define FILE_DEFAULT_HOST "localhost"
-
 #define AS_HOST "http://post.audioscrobbler.com/"
 
 struct config file_config = {
@@ -311,21 +308,9 @@ int file_read_config(void)
 		g_error("No audioscrobbler host configured in %s",
 			file_config.conf);
 
-	if (!file_config.host)
-		file_config.host = g_strdup(getenv("MPD_HOST"));
-	if (!file_config.host)
-		file_config.host = g_strdup(FILE_DEFAULT_HOST);
 	if (!file_config.log)
 		file_config.log = get_default_log_path();
 
-	if (file_config.port == -1) {
-		const char *port = getenv("MPD_PORT");
-		if (port != NULL)
-			file_config.port = atoi(port);
-	}
-
-	if (file_config.port == -1)
-		file_config.port = FILE_DEFAULT_PORT;
 	if (!file_config.proxy)
 		file_config.proxy = getenv("http_proxy");
 	if (file_config.sleep <= 0)
