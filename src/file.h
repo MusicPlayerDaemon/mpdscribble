@@ -36,7 +36,7 @@ struct config {
 	char *conf;
 	char *host;
 	char *proxy;
-	int port;
+	unsigned port;
 	int sleep;
 
 	/**

@@ -47,7 +47,7 @@
 #define AS_HOST "http://post.audioscrobbler.com/"
 
 struct config file_config = {
-	.port = -1,
+	.port = 0,
 	.sleep = -1,
 	.journal_interval = 600,
 	.verbose = -1,
@@ -268,7 +268,7 @@ load_config_file(const char *path)
 	load_string(file, "daemon_user", &file_config.daemon_user);
 	load_string(file, "log", &file_config.log);
 	load_string(file, "host", &file_config.host);
-	load_integer(file, "port", &file_config.port);
+	load_unsigned(file, "port", &file_config.port);
 	load_string(file, "proxy", &file_config.proxy);
 	load_integer(file, "sleep", &file_config.sleep);
 	if (!load_unsigned(file, "journal_interval",
