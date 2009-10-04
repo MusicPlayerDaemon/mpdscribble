@@ -73,7 +73,7 @@ lmc_reconnect(G_GNUC_UNUSED gpointer data)
 		return true;
 	}
 
-	idle_supported = true;
+	idle_supported = mpd_connection_cmp_server_version(g_mpd, 0, 14, 0) >= 0;
 
 	version = mpd_connection_get_server_version(g_mpd);
 	g_message("connected to mpd %i.%i.%i at %s:%i\n",
