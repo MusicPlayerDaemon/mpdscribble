@@ -76,7 +76,7 @@ lmc_reconnect(G_GNUC_UNUSED gpointer data)
 		password = g_strndup(g_host, at - g_host);
 	}
 
-	g_mpd = mpd_connection_new(host, g_port, 10);
+	g_mpd = mpd_connection_new(host, g_port, 0);
 	if (mpd_connection_get_error(g_mpd) != MPD_ERROR_SUCCESS) {
 		lmc_failure();
 		g_free(password);
