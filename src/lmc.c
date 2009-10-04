@@ -298,7 +298,8 @@ lmc_idle(G_GNUC_UNUSED GIOChannel *source,
 	success = mpd_response_finish(g_mpd);
 
 	if (!success && mpd_connection_get_error(g_mpd) == MPD_ERROR_SERVER &&
-	    mpd_connection_get_server_error(g_mpd) == MPD_SERVER_ERROR_UNKNOWN_CMD) {
+	    mpd_connection_get_server_error(g_mpd) == MPD_SERVER_ERROR_UNKNOWN_CMD &&
+	    mpd_connection_clear_error(g_mpd)) {
 		/* MPD does not recognize the "idle" command - disable
 		   it for this connection */
 
