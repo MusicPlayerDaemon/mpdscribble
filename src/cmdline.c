@@ -1,5 +1,5 @@
 /* mpdscribble (MPD Client)
- * Copyright (C) 2008-2009 The Music Player Daemon Project
+ * Copyright (C) 2008-2010 The Music Player Daemon Project
  * Copyright (C) 2005-2008 Kuno Woudt <kuno@frob.nl>
  * Project homepage: http://musicpd.org
  
@@ -33,7 +33,7 @@ static const char *blurb =
 	PACKAGE " version " VERSION "\n"
 	"another audioscrobbler plugin for music player daemon.\n"
 	"Copyright 2005,2006 Kuno Woudt <kuno@frob.nl>.\n"
-	"Copyright 2008 Max Kellermann <max@duempel.org>\n" "\n";
+	"Copyright 2008-2010 Max Kellermann <max@duempel.org>\n" "\n";
 
 #if GLIB_CHECK_VERSION(2,12,0)
 static const char *summary =
