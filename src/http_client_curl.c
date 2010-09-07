@@ -64,6 +64,12 @@ static struct {
 
 	/** a linked list of all active HTTP requests */
 	GSList *requests;
+
+	/**
+	 * Set when inside http_multi_info_read(), to prevent
+	 * recursive invocation.
+	 */
+	bool locked;
 } http_client;
 
 /**
@@ -244,6 +250,9 @@ http_request_done(struct http_request *request, CURLcode result)
 static void
 http_multi_info_read(void)
 {
+	assert(!http_client.locked);
+	http_client.locked = true;
+
 	CURLMsg *msg;
 	int msgs_in_queue;
 
@@ -257,6 +266,8 @@ http_multi_info_read(void)
 			http_request_done(request, msg->data.result);
 		}
 	}
+
+	http_client.locked = false;
 }
 
 /**
@@ -512,5 +523,6 @@ http_client_request(const char *url, const char *post_data,
 		return;
 	}
 
-	http_multi_info_read();
+	if (!http_client.locked)
+		http_multi_info_read();
 }
