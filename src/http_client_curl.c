@@ -291,6 +291,23 @@ curl_source_prepare(G_GNUC_UNUSED GSource *source, G_GNUC_UNUSED gint *timeout_)
 {
 	http_client_update_fds();
 
+#if LIBCURL_VERSION_NUM >= 0x070f04
+	long timeout2;
+	CURLMcode mcode = curl_multi_timeout(http_client.multi, &timeout2);
+	if (mcode == CURLM_OK) {
+		if (timeout2 >= 0 && timeout2 < 10)
+			/* CURL 7.21.1 likes to report "timeout=0",
+			   which means we're running in a busy loop.
+			   Quite a bad idea to waste so much CPU.
+			   Let's use a lower limit of 10ms. */
+			timeout2 = 10;
+
+		*timeout_ = timeout2;
+	} else
+		g_warning("curl_multi_timeout() failed: %s\n",
+			  curl_multi_strerror(mcode));
+#endif
+
 	return FALSE;
 }
 

@@ -1,4 +1,5 @@
 mpdscribble 0.20 - not yet released
+  * curl: implement libCURL timeouts
 
 
 mpdscribble 0.19 - 2009-12-26
