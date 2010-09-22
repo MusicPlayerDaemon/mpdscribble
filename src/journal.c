@@ -21,6 +21,7 @@
 #include "journal.h"
 #include "record.h"
 
+#include <assert.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -29,15 +30,28 @@
 static int journal_file_empty;
 
 static void
+journal_write_string(FILE *file, char field, const char *value)
+{
+	if (value != NULL)
+		fprintf(file, "%c = %s\n", field, value);
+}
+
+static void
 journal_write_record(gpointer data, gpointer user_data)
 {
 	struct record *record = data;
 	FILE *file = user_data;
 
+	assert(record->source != NULL);
+
+	journal_write_string(file, 'a', record->artist);
+	journal_write_string(file, 't', record->track);
+	journal_write_string(file, 'b', record->album);
+	journal_write_string(file, 'm', record->mbid);
+	journal_write_string(file, 'i', record->time);
+
 	fprintf(file,
-		"a = %s\nt = %s\nb = %s\nm = %s\n"
-		"i = %s\nl = %i\no = %s\n\n", record->artist,
-		record->track, record->album, record->mbid, record->time,
+		"l = %i\no = %s\n\n",
 		record->length, record->source);
 }
 
