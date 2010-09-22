@@ -61,7 +61,7 @@ install-dist_sysconfDATA:
 	test -z "$(sysconfdir)" || $(mkdir_p) "$(DESTDIR)$(sysconfdir)"
 	@list='$(dist_sysconf_DATA)'; \
 	for p in $$list; do \
-	    dest=$(am__strip_dir) \
+	    dest=`echo $$p | sed -e 's|^.*/||'`; \
 	    if test -f $(DESTDIR)$(sysconfdir)/$$dest; then \
 	        echo "$@ will not overwrite existing $(DESTDIR)$(sysconfdir)/$$dest"; \
 	    else \
