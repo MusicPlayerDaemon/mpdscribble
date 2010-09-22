@@ -111,6 +111,7 @@ static void song_changed(const struct mpd_song *song)
 	as_now_playing(mpd_song_get_tag(song, MPD_TAG_ARTIST, 0),
 		       mpd_song_get_tag(song, MPD_TAG_TITLE, 0),
 		       mpd_song_get_tag(song, MPD_TAG_ALBUM, 0),
+		       mpd_song_get_tag(song, MPD_TAG_TRACK, 0),
 		       mpd_song_get_tag(song, MPD_TAG_MUSICBRAINZ_TRACKID, 0),
 		       mpd_song_get_duration(song));
 }
@@ -187,6 +188,7 @@ song_ended(const struct mpd_song *song)
 		      mpd_song_get_tag(song, MPD_TAG_ARTIST, 0),
 		      mpd_song_get_tag(song, MPD_TAG_TITLE, 0),
 		      mpd_song_get_tag(song, MPD_TAG_ALBUM, 0),
+		      mpd_song_get_tag(song, MPD_TAG_TRACK, 0),
 		      mpd_song_get_tag(song, MPD_TAG_MUSICBRAINZ_TRACKID, 0),
 		      mpd_song_get_duration(song) > 0
 		      ? mpd_song_get_duration(song)

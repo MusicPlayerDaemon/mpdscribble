@@ -28,6 +28,7 @@ struct record {
 	char *artist;
 	char *track;
 	char *album;
+	char *number;
 	char *mbid;
 	char *time;
 	int length;

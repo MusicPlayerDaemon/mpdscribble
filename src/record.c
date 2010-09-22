@@ -28,6 +28,7 @@ record_copy(struct record *dest, const struct record *src)
 	dest->artist = g_strdup(src->artist);
 	dest->track = g_strdup(src->track);
 	dest->album = g_strdup(src->album);
+	dest->number = g_strdup(src->number);
 	dest->mbid = g_strdup(src->mbid);
 	dest->time = g_strdup(src->time);
 	dest->length = src->length;
@@ -48,6 +49,7 @@ record_deinit(struct record *record)
 	g_free(record->artist);
 	g_free(record->track);
 	g_free(record->album);
+	g_free(record->number);
 	g_free(record->mbid);
 	g_free(record->time);
 }
@@ -65,6 +67,7 @@ record_clear(struct record *record)
 	record->artist = NULL;
 	record->track = NULL;
 	record->album = NULL;
+	record->number = NULL;
 	record->mbid = NULL;
 	record->time = NULL;
 	record->length = 0;

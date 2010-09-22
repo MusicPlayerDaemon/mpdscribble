@@ -47,6 +47,7 @@ journal_write_record(gpointer data, gpointer user_data)
 	journal_write_string(file, 'a', record->artist);
 	journal_write_string(file, 't', record->track);
 	journal_write_string(file, 'b', record->album);
+	journal_write_string(file, 'n', record->number);
 	journal_write_string(file, 'm', record->mbid);
 	journal_write_string(file, 'i', record->time);
 
@@ -190,6 +191,8 @@ void journal_read(const char *path, GQueue *queue)
 			record.track = g_strdup(value);
 		else if (!strcmp("b", key))
 			record.album = g_strdup(value);
+		else if (!strcmp("n", key))
+			record.number = g_strdup(value);
 		else if (!strcmp("m", key))
 			record.mbid = g_strdup(value);
 		else if (!strcmp("i", key))

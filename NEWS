@@ -2,6 +2,7 @@ mpdscribble 0.20 - not yet released
   * curl: implement libCURL timeouts
   * curl: prevent recursive read calls
   * journal: don't save "(null)" values
+  * scrobbler: submit track numbers
 
 
 mpdscribble 0.19 - 2009-12-26

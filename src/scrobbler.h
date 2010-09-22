@@ -46,11 +46,13 @@ void as_cleanup(void);
 
 void
 as_now_playing(const char *artist, const char *track,
-	       const char *album, const char *mbid, const int length);
+	       const char *album, const char *number,
+	       const char *mbid, const int length);
 
 void
 as_songchange(const char *file, const char *artist, const char *track,
-	      const char *album, const char *mbid, const int length,
+	      const char *album, const char *number,
+	      const char *mbid, const int length,
 	      const char *time);
 
 void as_save_cache(void);

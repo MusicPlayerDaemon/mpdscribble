@@ -552,6 +552,7 @@ scrobbler_schedule_handshake(struct scrobbler *scrobbler)
 static void
 scrobbler_send_now_playing(struct scrobbler *scrobbler, const char *artist,
 			   const char *track, const char *album,
+			   const char *number,
 			   const char *mbid, const int length)
 {
 	GString *post_data;
@@ -570,7 +571,7 @@ scrobbler_send_now_playing(struct scrobbler *scrobbler, const char *artist,
 	add_var(post_data, "t", track);
 	add_var(post_data, "b", album);
 	add_var(post_data, "l", len);
-	add_var(post_data, "n", "");
+	add_var(post_data, "n", number);
 	add_var(post_data, "m", mbid);
 
 	g_message("[%s] sending 'now playing' notification",
@@ -599,13 +600,15 @@ scrobbler_schedule_now_playing_callback(gpointer data, gpointer user_data)
 
 void
 as_now_playing(const char *artist, const char *track,
-	       const char *album, const char *mbid, const int length)
+	       const char *album, const char *number,
+	       const char *mbid, const int length)
 {
 	struct record record;
 
 	record.artist = g_strdup(artist);
 	record.track = g_strdup(track);
 	record.album = g_strdup(album);
+	record.number = g_strdup(number);
 	record.mbid = g_strdup(mbid);
 	record.time = NULL;
 	record.length = length;
@@ -634,6 +637,7 @@ scrobbler_submit(struct scrobbler *scrobbler)
 						   scrobbler->now_playing.artist,
 						   scrobbler->now_playing.track,
 						   scrobbler->now_playing.album,
+						   scrobbler->now_playing.number,
 						   scrobbler->now_playing.mbid,
 						   scrobbler->now_playing.length);
 
@@ -661,7 +665,7 @@ scrobbler_submit(struct scrobbler *scrobbler)
 		add_var_i(post_data, "o", count, song->source);
 		add_var_i(post_data, "r", count, "");
 		add_var_i(post_data, "b", count, song->album);
-		add_var_i(post_data, "n", count, "");
+		add_var_i(post_data, "n", count, song->number);
 		add_var_i(post_data, "m", count, song->mbid);
 
 		count++;
@@ -696,7 +700,8 @@ scrobbler_push_callback(gpointer data, gpointer user_data)
 
 void
 as_songchange(const char *file, const char *artist, const char *track,
-	      const char *album, const char *mbid, const int length,
+	      const char *album, const char *number,
+	      const char *mbid, const int length,
 	      const char *time2)
 {
 	struct record record;
@@ -723,6 +728,7 @@ as_songchange(const char *file, const char *artist, const char *track,
 	record.artist = g_strdup(artist);
 	record.track = g_strdup(track);
 	record.album = g_strdup(album);
+	record.number = g_strdup(number);
 	record.mbid = g_strdup(mbid);
 	record.length = length;
 	record.time = time2 ? g_strdup(time2) : as_timestamp();
