@@ -210,21 +210,35 @@ load_scrobbler_config(GKeyFile *file, const char *group)
 
 		scrobbler->name = g_strdup("last.fm");
 		scrobbler->url = g_strdup(AS_HOST);
+		scrobbler->file = NULL;
 	} else {
 		scrobbler->name = g_strdup(group);
-		scrobbler->url = g_key_file_get_string(file, group, "url",
-						    &error);
-		if (error != NULL)
-			g_error("%s\n", error->message);
+		scrobbler->file = g_key_file_get_string(file, group,
+							"file", NULL);
+
+		if (scrobbler->file == NULL) {
+			scrobbler->url = g_key_file_get_string(file, group,
+							       "url", &error);
+			if (error != NULL)
+				g_error("%s\n", error->message);
+		} else
+			scrobbler->url = NULL;
 	}
 
-	scrobbler->username = g_key_file_get_string(file, group, "username", &error);
-	if (error != NULL)
-		g_error("%s\n", error->message);
+	if (scrobbler->file == NULL) {
+		scrobbler->username = g_key_file_get_string(file, group, "username", &error);
 
-	scrobbler->password = g_key_file_get_string(file, group, "password", &error);
-	if (error != NULL)
-		g_error("%s\n", error->message);
+		scrobbler->username = g_key_file_get_string(file, group, "username", &error);
+		if (error != NULL)
+			g_error("%s\n", error->message);
+
+		scrobbler->password = g_key_file_get_string(file, group, "password", &error);
+		if (error != NULL)
+			g_error("%s\n", error->message);
+	} else {
+		scrobbler->username = NULL;
+		scrobbler->password = NULL;
+	}
 
 	scrobbler->journal = g_key_file_get_string(file, group, "journal", NULL);
 	if (scrobbler->journal == NULL && strcmp(group, "mpdscribble") == 0) {
@@ -333,6 +347,7 @@ scrobbler_config_free_callback(gpointer data, G_GNUC_UNUSED gpointer user_data)
 	g_free(scrobbler->username);
 	g_free(scrobbler->password);
 	g_free(scrobbler->journal);
+	g_free(scrobbler->file);
 	g_free(scrobbler);
 }
 

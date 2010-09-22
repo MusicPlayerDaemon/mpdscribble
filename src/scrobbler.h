@@ -39,6 +39,13 @@ struct scrobbler_config {
 	 * have not been submitted yet.
 	 */
 	char *journal;
+
+	/**
+	 * The path of the log file.  This is set when logging to a
+	 * file is configured instead of submission to an
+	 * AudioScrobbler server.
+	 */
+	char *file;
 };
 
 void as_init(GSList *scrobbler_configs);

@@ -23,6 +23,7 @@
 #include "journal.h"
 #include "http_client.h"
 #include "config.h"
+#include "log.h" /* for log_date() */
 #include "compat.h"
 
 #include <glib.h>
@@ -84,6 +85,8 @@ typedef enum {
 struct scrobbler {
 	const struct scrobbler_config *config;
 
+	FILE *file;
+
 	enum scrobbler_state state;
 
 	unsigned interval;
@@ -121,6 +124,7 @@ scrobbler_new(const struct scrobbler_config *config)
 	struct scrobbler *scrobbler = g_new(struct scrobbler, 1);
 
 	scrobbler->config = config;
+	scrobbler->file = NULL;
 	scrobbler->state = SCROBBLER_STATE_NOTHING;
 	scrobbler->interval = 1;
 	scrobbler->handshake_source_id = 0;
@@ -163,6 +167,10 @@ scrobbler_free(struct scrobbler *scrobbler)
 	g_free(scrobbler->session);
 	g_free(scrobbler->nowplay_url);
 	g_free(scrobbler->submit_url);
+
+	if (scrobbler->file != NULL)
+		fclose(scrobbler->file);
+
 	g_free(scrobbler);
 }
 
@@ -314,6 +322,7 @@ scrobbler_handshake_callback(size_t length, const char *response, void *data)
 	bool ret;
 
 	assert(scrobbler != NULL);
+	assert(scrobbler->config->file == NULL);
 	assert(scrobbler->state == SCROBBLER_STATE_HANDSHAKE);
 
 	scrobbler->state = SCROBBLER_STATE_NOTHING;
@@ -385,6 +394,7 @@ scrobbler_submit_callback(size_t length, const char *response, void *data)
 	struct scrobbler *scrobbler = data;
 	char *newline;
 
+	assert(scrobbler->config->file == NULL);
 	assert(scrobbler->state == SCROBBLER_STATE_SUBMITTING);
 	scrobbler->state = SCROBBLER_STATE_READY;
 
@@ -496,6 +506,8 @@ static char *as_md5(const char *password, const char *timestamp)
 static void
 scrobbler_handshake(struct scrobbler *scrobbler)
 {
+	assert(scrobbler->config->file == NULL);
+
 	GString *url;
 	char *timestr, *md5;
 
@@ -530,6 +542,7 @@ scrobbler_handshake_timer(gpointer data)
 {
 	struct scrobbler *scrobbler = data;
 
+	assert(scrobbler->config->file == NULL);
 	assert(scrobbler->state == SCROBBLER_STATE_NOTHING);
 
 	scrobbler->handshake_source_id = 0;
@@ -541,6 +554,7 @@ scrobbler_handshake_timer(gpointer data)
 static void
 scrobbler_schedule_handshake(struct scrobbler *scrobbler)
 {
+	assert(scrobbler->config->file == NULL);
 	assert(scrobbler->state == SCROBBLER_STATE_NOTHING);
 	assert(scrobbler->handshake_source_id == 0);
 
@@ -558,6 +572,7 @@ scrobbler_send_now_playing(struct scrobbler *scrobbler, const char *artist,
 	GString *post_data;
 	char len[16];
 
+	assert(scrobbler->config->file == NULL);
 	assert(scrobbler->state == SCROBBLER_STATE_READY);
 	assert(scrobbler->submit_source_id == 0);
 
@@ -589,6 +604,10 @@ scrobbler_schedule_now_playing_callback(gpointer data, gpointer user_data)
 {
 	struct scrobbler *scrobbler = data;
 	const struct record *song = user_data;
+
+	if (scrobbler->file != NULL)
+		/* there's no "now playing" support for files */
+		return;
 
 	record_deinit(&scrobbler->now_playing);
 	record_copy(&scrobbler->now_playing, song);
@@ -626,6 +645,7 @@ scrobbler_submit(struct scrobbler *scrobbler)
 	unsigned count = 0;
 	GString *post_data;
 
+	assert(scrobbler->config->file == NULL);
 	assert(scrobbler->state == SCROBBLER_STATE_READY);
 	assert(scrobbler->submit_source_id == 0);
 
@@ -690,6 +710,13 @@ scrobbler_push_callback(gpointer data, gpointer user_data)
 {
 	struct scrobbler *scrobbler = data;
 	const struct record *record = user_data;
+
+	if (scrobbler->file != NULL) {
+		fprintf(scrobbler->file, "%s %s - %s\n",
+			log_date(), record->artist, record->track);
+		fflush(scrobbler->file);
+		return;
+	}
 
 	g_queue_push_tail(scrobbler->queue, record_dup(record));
 
@@ -759,7 +786,13 @@ scrobbler_new_callback(gpointer data, G_GNUC_UNUSED gpointer user_data)
 	}
 
 	scrobblers = g_slist_prepend(scrobblers, scrobbler);
-	scrobbler_schedule_handshake(scrobbler);
+	if (config->file != NULL) {
+		scrobbler->file = fopen(config->file, "a");
+		if (scrobbler->file == NULL)
+			g_error("Failed to open file '%s' of scrobbler '%s': %s\n",
+				config->file, config->name, g_strerror(errno));
+	} else
+		scrobbler_schedule_handshake(scrobbler);
 }
 
 void as_init(GSList *scrobbler_configs)
@@ -799,7 +832,7 @@ scrobbler_save_callback(gpointer data, G_GNUC_UNUSED gpointer user_data)
 {
 	struct scrobbler *scrobbler = data;
 
-	if (scrobbler->config->journal == NULL)
+	if (scrobbler->file != NULL || scrobbler->config->journal == NULL)
 		return;
 
 	if (journal_write(scrobbler->config->journal, scrobbler->queue)) {

@@ -4,6 +4,7 @@ mpdscribble 0.20 - not yet released
   * log: use ISO8601 date format
   * journal: don't save "(null)" values
   * scrobbler: submit track numbers
+  * scrobbler: support logging to a file
 
 
 mpdscribble 0.19 - 2009-12-26
