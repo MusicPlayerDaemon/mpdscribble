@@ -52,7 +52,7 @@ chomp_length(const char *p)
 
 static const char *log_date(void)
 {
-	static char buf[20];
+	static char buf[32];
 	time_t t;
 	struct tm *tmp;
 
@@ -63,7 +63,7 @@ static const char *log_date(void)
 		return buf;
 	}
 
-	if (!strftime(buf, sizeof(buf), "%Y/%m/%d %H:%M:%S", tmp)) {
+	if (!strftime(buf, sizeof(buf), "%Y-%m-%dT%H:%M:%S%z", tmp)) {
 		buf[0] = 0;
 		return buf;
 	}

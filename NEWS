@@ -1,6 +1,7 @@
 mpdscribble 0.20 - not yet released
   * curl: implement libCURL timeouts
   * curl: prevent recursive read calls
+  * log: use ISO8601 date format
   * journal: don't save "(null)" values
   * scrobbler: submit track numbers
 
