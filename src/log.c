@@ -50,7 +50,8 @@ chomp_length(const char *p)
 	return (int)length;
 }
 
-static const char *log_date(void)
+const char *
+log_date(void)
 {
 	static char buf[32];
 	time_t t;

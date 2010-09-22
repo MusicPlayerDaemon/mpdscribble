@@ -27,4 +27,7 @@ log_init(const char *path, int verbose);
 void
 log_deinit(void);
 
+const char *
+log_date(void);
+
 #endif
