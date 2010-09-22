@@ -198,11 +198,13 @@ load_scrobbler_config(GKeyFile *file, const char *group)
 	if(strcmp(group, "mpdscribble") == 0) {
 		char *username = g_key_file_get_string(file, group,
 						       "username", NULL);
-		if (username == NULL)
+		if (username == NULL) {
 			/* the default section does not contain a
 			   username: don't set up the last.fm default
 			   scrobbler */
+			g_free(scrobbler);
 			return NULL;
+		}
 
 		g_free(username);
 
