@@ -5,6 +5,7 @@ mpdscribble 0.20 - not yet released
   * journal: don't save "(null)" values
   * scrobbler: submit track numbers
   * scrobbler: support logging to a file
+  * scrobbler: fix memory leak in as_songchange()
 
 
 mpdscribble 0.19 - 2009-12-26

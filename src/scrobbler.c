@@ -766,6 +766,8 @@ as_songchange(const char *file, const char *artist, const char *track,
 		  record.track, record.length);
 
 	g_slist_foreach(scrobblers, scrobbler_push_callback, &record);
+
+	record_deinit(&record);
 }
 
 static void
