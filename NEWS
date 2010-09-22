@@ -1,4 +1,4 @@
-mpdscribble 0.20 - not yet released
+mpdscribble 0.20 - 2010-09-22
   * curl: implement libCURL timeouts
   * curl: prevent recursive read calls
   * log: use ISO8601 date format
