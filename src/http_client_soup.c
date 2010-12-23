@@ -32,8 +32,8 @@
 #include <string.h>
 
 struct http_request {
-	http_client_callback_t *callback;
-	void *callback_data;
+	const struct http_client_handler *handler;
+	void *handler_ctx;
 };
 
 static struct {
@@ -117,21 +117,23 @@ http_client_soup_callback(SoupMessage *msg, gpointer data)
 	/* NOTE: does not support redirects */
 	if (SOUP_STATUS_IS_SUCCESSFUL(msg->status_code)) {
 #ifdef HAVE_SOUP_24
-		request->callback(msg->response_body->length,
-				  msg->response_body->data, request->callback_data);
+		request->handler->response(msg->response_body->length,
+					   msg->response_body->data,
+					   request->handler_ctx);
 #else
-		request->callback(msg->response.length, msg->response.body,
-				  request->callback_data);
+		request->handler->response_body(msg->response.length,
+						msg->response.body,
+						request->handler_ctx);
 #endif
 	} else
-		request->callback(0, NULL, request->callback_data);
+		request->handler->error(request->handler_ctx);
 
 	http_request_free(request);
 }
 
 void
 http_client_request(const char *url, const char *post_data,
-		    http_client_callback_t *callback, void *data)
+		    const struct http_client_handler *handler, void *ctx)
 {
 	SoupMessage *msg;
 	struct http_request *request;
@@ -166,8 +168,8 @@ http_client_request(const char *url, const char *post_data,
 	soup_message_set_flags(msg, SOUP_MESSAGE_NO_REDIRECT);
 
 	request = g_new(struct http_request, 1);
-	request->callback = callback;
-	request->callback_data = data;
+	request->handler = handler;
+	request->handler_ctx = ctx;
 
 	soup_session_queue_message(http_client.session, msg,
 				   http_client_soup_callback, request);

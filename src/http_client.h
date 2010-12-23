@@ -23,7 +23,10 @@
 
 #include <stddef.h>
 
-typedef void http_client_callback_t(size_t, const char *, void *);
+struct http_client_handler {
+	void (*response)(size_t length, const char *data, void *ctx);
+	void (*error)(void *ctx);
+};
 
 /**
  * Perform global initialization on the HTTP client library.
@@ -46,6 +49,6 @@ http_client_uri_escape(const char *src);
 
 void
 http_client_request(const char *url, const char *post_data,
-		    http_client_callback_t * callback, void *data);
+		    const struct http_client_handler *handler, void *ctx);
 
 #endif /* CONN_H */
