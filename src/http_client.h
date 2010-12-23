@@ -21,11 +21,13 @@
 #ifndef HTTP_CLIENT_H
 #define HTTP_CLIENT_H
 
+#include <glib.h>
+
 #include <stddef.h>
 
 struct http_client_handler {
 	void (*response)(size_t length, const char *data, void *ctx);
-	void (*error)(void *ctx);
+	void (*error)(GError *error, void *ctx);
 };
 
 /**

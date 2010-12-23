@@ -47,6 +47,12 @@ static struct {
 	GList *requests;
 } http_client;
 
+static inline GQuark
+soup_quark(void)
+{
+    return g_quark_from_static_string("soup");
+}
+
 void
 http_client_init(void)
 {
@@ -125,8 +131,13 @@ http_client_soup_callback(SoupMessage *msg, gpointer data)
 						msg->response.body,
 						request->handler_ctx);
 #endif
-	} else
-		request->handler->error(request->handler_ctx);
+	} else {
+		GError *error = g_error_new(soup_quark(), 0,
+					    "got HTTP status %d (%s)",
+					    msg->status_code,
+					    msg->reason_phrase);
+		request->handler->error(error, request->handler_ctx);
+	}
 
 	http_request_free(request);
 }
