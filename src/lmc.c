@@ -62,6 +62,43 @@ static void lmc_failure(void)
 	g_mpd = NULL;
 }
 
+#if LIBMPDCLIENT_CHECK_VERSION(2,4,0)
+
+static char *
+settings_name(const struct mpd_settings *settings)
+{
+	const char *host = mpd_settings_get_host(settings);
+	if (host == NULL)
+		host = "unknown";
+
+	if (host[0] == '/')
+		return g_strdup(host);
+
+	unsigned port = mpd_settings_get_port(settings);
+	if (port == 0 || port == 6600)
+		return g_strdup(host);
+
+	return g_strdup_printf("%s:%u", host, port);
+}
+
+#endif
+
+static char *
+connection_settings_name(const struct mpd_connection *connection)
+{
+#if LIBMPDCLIENT_CHECK_VERSION(2,4,0)
+	const struct mpd_settings *settings =
+		mpd_connection_get_settings(connection);
+	if (settings == NULL)
+		return g_strdup("unknown");
+
+	return settings_name(settings);
+#else
+	(void)connection;
+	return g_strdup(g_host);
+#endif
+}
+
 static gboolean
 lmc_reconnect(G_GNUC_UNUSED gpointer data)
 {
@@ -76,9 +113,11 @@ lmc_reconnect(G_GNUC_UNUSED gpointer data)
 	idle_supported = mpd_connection_cmp_server_version(g_mpd, 0, 14, 0) >= 0;
 
 	version = mpd_connection_get_server_version(g_mpd);
-	g_message("connected to mpd %i.%i.%i at %s:%i\n",
+	char *name = connection_settings_name(g_mpd);
+	g_message("connected to mpd %i.%i.%i at %s\n",
 		  version[0], version[1], version[2],
-		  g_host, g_port);
+		  name);
+	g_free(name);
 
 	lmc_schedule_update();
 

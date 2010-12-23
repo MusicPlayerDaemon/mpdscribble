@@ -2,6 +2,7 @@ mpdscribble 0.21 - not yet released
   * better HTTP error messages
   * curl: check the HTTP response status
   * file: ignore trailing whitespace
+  * lmc: show real server address in verbose log message
 
 
 mpdscribble 0.20 - 2010-09-22
