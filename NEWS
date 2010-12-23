@@ -1,4 +1,5 @@
 mpdscribble 0.21 - not yet released
+  * require libmpdclient 2.2
   * better HTTP error messages
   * curl: check the HTTP response status
   * file: ignore trailing whitespace
