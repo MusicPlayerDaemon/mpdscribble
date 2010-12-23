@@ -128,6 +128,16 @@ get_default_cache_path(void)
 #endif
 }
 
+static char *
+get_string(GKeyFile *file, const char *group_name, const char *key,
+	   GError **error_r)
+{
+	char *value = g_key_file_get_string(file, group_name, key, error_r);
+	if (value != NULL)
+		g_strchomp(value);
+	return value;
+}
+
 static bool
 load_string(GKeyFile *file, const char *name, char **value_r)
 {
@@ -138,7 +148,7 @@ load_string(GKeyFile *file, const char *name, char **value_r)
 		/* already set by command line */
 		return false;
 
-	value = g_key_file_get_string(file, PACKAGE, name, &error);
+	value = get_string(file, PACKAGE, name, &error);
 	if (error != NULL) {
 		if (error->code != G_KEY_FILE_ERROR_KEY_NOT_FOUND)
 			g_error("%s\n", error->message);
@@ -196,8 +206,7 @@ load_scrobbler_config(GKeyFile *file, const char *group)
 
 	/* Use default host for mpdscribble group, for backward compatability */
 	if(strcmp(group, "mpdscribble") == 0) {
-		char *username = g_key_file_get_string(file, group,
-						       "username", NULL);
+		char *username = get_string(file, group, "username", NULL);
 		if (username == NULL) {
 			/* the default section does not contain a
 			   username: don't set up the last.fm default
@@ -213,12 +222,11 @@ load_scrobbler_config(GKeyFile *file, const char *group)
 		scrobbler->file = NULL;
 	} else {
 		scrobbler->name = g_strdup(group);
-		scrobbler->file = g_key_file_get_string(file, group,
+		scrobbler->file = get_string(file, group,
 							"file", NULL);
 
 		if (scrobbler->file == NULL) {
-			scrobbler->url = g_key_file_get_string(file, group,
-							       "url", &error);
+			scrobbler->url = get_string(file, group, "url", &error);
 			if (error != NULL)
 				g_error("%s\n", error->message);
 		} else
@@ -226,13 +234,13 @@ load_scrobbler_config(GKeyFile *file, const char *group)
 	}
 
 	if (scrobbler->file == NULL) {
-		scrobbler->username = g_key_file_get_string(file, group, "username", &error);
+		scrobbler->username = get_string(file, group, "username", &error);
 
-		scrobbler->username = g_key_file_get_string(file, group, "username", &error);
+		scrobbler->username = get_string(file, group, "username", &error);
 		if (error != NULL)
 			g_error("%s\n", error->message);
 
-		scrobbler->password = g_key_file_get_string(file, group, "password", &error);
+		scrobbler->password = get_string(file, group, "password", &error);
 		if (error != NULL)
 			g_error("%s\n", error->message);
 	} else {
@@ -240,11 +248,10 @@ load_scrobbler_config(GKeyFile *file, const char *group)
 		scrobbler->password = NULL;
 	}
 
-	scrobbler->journal = g_key_file_get_string(file, group, "journal", NULL);
+	scrobbler->journal = get_string(file, group, "journal", NULL);
 	if (scrobbler->journal == NULL && strcmp(group, "mpdscribble") == 0) {
 		/* mpdscribble <= 0.17 compatibility */
-		scrobbler->journal = g_key_file_get_string(file, group,
-							   "cache", NULL);
+		scrobbler->journal = get_string(file, group, "cache", NULL);
 		if (scrobbler->journal == NULL)
 			scrobbler->journal = get_default_cache_path();
 	}
