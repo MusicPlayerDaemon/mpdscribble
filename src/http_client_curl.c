@@ -236,19 +236,23 @@ http_client_find_request(CURL *curl)
  * A HTTP request is finished: invoke its callback and free it.
  */
 static void
-http_request_done(struct http_request *request, CURLcode result)
+http_request_done(struct http_request *request, CURLcode result, long status)
 {
 	/* invoke the handler method */
-	if (result == CURLE_OK)
-		request->handler->response(request->body->len,
-					   request->body->str,
-					   request->handler_ctx);
-	else {
+	if (result != CURLE_OK) {
 		GError *error = g_error_new(curl_quark(), result,
 					    "curl failed: %s",
 					    request->error);
 		request->handler->error(error, request->handler_ctx);
-	}
+	} else if (status < 200 || status >= 300) {
+		GError *error = g_error_new(curl_quark(), 0,
+					    "got HTTP status %ld",
+					    status);
+		request->handler->error(error, request->handler_ctx);
+	} else
+		request->handler->response(request->body->len,
+					   request->body->str,
+					   request->handler_ctx);
 
 	/* remove it from the list and free resources */
 	http_client.requests = g_slist_remove(http_client.requests, request);
@@ -274,7 +278,11 @@ http_multi_info_read(void)
 				http_client_find_request(msg->easy_handle);
 			assert(request != NULL);
 
-			http_request_done(request, msg->data.result);
+			long status = 0;
+			curl_easy_getinfo(msg->easy_handle,
+					  CURLINFO_RESPONSE_CODE, &status);
+
+			http_request_done(request, msg->data.result, status);
 		}
 	}
 
