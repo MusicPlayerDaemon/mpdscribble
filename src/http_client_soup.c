@@ -127,9 +127,9 @@ http_client_soup_callback(SoupMessage *msg, gpointer data)
 					   msg->response_body->data,
 					   request->handler_ctx);
 #else
-		request->handler->response_body(msg->response.length,
-						msg->response.body,
-						request->handler_ctx);
+		request->handler->response(msg->response.length,
+					   msg->response.body,
+					   request->handler_ctx);
 #endif
 	} else {
 		GError *error = g_error_new(soup_quark(), 0,
