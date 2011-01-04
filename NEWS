@@ -1,3 +1,6 @@
+mpdscribble 0.22 - not yet released
+
+
 mpdscribble 0.21 - 2011-01-03
   * require libmpdclient 2.2
   * better HTTP error messages
