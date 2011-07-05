@@ -130,6 +130,12 @@ if test "x$enable_debug" = xno; then
 	AM_CFLAGS="$AM_CFLAGS -DNDEBUG"
 fi
 
+AC_ARG_ENABLE(test,
+	AS_HELP_STRING([--enable-test],
+		[build the test programs (default: disabled)]),,
+	enable_test=no)
+AM_CONDITIONAL(ENABLE_TEST, test "x$enable_test" = xyes)
+
 
 dnl
 dnl CFLAGS
