@@ -9,26 +9,29 @@ EXTRA_DIST = autogen.sh
 
 bin_PROGRAMS = src/mpdscribble
 
+HTTP_CLIENT_SRC = src/http_client.h
+
+if HAVE_CURL
+HTTP_CLIENT_SRC += src/http_client_curl.c
+endif
+
+if HAVE_SOUP
+HTTP_CLIENT_SRC += src/http_client_soup.c
+endif
+
 src_mpdscribble_SOURCES = \
 	src/mpdscribble.c \
 	src/compat.h \
 	src/daemon.c src/daemon.h \
 	src/record.c src/record.h \
 	src/scrobbler.c src/scrobbler.h \
+	$(HTTP_CLIENT_SRC) \
 	src/http_client.h \
 	src/cmdline.c src/cmdline.h \
 	src/file.c src/file.h \
 	src/journal.c src/journal.h \
 	src/lmc.c src/lmc.h \
 	src/log.c src/log.h
-
-if HAVE_CURL
-src_mpdscribble_SOURCES += src/http_client_curl.c
-endif
-
-if HAVE_SOUP
-src_mpdscribble_SOURCES += src/http_client_soup.c
-endif
 
 AM_CPPFLAGS = $(libcurl_CFLAGS) $(libsoup_CFLAGS) \
 	$(LIBMPDCLIENT_CFLAGS) \
@@ -43,6 +46,18 @@ LDADD = $(libcurl_LIBS) $(libsoup_LIBS) \
 	$(libglib_LIBS)
 
 AM_CPPFLAGS += -DFILE_CONF='"$(sysconfdir)/mpdscribble.conf"'
+
+
+#
+# Test suite
+#
+
+noinst_PROGRAMS = test/run_http_client
+
+test_run_http_client_SOURCES = \
+	$(HTTP_CLIENT_SRC) \
+	src/file.c \
+	test/run_http_client.c
 
 
 #
