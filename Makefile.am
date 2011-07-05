@@ -44,6 +44,11 @@ LDADD = $(libcurl_LIBS) $(libsoup_LIBS) \
 
 AM_CPPFLAGS += -DFILE_CONF='"$(sysconfdir)/mpdscribble.conf"'
 
+
+#
+# Sparse code analysis
+#
+
 SPARSE = sparse
 SPARSE_FLAGS =
 SPARSE_CPPFLAGS = $(DEFAULT_INCLUDES) \
@@ -54,6 +59,11 @@ sparse-check:
 	do \
 		$(SPARSE) -I. $(CFLAGS) $(AM_CPPFLAGS) $(SPARSE_FLAGS) $(SPARSE_CPPFLAGS) $(srcdir)/$$i || exit; \
 	done
+
+
+#
+# Distribution
+#
 
 INSTALL_SECURE = $(INSTALL) -m 600
 
