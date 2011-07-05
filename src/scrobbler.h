@@ -23,6 +23,8 @@
 
 #include <glib.h>
 
+#include <stdbool.h>
+
 struct scrobbler_config {
 	/**
 	 * The name of the mpdscribble.conf section.  It is used in
@@ -60,6 +62,7 @@ void
 as_songchange(const char *file, const char *artist, const char *track,
 	      const char *album, const char *number,
 	      const char *mbid, const int length,
+	      bool love,
 	      const char *time);
 
 void as_save_cache(void);

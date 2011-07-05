@@ -16,6 +16,19 @@ Installing mpdscribble
 See the INSTALL file.
 
 
+Rating / Love
+-------------
+
+With MPD 0.17 or later, clients can submit track ratings over the
+client-to-client protocol.  To do that, the client sends the following
+command to mpd:
+
+ sendmessage mpdscribble love
+
+The song that is currently playing will be rated with the "love"
+attribute, as soon as it gets submitted to the scrobbler.
+
+
 Support
 -------
 

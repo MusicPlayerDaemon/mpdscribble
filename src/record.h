@@ -32,6 +32,7 @@ struct record {
 	char *mbid;
 	char *time;
 	int length;
+	bool love;
 	const char *source;
 };
 

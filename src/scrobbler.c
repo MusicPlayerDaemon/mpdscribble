@@ -720,6 +720,9 @@ scrobbler_submit(struct scrobbler *scrobbler)
 		add_var_i(post_data, "n", count, song->number);
 		add_var_i(post_data, "m", count, song->mbid);
 
+		if (song->love)
+			add_var_i(post_data, "r", count, "L");
+
 		count++;
 	}
 
@@ -761,6 +764,7 @@ void
 as_songchange(const char *file, const char *artist, const char *track,
 	      const char *album, const char *number,
 	      const char *mbid, const int length,
+	      bool love,
 	      const char *time2)
 {
 	struct record record;
@@ -791,6 +795,7 @@ as_songchange(const char *file, const char *artist, const char *track,
 	record.mbid = g_strdup(mbid);
 	record.length = length;
 	record.time = time2 ? g_strdup(time2) : as_timestamp();
+	record.love = love;
 	record.source = strstr(file, "://") == NULL ? "P" : "R";
 
 	g_message("%s, songchange: %s - %s (%i)\n",

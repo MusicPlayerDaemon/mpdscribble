@@ -49,6 +49,8 @@ journal_write_record(gpointer data, gpointer user_data)
 	journal_write_string(file, 'b', record->album);
 	journal_write_string(file, 'n', record->number);
 	journal_write_string(file, 'm', record->mbid);
+	if (record->love)
+		journal_write_string(file, 'r', "L");
 	journal_write_string(file, 'i', record->time);
 
 	fprintf(file,
@@ -201,6 +203,8 @@ void journal_read(const char *path, GQueue *queue)
 			record.length = atoi(value);
 		else if (strcmp("o", key) == 0 && value[0] == 'R')
 			record.source = "R";
+		else if (strcmp("r", key) == 0 && value[0] == 'L')
+			record.love = true;
 	}
 
 	fclose(file);

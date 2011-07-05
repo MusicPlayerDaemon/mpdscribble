@@ -32,6 +32,7 @@ record_copy(struct record *dest, const struct record *src)
 	dest->mbid = g_strdup(src->mbid);
 	dest->time = g_strdup(src->time);
 	dest->length = src->length;
+	dest->love = src->love;
 	dest->source = src->source;
 }
 
@@ -71,5 +72,6 @@ record_clear(struct record *record)
 	record->mbid = NULL;
 	record->time = NULL;
 	record->length = 0;
+	record->love = false;
 	record->source = "P";
 }

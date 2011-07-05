@@ -23,7 +23,7 @@
 
 #include <mpd/client.h>
 
-#include <stdio.h>
+#include <stdbool.h>
 
 void lmc_connect(char *host, int port);
 void lmc_disconnect(void);
@@ -42,6 +42,6 @@ void
 song_playing(const struct mpd_song *song, int elapsed);
 
 void
-song_ended(const struct mpd_song *song);
+song_ended(const struct mpd_song *song, bool love);
 
 #endif /* LMC_H */

@@ -22,6 +22,10 @@
 #include "file.h"
 #include "compat.h"
 
+#if LIBMPDCLIENT_CHECK_VERSION(2,5,0)
+#include <mpd/message.h>
+#endif
+
 #include <glib.h>
 
 #include <assert.h>
@@ -36,6 +40,16 @@ static bool idle_supported, idle_notified;
 static unsigned last_id = -1;
 static struct mpd_song *current_song;
 static bool was_paused;
+
+/**
+ * Is the current song being "loved"?  That variable gets set when the
+ * client-to-client command "love" is received.
+ */
+static bool love;
+
+#if LIBMPDCLIENT_CHECK_VERSION(2,5,0)
+static bool subscribed;
+#endif
 
 static char *g_host;
 static int g_port;
@@ -118,6 +132,14 @@ lmc_reconnect(G_GNUC_UNUSED gpointer data)
 		  version[0], version[1], version[2],
 		  name);
 	g_free(name);
+
+#if LIBMPDCLIENT_CHECK_VERSION(2,5,0)
+	subscribed = mpd_run_subscribe(g_mpd, "mpdscribble");
+	if (!subscribed && !mpd_connection_clear_error(g_mpd)) {
+		lmc_failure();
+		return true;
+	}
+#endif
 
 	lmc_schedule_update();
 
@@ -276,8 +298,10 @@ lmc_update(G_GNUC_UNUSED gpointer data)
 	/* submit the previous song */
 	if (prev != NULL &&
 	    (current_song == NULL ||
-	     mpd_song_get_id(prev) != mpd_song_get_id(current_song)))
-		song_ended(prev);
+	     mpd_song_get_id(prev) != mpd_song_get_id(current_song))) {
+		song_ended(prev, love);
+		love = false;
+	}
 
 	if (current_song != NULL) {
 		if (mpd_song_get_id(current_song) != last_id) {
@@ -319,6 +343,33 @@ lmc_schedule_update(void)
 						 lmc_update, NULL);
 }
 
+#if LIBMPDCLIENT_CHECK_VERSION(2,5,0)
+
+static bool
+lmc_read_messages(void)
+{
+	assert(subscribed);
+
+	if (!mpd_send_read_messages(g_mpd))
+		return mpd_connection_clear_error(g_mpd);
+
+	struct mpd_message *msg;
+	while ((msg = mpd_recv_message(g_mpd)) != NULL) {
+		const char *text = mpd_message_get_text(msg);
+		if (strcmp(text, "love") == 0)
+			love = true;
+		else
+			g_message("Unrecognized client-to-client message: '%s'",
+				  text);
+
+		mpd_message_free(msg);
+	}
+
+	return mpd_response_finish(g_mpd);
+}
+
+#endif
+
 static gboolean
 lmc_idle(G_GNUC_UNUSED GIOChannel *source,
 	 G_GNUC_UNUSED GIOCondition condition,
@@ -356,6 +407,15 @@ lmc_idle(G_GNUC_UNUSED GIOChannel *source,
 		return false;
 	}
 
+#if LIBMPDCLIENT_CHECK_VERSION(2,5,0)
+	if (subscribed && (idle & MPD_IDLE_MESSAGE) != 0 &&
+	    !lmc_read_messages()) {
+		lmc_failure();
+		lmc_schedule_reconnect();
+		return false;
+	}
+#endif
+
 	if (idle & MPD_IDLE_PLAYER)
 		/* there was a change: query MPD */
 		lmc_schedule_update();
@@ -376,7 +436,13 @@ lmc_schedule_idle(void)
 
 	idle_notified = false;
 
-	if (!mpd_send_idle_mask(g_mpd, MPD_IDLE_PLAYER)) {
+	enum mpd_idle mask = MPD_IDLE_PLAYER;
+#if LIBMPDCLIENT_CHECK_VERSION(2,5,0)
+	if (subscribed)
+		mask |= MPD_IDLE_MESSAGE;
+#endif
+
+	if (!mpd_send_idle_mask(g_mpd, mask)) {
 		lmc_failure();
 		lmc_schedule_reconnect();
 		return;

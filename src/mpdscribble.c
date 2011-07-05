@@ -166,7 +166,7 @@ song_playing(const struct mpd_song *song, int elapsed)
 		   stop and re-start */
 		g_debug("repeated song detected");
 
-		song_ended(song);
+		song_ended(song, false);
 		song_started(song);
 	}
 }
@@ -175,7 +175,7 @@ song_playing(const struct mpd_song *song, int elapsed)
  * MPD stopped playing this song.
  */
 void
-song_ended(const struct mpd_song *song)
+song_ended(const struct mpd_song *song, bool love)
 {
 	int elapsed = g_timer_elapsed(timer, NULL);
 
@@ -193,6 +193,7 @@ song_ended(const struct mpd_song *song)
 		      mpd_song_get_duration(song) > 0
 		      ? mpd_song_get_duration(song)
 		      : g_timer_elapsed(timer, NULL),
+		      love,
 		      NULL);
 }
 
