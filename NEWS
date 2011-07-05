@@ -1,5 +1,5 @@
 mpdscribble 0.22 - not yet released
-* curl: fix segmentation fault with large response body
+  * curl: fix segmentation fault with large response body
 
 
 mpdscribble 0.21 - 2011-01-03
