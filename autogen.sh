@@ -3,10 +3,10 @@
 rm -rf config.cache build
 mkdir build
 
-aclocal -I m4
+aclocal -I m4 $ACLOCAL_FLAGS
 autoconf
 autoheader
-automake --add-missing
+automake --add-missing $AUTOMAKE_FLAGS
 
 if test x$NOCONFIGURE = x; then
 	echo "./configure $*"
