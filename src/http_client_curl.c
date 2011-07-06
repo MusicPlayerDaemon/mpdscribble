@@ -70,6 +70,15 @@ static struct {
 	 * recursive invocation.
 	 */
 	bool locked;
+
+#if LIBCURL_VERSION_NUM >= 0x070f04
+	/**
+	 * Did CURL give us a timeout?  If yes, then we need to call
+	 * curl_multi_perform(), even if there was no event on any
+	 * file descriptor.
+	 */
+	bool timeout;
+#endif
 } http_client;
 
 static inline GQuark
@@ -332,6 +341,8 @@ curl_source_prepare(G_GNUC_UNUSED GSource *source, G_GNUC_UNUSED gint *timeout_)
 	http_client_update_fds();
 
 #if LIBCURL_VERSION_NUM >= 0x070f04
+	http_client.timeout = false;
+
 	long timeout2;
 	CURLMcode mcode = curl_multi_timeout(http_client.multi, &timeout2);
 	if (mcode == CURLM_OK) {
@@ -343,6 +354,8 @@ curl_source_prepare(G_GNUC_UNUSED GSource *source, G_GNUC_UNUSED gint *timeout_)
 			timeout2 = 10;
 
 		*timeout_ = timeout2;
+
+		http_client.timeout = timeout2 >= 0;
 	} else
 		g_warning("curl_multi_timeout() failed: %s\n",
 			  curl_multi_strerror(mcode));
@@ -357,6 +370,16 @@ curl_source_prepare(G_GNUC_UNUSED GSource *source, G_GNUC_UNUSED gint *timeout_)
 static gboolean
 curl_source_check(G_GNUC_UNUSED GSource *source)
 {
+#if LIBCURL_VERSION_NUM >= 0x070f04
+	if (http_client.timeout) {
+		/* when a timeout has expired, we need to call
+		   curl_multi_perform(), even if there was no file
+		   descriptor event */
+		http_client.timeout = false;
+		return TRUE;
+	}
+#endif
+
 	for (GSList *i = http_client.fds; i != NULL; i = i->next) {
 		GPollFD *poll_fd = i->data;
 		if (poll_fd->revents != 0)
