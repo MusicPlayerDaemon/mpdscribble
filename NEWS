@@ -1,3 +1,6 @@
+mpdscribble 0.23 - not yet released
+
+
 mpdscribble 0.22 - 2011-07-09
   * curl: fix segmentation fault with large response body
   * curl: fix operation with threaded resolver
