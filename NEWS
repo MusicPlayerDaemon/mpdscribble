@@ -1,5 +1,6 @@
 mpdscribble 0.23 - not yet released
   * fix build failure with GLib < 2.16
+  * soup: always send the User-Agent request header
 
 
 mpdscribble 0.22 - 2011-07-09

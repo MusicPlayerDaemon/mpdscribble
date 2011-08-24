@@ -171,16 +171,15 @@ http_client_request(const char *url, const char *post_data,
 		     SOUP_BUFFER_SYSTEM_OWNED, g_strdup(post_data),
 		     strlen(post_data));
 #endif
-
-		append_request_header(msg, "User-Agent",
-				      "mpdscribble/" VERSION);
-		append_request_header(msg, "Pragma", "no-cache");
-		append_request_header(msg, "Accept", "*/*");
 	} else {
 		msg = soup_message_new(SOUP_METHOD_GET, url);
 	}
 
 	soup_message_set_flags(msg, SOUP_MESSAGE_NO_REDIRECT);
+
+	append_request_header(msg, "User-Agent", "mpdscribble/" VERSION);
+	append_request_header(msg, "Pragma", "no-cache");
+	append_request_header(msg, "Accept", "*/*");
 
 	request = g_new(struct http_request, 1);
 	request->handler = handler;
