@@ -142,6 +142,16 @@ http_client_soup_callback(SoupMessage *msg, gpointer data)
 	http_request_free(request);
 }
 
+static void
+append_request_header(SoupMessage *msg, const char *name, const char *value)
+{
+#ifdef HAVE_SOUP_24
+	soup_message_headers_append(msg->request_headers, name, value);
+#else
+	soup_message_add_header(msg->request_headers, name, value);
+#endif
+}
+
 void
 http_client_request(const char *url, const char *post_data,
 		    const struct http_client_handler *handler, void *ctx)
@@ -155,23 +165,17 @@ http_client_request(const char *url, const char *post_data,
 		soup_message_set_request
 		    (msg, "application/x-www-form-urlencoded",
 		     SOUP_MEMORY_COPY, post_data, strlen(post_data));
-		soup_message_headers_append(msg->request_headers, "User-Agent",
-					    "mpdscribble/" VERSION);
-		soup_message_headers_append(msg->request_headers, "Pragma",
-					    "no-cache");
-		soup_message_headers_append(msg->request_headers, "Accept",
-					    "*/*");
 #else
 		soup_message_set_request
 		    (msg, "application/x-www-form-urlencoded",
 		     SOUP_BUFFER_SYSTEM_OWNED, g_strdup(post_data),
 		     strlen(post_data));
-		soup_message_add_header(msg->request_headers, "User-Agent",
-					"mpdscribble/" VERSION);
-		soup_message_add_header(msg->request_headers, "Pragma",
-					"no-cache");
-		soup_message_add_header(msg->request_headers, "Accept", "*/*");
 #endif
+
+		append_request_header(msg, "User-Agent",
+				      "mpdscribble/" VERSION);
+		append_request_header(msg, "Pragma", "no-cache");
+		append_request_header(msg, "Accept", "*/*");
 	} else {
 		msg = soup_message_new(SOUP_METHOD_GET, url);
 	}
