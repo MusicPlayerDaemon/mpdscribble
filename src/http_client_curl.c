@@ -138,23 +138,21 @@ static void
 http_client_update_fds(void)
 {
 	fd_set rfds, wfds, efds;
-	int max_fd;
-	CURLMcode mcode;
-	GSList *fds;
 
 	FD_ZERO(&rfds);
 	FD_ZERO(&wfds);
 	FD_ZERO(&efds);
 
-	mcode = curl_multi_fdset(http_client.multi, &rfds, &wfds,
-				 &efds, &max_fd);
+	int max_fd;
+	CURLMcode mcode = curl_multi_fdset(http_client.multi, &rfds, &wfds,
+					   &efds, &max_fd);
 	if (mcode != CURLM_OK) {
 		g_warning("curl_multi_fdset() failed: %s\n",
 			  curl_multi_strerror(mcode));
 		return;
 	}
 
-	fds = http_client.fds;
+	GSList *fds = http_client.fds;
 	http_client.fds = NULL;
 
 	while (fds != NULL) {
@@ -314,9 +312,9 @@ static bool
 http_multi_perform(void)
 {
 	CURLMcode mcode;
-	int running_handles;
 
 	do {
+		int running_handles;
 		mcode = curl_multi_perform(http_client.multi,
 					   &running_handles);
 	} while (mcode == CURLM_CALL_MULTI_PERFORM);
@@ -506,9 +504,6 @@ http_client_request(const char *url, const char *post_data,
 		    const struct http_client_handler *handler, void *ctx)
 {
 	struct http_request *request = g_new(struct http_request, 1);
-	CURLcode code;
-	CURLMcode mcode;
-	bool success;
 
 	request->handler = handler;
 	request->handler_ctx = ctx;
@@ -525,7 +520,7 @@ http_client_request(const char *url, const char *post_data,
 		return;
 	}
 
-	mcode = curl_multi_add_handle(http_client.multi, request->curl);
+	CURLMcode mcode = curl_multi_add_handle(http_client.multi, request->curl);
 	if (mcode != CURLM_OK) {
 		curl_easy_cleanup(request->curl);
 		g_free(request);
@@ -557,7 +552,7 @@ http_client_request(const char *url, const char *post_data,
 				 request->post_data);
 	}
 
-	code = curl_easy_setopt(request->curl, CURLOPT_URL, url);
+	CURLcode code = curl_easy_setopt(request->curl, CURLOPT_URL, url);
 	if (code != CURLE_OK) {
 		curl_multi_remove_handle(http_client.multi, request->curl);
 		curl_easy_cleanup(request->curl);
@@ -575,8 +570,7 @@ http_client_request(const char *url, const char *post_data,
 
 	/* initiate the transfer */
 
-	success = http_multi_perform();
-	if (!success) {
+	if (!http_multi_perform()) {
 		http_client.requests = g_slist_remove(http_client.requests,
 						      request);
 		http_request_free(request);
