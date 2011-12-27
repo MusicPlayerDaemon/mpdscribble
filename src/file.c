@@ -83,7 +83,7 @@ get_default_config_path(void)
 		file_config.loc = file_home;
 		return file;
 	} else {
-		free(file);
+		g_free(file);
 
 		if (!file_exists(FILE_CONF))
 			return NULL;
