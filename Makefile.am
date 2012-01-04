@@ -20,6 +20,7 @@ HTTP_CLIENT_SRC += src/http_client_soup.c
 endif
 
 src_mpdscribble_SOURCES = \
+	src/gcc.h \
 	src/mpdscribble.c \
 	src/compat.h \
 	src/daemon.c src/daemon.h \
