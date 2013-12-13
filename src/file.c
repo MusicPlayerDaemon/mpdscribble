@@ -48,7 +48,6 @@
 
 struct config file_config = {
 	.port = 0,
-	.sleep = -1,
 	.journal_interval = 600,
 	.verbose = -1,
 	.loc = file_unknown,
@@ -293,7 +292,6 @@ load_config_file(const char *path)
 	load_string(file, "host", &file_config.host);
 	load_unsigned(file, "port", &file_config.port);
 	load_string(file, "proxy", &file_config.proxy);
-	load_integer(file, "sleep", &file_config.sleep);
 	if (!load_unsigned(file, "journal_interval",
 			   &file_config.journal_interval))
 		load_unsigned(file, "cache_interval",
@@ -336,8 +334,6 @@ int file_read_config(void)
 
 	if (!file_config.proxy)
 		file_config.proxy = getenv("http_proxy");
-	if (file_config.sleep <= 0)
-		file_config.sleep = 1;
 	if (file_config.verbose == -1)
 		file_config.verbose = 1;
 

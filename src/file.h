@@ -37,7 +37,6 @@ struct config {
 	char *host;
 	char *proxy;
 	unsigned port;
-	int sleep;
 
 	/**
 	 * The interval in seconds after which the journal is saved to

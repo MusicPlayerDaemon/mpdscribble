@@ -36,7 +36,7 @@
 #include <unistd.h>
 
 static struct mpd_connection *g_mpd;
-static bool idle_supported, idle_notified;
+static bool idle_notified;
 static unsigned last_id = -1;
 static struct mpd_song *current_song;
 static bool was_paused;
@@ -116,17 +116,23 @@ connection_settings_name(const struct mpd_connection *connection)
 static gboolean
 lmc_reconnect(G_GNUC_UNUSED gpointer data)
 {
-	const unsigned *version;
-
 	g_mpd = mpd_connection_new(g_host, g_port, 0);
 	if (mpd_connection_get_error(g_mpd) != MPD_ERROR_SUCCESS) {
 		lmc_failure();
 		return true;
 	}
 
-	idle_supported = mpd_connection_cmp_server_version(g_mpd, 0, 14, 0) >= 0;
+	const unsigned *version = mpd_connection_get_server_version(g_mpd);
 
-	version = mpd_connection_get_server_version(g_mpd);
+	if (mpd_connection_cmp_server_version(g_mpd, 0, 16, 0) < 0) {
+		g_warning("Error: MPD version %d.%d.%d is too old (%s needed)",
+			  version[0], version[1], version[2],
+			  "0.16.0");
+		mpd_connection_free(g_mpd);
+		g_mpd = NULL;
+		return true;
+	}
+
 	char *name = connection_settings_name(g_mpd);
 	g_message("connected to mpd %i.%i.%i at %s\n",
 		  version[0], version[1], version[2],
@@ -265,13 +271,9 @@ lmc_update(G_GNUC_UNUSED gpointer data)
 			song_paused();
 		was_paused = true;
 
-		if (idle_supported) {
-			lmc_schedule_idle();
-			update_source_id = 0;
-			return false;
-		}
-
-		return true;
+		lmc_schedule_idle();
+		update_source_id = 0;
+		return false;
 	} else if (state != MPD_STATE_PLAY) {
 		current_song = NULL;
 		last_id = -1;
@@ -325,13 +327,9 @@ lmc_update(G_GNUC_UNUSED gpointer data)
 		return false;
 	}
 
-	if (idle_supported) {
-		lmc_schedule_idle();
-		update_source_id = 0;
-		return false;
-	}
-
-	return true;
+	lmc_schedule_idle();
+	update_source_id = 0;
+	return false;
 }
 
 static void
@@ -339,8 +337,7 @@ lmc_schedule_update(void)
 {
 	assert(update_source_id == 0);
 
-	update_source_id = g_timeout_add_seconds(idle_supported ? 0 : file_config.sleep,
-						 lmc_update, NULL);
+	update_source_id = g_timeout_add_seconds(0, lmc_update, NULL);
 }
 
 #if LIBMPDCLIENT_CHECK_VERSION(2,5,0)
@@ -386,20 +383,6 @@ lmc_idle(G_GNUC_UNUSED GIOChannel *source,
 
 	idle = mpd_recv_idle(g_mpd, false);
 	success = mpd_response_finish(g_mpd);
-
-	if (!success && mpd_connection_get_error(g_mpd) == MPD_ERROR_SERVER &&
-	    mpd_connection_get_server_error(g_mpd) == MPD_SERVER_ERROR_UNKNOWN_CMD &&
-	    mpd_connection_clear_error(g_mpd)) {
-		/* MPD does not recognize the "idle" command - disable
-		   it for this connection */
-
-		g_message("MPD does not support the 'idle' command - "
-			  "falling back to polling\n");
-
-		idle_supported = false;
-		lmc_schedule_update();
-		return false;
-	}
 
 	if (!success) {
 		lmc_failure();
