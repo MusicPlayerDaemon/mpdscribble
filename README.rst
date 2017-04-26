@@ -4,7 +4,7 @@ mpdscribble
 mpdscribble - A Music Player Daemon (MPD) client which submits
 information about tracks being played to a scrobbler (e.g. last.fm).
 
-Home page: http://mpd.wikia.com/wiki/Client:mpdscribble
+Home page: https://www.musicpd.org/clients/mpdscribble/
 
 
 Installing mpdscribble
