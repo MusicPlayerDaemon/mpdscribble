@@ -20,9 +20,15 @@
 #ifndef MPD_GCC_H
 #define MPD_GCC_H
 
+#define GCC_MAKE_VERSION(major, minor, patchlevel) ((major) * 10000 + (minor) * 100 + patchlevel)
+
+#ifdef __GNUC__
+#  define GCC_VERSION GCC_MAKE_VERSION(__GNUC__, __GNUC_MINOR__, __GNUC_PATCHLEVEL__)
+#else
+#  define GCC_VERSION 0
+#endif
+
 #define GCC_CHECK_VERSION(major, minor) \
-	(defined(__GNUC__) && \
-	 (__GNUC__ > (major) || \
-	  (__GNUC__ == (major) && __GNUC_MINOR__ >= (minor))))
+  (GCC_VERSION >= GCC_MAKE_VERSION(major, minor, 0))
 
 #endif /* MPD_GCC_H */
