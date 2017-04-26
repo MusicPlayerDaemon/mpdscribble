@@ -161,7 +161,7 @@ http_client_request(const char *url, const char *post_data,
 	struct http_request *request;
 
 	if (post_data) {
-#if GCC_CHECK_VERSION(4,5)
+#if CLANG_OR_GCC_VERSION(4,5)
 #pragma GCC diagnostic push
 		/* the libsoup macro SOUP_METHOD_POST discards the
 		   "const" attribute of the g_intern_static_string()
@@ -169,7 +169,7 @@ http_client_request(const char *url, const char *post_data,
 #pragma GCC diagnostic ignored "-Wcast-qual"
 #endif
 		msg = soup_message_new(SOUP_METHOD_POST, url);
-#if GCC_CHECK_VERSION(4,5)
+#if CLANG_OR_GCC_VERSION(4,5)
 #pragma GCC diagnostic pop
 #endif
 
@@ -184,7 +184,7 @@ http_client_request(const char *url, const char *post_data,
 		     strlen(post_data));
 #endif
 	} else {
-#if GCC_CHECK_VERSION(4,5)
+#if CLANG_OR_GCC_VERSION(4,5)
 #pragma GCC diagnostic push
 		/* the libsoup macro SOUP_METHOD_POST discards the
 		   "const" attribute of the g_intern_static_string()
@@ -192,7 +192,7 @@ http_client_request(const char *url, const char *post_data,
 #pragma GCC diagnostic ignored "-Wcast-qual"
 #endif
 		msg = soup_message_new(SOUP_METHOD_GET, url);
-#if GCC_CHECK_VERSION(4,5)
+#if CLANG_OR_GCC_VERSION(4,5)
 #pragma GCC diagnostic pop
 #endif
 	}
