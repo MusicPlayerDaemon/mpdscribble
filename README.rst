@@ -4,9 +4,6 @@ mpdscribble
 mpdscribble - A Music Player Daemon (MPD) client which submits
 information about tracks being played to a scrobbler (e.g. last.fm).
 
-   mpdscribble is Copyright © 2005,2006 Kuno Woudt <kuno@frob.nl>
-   Copyright (C) 2008-2010 Max Kellermann <max@duempel.org>
-
 Home page: http://mpd.wikia.com/wiki/Client:mpdscribble
 
 
@@ -35,6 +32,3 @@ Support
 If you find a bug, please file a bug report at MPD's bug tracker:
 
   http://www.musicpd.org/mantis
-
-You can contact me via email <max@duempel.org> or via IRC in #mpd on
-freenode.
