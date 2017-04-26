@@ -1,5 +1,5 @@
-mpdscribble INSTALL
-===================
+mpdscribble
+===========
 
 mpdscribble - A Music Player Daemon (MPD) client which submits
 information about tracks being played to a scrobbler (e.g. last.fm).
@@ -13,7 +13,7 @@ Home page: http://mpd.wikia.com/wiki/Client:mpdscribble
 Installing mpdscribble
 ----------------------
 
-See the INSTALL file.
+See the `INSTALL <INSTALL>`__ file.
 
 
 Rating / Love
@@ -21,7 +21,7 @@ Rating / Love
 
 With MPD 0.17 or later, clients can submit track ratings over the
 client-to-client protocol.  To do that, the client sends the following
-command to mpd:
+command to mpd::
 
  sendmessage mpdscribble love
 
