@@ -4,8 +4,6 @@ mpdscribble
 mpdscribble - A Music Player Daemon (MPD) client which submits
 information about tracks being played to a scrobbler (e.g. last.fm).
 
-Home page: https://www.musicpd.org/clients/mpdscribble/
-
 
 Installing mpdscribble
 ----------------------
@@ -26,9 +24,10 @@ The song that is currently playing will be rated with the "love"
 attribute, as soon as it gets submitted to the scrobbler.
 
 
-Support
--------
+Links
+-----
 
-If you find a bug, please file a bug report at MPD's bug tracker:
-
-  http://www.musicpd.org/mantis
+- `Home page and download <http://www.musicpd.org/clients/mpdscribble/>`__
+- `git repository <https://github.com/MusicPlayerDaemon/mpdscribble/>`__
+- `Bug tracker <https://github.com/MusicPlayerDaemon/mpdscribble/issues>`__
+- `Forum <http://forum.musicpd.org/>`__
