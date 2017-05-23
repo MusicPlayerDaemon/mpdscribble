@@ -889,6 +889,31 @@ void as_save_cache(void)
 }
 
 static void
+scrobbler_submit_now_callback(gpointer data, G_GNUC_UNUSED gpointer user_data)
+{
+	struct scrobbler *scrobbler = data;
+
+	scrobbler->interval = 1;
+
+	if (scrobbler->handshake_source_id != 0) {
+		g_source_remove(scrobbler->handshake_source_id);
+		scrobbler->handshake_source_id = 0;
+		scrobbler_schedule_handshake(scrobbler);
+	}
+
+	if (scrobbler->submit_source_id != 0) {
+		g_source_remove(scrobbler->submit_source_id);
+		scrobbler->submit_source_id = 0;
+		scrobbler_schedule_submit(scrobbler);
+	}
+}
+
+void as_submit_now(void)
+{
+	g_slist_foreach(scrobblers, scrobbler_submit_now_callback, NULL);
+}
+
+static void
 scrobbler_free_callback(gpointer data, G_GNUC_UNUSED gpointer user_data)
 {
 	struct scrobbler *scrobbler = data;

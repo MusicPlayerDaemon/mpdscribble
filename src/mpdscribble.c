@@ -50,6 +50,11 @@ static gboolean exit_signal_handler(G_GNUC_UNUSED gpointer user_data) {
 	return true;
 }
 
+static gboolean submit_signal_handler(G_GNUC_UNUSED gpointer user_data) {
+  as_submit_now();
+	return true;
+}
+
 static void setup_signals(void)
 {
 	signal(SIGPIPE, SIG_IGN);
@@ -57,6 +62,8 @@ static void setup_signals(void)
 	g_unix_signal_add(SIGINT, exit_signal_handler, NULL);
 	g_unix_signal_add(SIGTERM, exit_signal_handler, NULL);
 	g_unix_signal_add(SIGHUP, exit_signal_handler, NULL);
+
+	g_unix_signal_add(SIGUSR1, submit_signal_handler, NULL);
 }
 #endif
 
