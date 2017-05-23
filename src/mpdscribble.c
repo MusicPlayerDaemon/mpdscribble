@@ -28,6 +28,9 @@
 #include "http_client.h"
 
 #include <glib.h>
+#ifndef WIN32
+#include <glib-unix.h>
+#endif
 
 #include <stdbool.h>
 #include <signal.h>
@@ -42,38 +45,20 @@ static guint save_source_id;
 static GTimer *timer;
 
 #ifndef WIN32
-static void signal_handler(G_GNUC_UNUSED int signum)
-{
+static gboolean exit_signal_handler(G_GNUC_UNUSED gpointer user_data) {
 	g_main_loop_quit(main_loop);
+	return true;
 }
 
-static void
-x_sigaction(int signum, const struct sigaction *act)
+static void setup_signals(void)
 {
-	if (sigaction(signum, act, NULL) < 0) {
-		perror("sigaction()");
-		exit(EXIT_FAILURE);
-	}
+	signal(SIGPIPE, SIG_IGN);
+
+	g_unix_signal_add(SIGINT, exit_signal_handler, NULL);
+	g_unix_signal_add(SIGTERM, exit_signal_handler, NULL);
+	g_unix_signal_add(SIGHUP, exit_signal_handler, NULL);
 }
 #endif
-
-static void
-setup_signals(void)
-{
-#ifndef WIN32
-	struct sigaction sa;
-
-	sigemptyset(&sa.sa_mask);
-	sa.sa_flags = 0;
-	sa.sa_handler = signal_handler;
-	x_sigaction(SIGINT, &sa);
-	x_sigaction(SIGTERM, &sa);
-	x_sigaction(SIGHUP, &sa);
-
-	sa.sa_handler = SIG_IGN;
-	x_sigaction(SIGPIPE, &sa);
-#endif
-}
 
 static bool played_long_enough(int elapsed, int length)
 {
@@ -227,7 +212,9 @@ int main(int argc, char **argv)
 	http_client_init();
 	as_init(file_config.scrobblers);
 
+#ifndef WIN32
 	setup_signals();
+#endif
 
 	timer = g_timer_new();
 
