@@ -27,6 +27,9 @@ If you want to use mpdscribble with a password-protected MPD, set the
 environment variable MPD_HOST to password@host, or specify the host in the
 configuration file similarly.
 
+On submission failure, mpdscribble waits for some time then retries. Sending a
+USR1 signal to a running mpdscribble process makes it submit immediately.
+
 .SH "OPTIONS"
 .TP
 .B \-\-help
