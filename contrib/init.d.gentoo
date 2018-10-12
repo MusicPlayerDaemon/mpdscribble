@@ -1,6 +1,8 @@
 #!/sbin/runscript
 
 depend() {
+	need ntp-client
+	need ntpd
 	need localmount
 	need net
 }
