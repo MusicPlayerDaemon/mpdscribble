@@ -24,6 +24,7 @@
 
 #include "fm4.h"
 #include "difm.h"
+#include "scrobbler.h"
 
 #if LIBMPDCLIENT_CHECK_VERSION(2,5,0)
 #include <mpd/message.h>
@@ -295,6 +296,16 @@ lmc_update(G_GNUC_UNUSED gpointer data)
 
 			mpd_song_free(current_song);
 			current_song = NULL;
+		} else {
+			as_songchange(mpd_song_get_uri(current_song),
+					mpd_song_get_tag(current_song, MPD_TAG_ARTIST, 0),
+					mpd_song_get_tag(current_song, MPD_TAG_TITLE, 0),
+					mpd_song_get_tag(current_song, MPD_TAG_ALBUM, 0),
+					mpd_song_get_tag(current_song, MPD_TAG_TRACK, 0),
+					mpd_song_get_tag(current_song, MPD_TAG_MUSICBRAINZ_TRACKID, 0),
+					mpd_song_get_duration(current_song),
+					love,
+					NULL);
 		}
 	}
 
