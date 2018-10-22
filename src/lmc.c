@@ -285,7 +285,7 @@ lmc_update(G_GNUC_UNUSED gpointer data)
 		   mpd_song_get_tag(current_song, MPD_TAG_TITLE, 0) == NULL) {
 
 		if ((!fm4_is_fm4_stream(current_song) || !fm4_parse_stream(current_song)) &&
-			(!difm_is_difm_stream(current_song) || difm_parse_stream(current_song))){
+			(!difm_is_difm_stream(current_song) || !difm_parse_stream(current_song))){
 
 			if (mpd_song_get_id(current_song) != last_id) {
 				g_message("new song detected with tags missing (%s)\n",
