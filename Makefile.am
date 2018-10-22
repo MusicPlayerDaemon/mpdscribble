@@ -31,6 +31,8 @@ src_mpdscribble_SOURCES = \
 	src/cmdline.c src/cmdline.h \
 	src/file.c src/file.h \
 	src/journal.c src/journal.h \
+	src/fm4.c src/fm4.h \
+	src/difm.c src/difm.h \
 	src/lmc.c src/lmc.h \
 	src/log.c src/log.h
 

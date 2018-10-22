@@ -22,6 +22,9 @@
 #include "file.h"
 #include "compat.h"
 
+#include "fm4.h"
+#include "difm.h"
+
 #if LIBMPDCLIENT_CHECK_VERSION(2,5,0)
 #include <mpd/message.h>
 #endif
@@ -280,14 +283,19 @@ lmc_update(G_GNUC_UNUSED gpointer data)
 		was_paused = false;
 	} else if (mpd_song_get_tag(current_song, MPD_TAG_ARTIST, 0) == NULL ||
 		   mpd_song_get_tag(current_song, MPD_TAG_TITLE, 0) == NULL) {
-		if (mpd_song_get_id(current_song) != last_id) {
-			g_message("new song detected with tags missing (%s)\n",
-				  mpd_song_get_uri(current_song));
-			last_id = mpd_song_get_id(current_song);
-		}
 
-		mpd_song_free(current_song);
-		current_song = NULL;
+		if ((!fm4_is_fm4_stream(current_song) || !fm4_parse_stream(current_song)) &&
+			(!difm_is_difm_stream(current_song) || difm_parse_stream(current_song))){
+
+			if (mpd_song_get_id(current_song) != last_id) {
+				g_message("new song detected with tags missing (%s)\n",
+					  mpd_song_get_uri(current_song));
+				last_id = mpd_song_get_id(current_song);
+			}
+
+			mpd_song_free(current_song);
+			current_song = NULL;
+		}
 	}
 
 	if (was_paused) {
