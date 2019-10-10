@@ -66,52 +66,8 @@ dnl
 dnl HTTP client library
 dnl
 
-AC_ARG_WITH(http-client,
-	AS_HELP_STRING([--with-http-client=@<:@auto|soup|curl@:>@],
-		[choose the HTTP client library (default=auto)]),,
-	with_http_client=auto)
-
-if test x$with_http_client = xcurl || test x$with_http_client = xauto; then
-	PKG_CHECK_MODULES([libcurl], [libcurl], found_curl=yes, found_curl=no)
-	if test x$found_curl = xyes; then
-		with_http_client=curl
-	elif test x$with_http_client = xcurl; then
-		AC_MSG_ERROR([libcurl not found])
-	fi
-elif test x$with_http_client != xsoup; then
-	AC_MSG_ERROR([unknown HTTP client specified])
-fi
-
+PKG_CHECK_MODULES([libcurl], [libcurl],, AC_MSG_ERROR([libcurl not found]))
 AM_CONDITIONAL(HAVE_CURL, test x$with_http_client = xcurl)
-
-if test x$with_http_client = xsoup || test x$with_http_client = xauto; then
-	PKG_CHECK_MODULES([libsoup], [libsoup-2.4],
-		found_soup_24=yes, found_soup_24=no)
-	if test x$found_soup_24 = xyes; then
-		with_http_client=soup
-		AC_DEFINE([HAVE_SOUP_24], [1], [Defined if libsoup-2.4 instead of libsoup-2.2 is used])
-	else
-		PKG_CHECK_MODULES([libsoup], [libsoup-2.2],
-			found_soup_22=yes, found_soup_22=no)
-		if test x$found_soup_22 = xyes; then
-			with_http_client=soup
-		elif test x$with_http_client = xsoup; then
-			AC_MSG_ERROR([libsoup (2.4 or 2.2) not found])
-		fi
-	fi
-fi
-
-if test x$with_http_client = xsoup; then
-	PKG_CHECK_MODULES([libgthread], [gthread-2.0],,
-		[AC_MSG_ERROR(gthread-2.0 not found)])
-fi
-
-AM_CONDITIONAL(HAVE_SOUP, test x$with_http_client = xsoup)
-
-if test x$with_http_client = xauto; then
-	AC_MSG_ERROR([No HTTP client library was found])
-fi
-
 
 dnl
 dnl build options

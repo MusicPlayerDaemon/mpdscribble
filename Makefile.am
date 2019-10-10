@@ -9,16 +9,6 @@ EXTRA_DIST = autogen.sh
 
 bin_PROGRAMS = src/mpdscribble
 
-HTTP_CLIENT_SRC = src/http_client.h
-
-if HAVE_CURL
-HTTP_CLIENT_SRC += src/http_client_curl.c
-endif
-
-if HAVE_SOUP
-HTTP_CLIENT_SRC += src/http_client_soup.c
-endif
-
 src_mpdscribble_SOURCES = \
 	src/gcc.h \
 	src/mpdscribble.c \
@@ -26,23 +16,20 @@ src_mpdscribble_SOURCES = \
 	src/daemon.c src/daemon.h \
 	src/record.c src/record.h \
 	src/scrobbler.c src/scrobbler.h \
-	$(HTTP_CLIENT_SRC) \
-	src/http_client.h \
+	src/http_client.c src/http_client.h \
 	src/cmdline.c src/cmdline.h \
 	src/file.c src/file.h \
 	src/journal.c src/journal.h \
 	src/lmc.c src/lmc.h \
 	src/log.c src/log.h
 
-AM_CPPFLAGS = $(libcurl_CFLAGS) $(libsoup_CFLAGS) \
+AM_CPPFLAGS = $(libcurl_CFLAGS) \
 	$(LIBMPDCLIENT_CFLAGS) \
-	$(libgthread_CFLAGS) \
 	$(libgcrypt_CFLAGS) \
 	$(libglib_CFLAGS) \
 	-I$(srcdir)/src -I$(srcdir)/src/libmpdclient
-LDADD = $(libcurl_LIBS) $(libsoup_LIBS) \
+LDADD = $(libcurl_LIBS) \
 	$(LIBMPDCLIENT_LIBS) \
-	$(libgthread_LIBS) \
 	$(libgcrypt_LIBS) \
 	$(libglib_LIBS)
 
@@ -56,7 +43,7 @@ AM_CPPFLAGS += -DFILE_CONF='"$(sysconfdir)/mpdscribble.conf"'
 noinst_PROGRAMS = test/run_http_client
 
 test_run_http_client_SOURCES = \
-	$(HTTP_CLIENT_SRC) \
+	src/http_client.c \
 	src/file.c \
 	test/run_http_client.c
 

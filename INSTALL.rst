@@ -8,6 +8,7 @@ Requirements
 - `libmpdclient 2.2 <https://www.musicpd.org/libs/libmpdclient/>`__
 - `glib 2.6 <https://wiki.gnome.org/Projects/GLib>`__
 - libsoup (2.2 or 2.4) or libcurl
+- `libcurl <https://curl.haxx.se/>`__
 
 
 Compiling mpdscribble
