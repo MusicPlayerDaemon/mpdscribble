@@ -522,7 +522,7 @@ scrobbler_handshake(Scrobbler *scrobbler)
 
 	//  notice ("handshake url:\n%s", url);
 
-	http_client_request(url.c_str(), nullptr,
+	http_client_request(url.c_str(), {},
 			    &scrobbler_handshake_handler, scrobbler);
 }
 
@@ -581,7 +581,7 @@ scrobbler_send_now_playing(Scrobbler *scrobbler, const char *artist,
 		  scrobbler->config.name.c_str());
 
 	http_client_request(scrobbler->nowplay_url.c_str(),
-			    post_data.c_str(),
+			    std::move(post_data),
 			    &scrobbler_submit_handler, scrobbler);
 }
 
@@ -694,7 +694,7 @@ scrobbler_submit(Scrobbler *scrobbler)
 
 	scrobbler->pending = count;
 	http_client_request(scrobbler->submit_url.c_str(),
-			    post_data.c_str(),
+			    std::move(post_data),
 			    &scrobbler_submit_handler, scrobbler);
 }
 

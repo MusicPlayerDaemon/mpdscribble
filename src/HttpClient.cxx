@@ -38,7 +38,7 @@ struct HttpRequest {
 	CURL *curl;
 
 	/** the POST request body */
-	char *post_data;
+	std::string request_body;
 
 	/** the response body */
 	std::string response_body;
@@ -96,7 +96,6 @@ http_request_free(HttpRequest *request)
 {
 	curl_multi_remove_handle(http_client.multi, request->curl);
 	curl_easy_cleanup(request->curl);
-	g_free(request->post_data);
 	delete request;
 }
 
@@ -497,7 +496,7 @@ http_request_writefunction(void *ptr, size_t size, size_t nmemb, void *stream)
 }
 
 void
-http_client_request(const char *url, const char *post_data,
+http_client_request(const char *url, std::string &&post_data,
 		    const HttpClientHandler *handler, void *ctx)
 {
 	HttpRequest *request = new HttpRequest;
@@ -542,11 +541,11 @@ http_client_request(const char *url, const char *post_data,
 	if (file_config.proxy != nullptr)
 		curl_easy_setopt(request->curl, CURLOPT_PROXY, file_config.proxy);
 
-	request->post_data = g_strdup(post_data);
-	if (request->post_data != nullptr) {
+	request->request_body = std::move(post_data);
+	if (!request->request_body.empty()) {
 		curl_easy_setopt(request->curl, CURLOPT_POST, true);
 		curl_easy_setopt(request->curl, CURLOPT_POSTFIELDS,
-				 request->post_data);
+				 request->request_body.c_str());
 	}
 
 	CURLcode code = curl_easy_setopt(request->curl, CURLOPT_URL, url);
