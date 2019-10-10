@@ -1,5 +1,5 @@
 /* mpdscribble (MPD Client)
- * Copyright (C) 2008-2010 The Music Player Daemon Project
+ * Copyright (C) 2008-2019 The Music Player Daemon Project
  * Copyright (C) 2005-2008 Kuno Woudt <kuno@frob.nl>
  * Project homepage: http://musicpd.org
  *
