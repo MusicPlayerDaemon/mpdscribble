@@ -194,7 +194,7 @@ load_unsigned(GKeyFile *file, const char *name, unsigned *value_r)
 static ScrobblerConfig *
 load_scrobbler_config(GKeyFile *file, const char *group)
 {
-	ScrobblerConfig *scrobbler = g_new(ScrobblerConfig, 1);
+	ScrobblerConfig *scrobbler = new ScrobblerConfig();
 	GError *error = nullptr;
 
 	/* Use default host for mpdscribble group, for backward compatability */
@@ -204,7 +204,7 @@ load_scrobbler_config(GKeyFile *file, const char *group)
 			/* the default section does not contain a
 			   username: don't set up the last.fm default
 			   scrobbler */
-			g_free(scrobbler);
+			delete scrobbler;
 			return nullptr;
 		}
 
@@ -345,7 +345,7 @@ scrobbler_config_free_callback(gpointer data, G_GNUC_UNUSED gpointer user_data)
 	g_free(scrobbler->password);
 	g_free(scrobbler->journal);
 	g_free(scrobbler->file);
-	g_free(scrobbler);
+	delete scrobbler;
 }
 
 void file_cleanup()
