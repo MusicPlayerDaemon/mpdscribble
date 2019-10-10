@@ -35,7 +35,7 @@ struct HttpRequest {
 	void *handler_ctx;
 
 	/** the CURL easy handle */
-	CURL *curl;
+	CURL *curl = nullptr;
 
 	/** the POST request body */
 	std::string request_body;
@@ -45,6 +45,8 @@ struct HttpRequest {
 
 	/** error message provided by libcurl */
 	char error[CURL_ERROR_SIZE];
+
+	~HttpRequest() noexcept;
 };
 
 static struct {
@@ -86,17 +88,12 @@ curl_quark()
     return g_quark_from_static_string("curl");
 }
 
-/**
- * Frees all resources of a #HttpRequest object.  Also unregisters
- * the CURL easy handle from the CURL multi handle.  This function
- * does not affect the linked list http_client.requests.
- */
-static void
-http_request_free(HttpRequest *request)
+HttpRequest::~HttpRequest() noexcept
 {
-	curl_multi_remove_handle(http_client.multi, request->curl);
-	curl_easy_cleanup(request->curl);
-	delete request;
+	if (curl != nullptr) {
+		curl_multi_remove_handle(http_client.multi, curl);
+		curl_easy_cleanup(curl);
+	}
 }
 
 /**
@@ -201,7 +198,7 @@ http_request_abort(HttpRequest *request, GError *error)
 	http_client.requests = g_slist_remove(http_client.requests, request);
 
 	request->handler->error(error, request->handler_ctx);
-	http_request_free(request);
+	delete request;
 }
 
 /**
@@ -268,7 +265,7 @@ http_request_done(HttpRequest *request, CURLcode result, long status)
 
 	/* remove it from the list and free resources */
 	http_client.requests = g_slist_remove(http_client.requests, request);
-	http_request_free(request);
+	delete request;
 }
 
 /**
@@ -432,7 +429,7 @@ http_request_free_callback(gpointer data, G_GNUC_UNUSED gpointer user_data)
 {
 	auto *request = (HttpRequest *)data;
 
-	http_request_free(request);
+	delete request;
 }
 
 void
@@ -567,7 +564,7 @@ http_client_request(const char *url, std::string &&post_data,
 	if (!http_multi_perform()) {
 		http_client.requests = g_slist_remove(http_client.requests,
 						      request);
-		http_request_free(request);
+		delete request;
 
 		GError *error = g_error_new_literal(curl_quark(), code,
 						    "http_multi_perform() failed");
