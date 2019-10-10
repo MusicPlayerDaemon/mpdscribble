@@ -23,7 +23,7 @@
 
 #include <stddef.h>
 
-struct record {
+struct Record {
 	char *artist;
 	char *track;
 	char *album;
@@ -40,35 +40,35 @@ struct record {
  * existing values in the destination record.
  */
 void
-record_copy(struct record *dest, const struct record *src);
+record_copy(Record *dest, const Record *src);
 
 /**
  * Duplicates a record object.
  */
-struct record *
-record_dup(const struct record *src);
+Record *
+record_dup(const Record *src);
 
 /**
  * Deinitializes a record object, freeing all members.
  */
 void
-record_deinit(struct record *record);
+record_deinit(Record *record);
 
 /**
  * Frees a record object: free all members with record_deinit(), and
  * free the record pointer itself.
  */
 void
-record_free(struct record *record);
+record_free(Record *record);
 
 void
-record_clear(struct record *record);
+record_clear(Record *record);
 
 /**
  * Does this record object have a defined and usable value?
  */
 static inline bool
-record_is_defined(const struct record *record)
+record_is_defined(const Record *record)
 {
 	return record->artist != nullptr && record->track != nullptr;
 }

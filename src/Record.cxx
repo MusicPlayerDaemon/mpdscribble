@@ -23,7 +23,7 @@
 #include <glib.h>
 
 void
-record_copy(struct record *dest, const struct record *src)
+record_copy(Record *dest, const Record *src)
 {
 	dest->artist = g_strdup(src->artist);
 	dest->track = g_strdup(src->track);
@@ -36,16 +36,16 @@ record_copy(struct record *dest, const struct record *src)
 	dest->source = src->source;
 }
 
-struct record *
-record_dup(const struct record *src)
+Record *
+record_dup(const Record *src)
 {
-	struct record *dest = g_new(struct record, 1);
+	Record *dest = g_new(Record, 1);
 	record_copy(dest, src);
 	return dest;
 }
 
 void
-record_deinit(struct record *record)
+record_deinit(Record *record)
 {
 	g_free(record->artist);
 	g_free(record->track);
@@ -56,14 +56,14 @@ record_deinit(struct record *record)
 }
 
 void
-record_free(struct record *record)
+record_free(Record *record)
 {
 	record_deinit(record);
 	g_free(record);
 }
 
 void
-record_clear(struct record *record)
+record_clear(Record *record)
 {
 	record->artist = nullptr;
 	record->track = nullptr;

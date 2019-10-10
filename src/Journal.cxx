@@ -39,7 +39,7 @@ journal_write_string(FILE *file, char field, const char *value)
 static void
 journal_write_record(gpointer data, gpointer user_data)
 {
-	auto *record = (struct record *)data;
+	auto *record = (Record *)data;
 	FILE *file = (FILE *)user_data;
 
 	assert(record->source != nullptr);
@@ -79,7 +79,7 @@ bool journal_write(const char *path, GQueue *queue)
 }
 
 static void
-journal_commit_record(GQueue *queue, struct record *record)
+journal_commit_record(GQueue *queue, Record *record)
 {
 	if (record->artist != nullptr && record->track != nullptr) {
 		/* append record to the queue; reuse allocated strings */
@@ -146,7 +146,7 @@ void journal_read(const char *path, GQueue *queue)
 {
 	FILE *file;
 	char line[1024];
-	struct record record;
+	Record record;
 
 	journal_file_empty = true;
 

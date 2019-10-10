@@ -94,7 +94,7 @@ struct scrobbler {
 	char *nowplay_url;
 	char *submit_url;
 
-	struct record now_playing;
+	Record now_playing;
 
 	/**
 	 * A queue of #record objects.
@@ -140,7 +140,7 @@ scrobbler_new(const struct scrobbler_config *config)
 static void
 record_free_callback(gpointer data, gpointer)
 {
-	auto *song = (struct record *)data;
+	auto *song = (Record *)data;
 	record_free(song);
 }
 
@@ -396,7 +396,7 @@ scrobbler_queue_remove_oldest(GQueue *queue, unsigned count)
 	assert(count > 0);
 
 	while (count--) {
-		auto *tmp = (struct record *)g_queue_pop_head(queue);
+		auto *tmp = (Record *)g_queue_pop_head(queue);
 		record_free(tmp);
 	}
 }
@@ -625,7 +625,7 @@ static void
 scrobbler_schedule_now_playing_callback(gpointer data, gpointer user_data)
 {
 	auto *scrobbler = (struct scrobbler *)data;
-	const auto *song = (const struct record *)user_data;
+	const auto *song = (const Record *)user_data;
 
 	if (scrobbler->file != nullptr)
 		/* there's no "now playing" support for files */
@@ -644,7 +644,7 @@ as_now_playing(const char *artist, const char *track,
 	       const char *album, const char *number,
 	       const char *mbid, const int length)
 {
-	struct record record;
+	Record record;
 
 	record.artist = g_strdup(artist);
 	record.track = g_strdup(track);
@@ -695,7 +695,7 @@ scrobbler_submit(struct scrobbler *scrobbler)
 	for (GList *list = g_queue_peek_head_link(scrobbler->queue);
 	     list != nullptr && count < MAX_SUBMIT_COUNT;
 	     list = g_list_next(list)) {
-		auto *song = (struct record *)list->data;
+		auto *song = (Record *)list->data;
 		char len[16];
 
 		snprintf(len, sizeof(len), "%i", song->length);
@@ -734,7 +734,7 @@ static void
 scrobbler_push_callback(gpointer data, gpointer user_data)
 {
 	auto *scrobbler = (struct scrobbler *)data;
-	const auto *record = (const struct record *)user_data;
+	const auto *record = (const Record *)user_data;
 
 	if (scrobbler->file != nullptr) {
 		fprintf(scrobbler->file, "%s %s - %s\n",
@@ -757,7 +757,7 @@ as_songchange(const char *file, const char *artist, const char *track,
 	      bool love,
 	      const char *time2)
 {
-	struct record record;
+	Record record;
 
 	/* from the 1.2 protocol draft:
 
