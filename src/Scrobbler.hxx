@@ -23,29 +23,31 @@
 
 #include <glib.h>
 
+#include <string>
+
 struct ScrobblerConfig {
 	/**
 	 * The name of the mpdscribble.conf section.  It is used in
 	 * log messages.
 	 */
-	char *name;
+	std::string name;
 
-	char *url;
-	char *username;
-	char *password;
+	std::string url;
+	std::string username;
+	std::string password;
 
 	/**
 	 * The path of the journal file.  It contains records which
 	 * have not been submitted yet.
 	 */
-	char *journal;
+	std::string journal;
 
 	/**
 	 * The path of the log file.  This is set when logging to a
 	 * file is configured instead of submission to an
 	 * AudioScrobbler server.
 	 */
-	char *file;
+	std::string file;
 };
 
 void as_init(GSList *scrobbler_configs);
