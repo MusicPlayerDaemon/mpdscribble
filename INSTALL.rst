@@ -9,6 +9,7 @@ Requirements
 - `glib 2.6 <https://wiki.gnome.org/Projects/GLib>`__
 - libsoup (2.2 or 2.4) or libcurl
 - `libcurl <https://curl.haxx.se/>`__
+- `libgcrypt <https://gnupg.org/software/libgcrypt/index.html>`__
 
 
 Compiling mpdscribble

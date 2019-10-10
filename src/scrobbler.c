@@ -28,9 +28,7 @@
 
 #include <glib.h>
 
-#if !GLIB_CHECK_VERSION(2,16,0)
 #include <gcrypt.h>
-#endif
 
 #include <assert.h>
 #include <stdbool.h>
@@ -490,10 +488,6 @@ char *as_timestamp(void)
  */
 static char *md5_hex(const char *p, int len)
 {
-#if GLIB_CHECK_VERSION(2,16,0)
-	return g_compute_checksum_for_string(G_CHECKSUM_MD5, p, len);
-#else
-	/* fall back to libgcrypt on GLib < 2.16 */
 	gcry_md_hd_t hd;
 	unsigned char *binary;
 	char *result;
@@ -513,7 +507,6 @@ static char *md5_hex(const char *p, int len)
 	gcry_md_close(hd);
 
 	return result;
-#endif
 }
 
 static char *as_md5(const char *password, const char *timestamp)

@@ -41,26 +41,17 @@ dnl
 dnl libraries
 dnl
 
-AC_SUBST(libgcrypt_CFLAGS, [])
-AC_SUBST(libgcrypt_LIBS, [])
-
 PKG_CHECK_MODULES([LIBMPDCLIENT], [libmpdclient >= 2.2],,
 	[AC_MSG_ERROR([libmpdclient2 is required])])
 
 PKG_CHECK_MODULES([libglib],
-	[glib-2.0 >= 2.16],
-	[glib216=yes], [glib216=no])
-if test "x$glib216" != "xyes"; then
-	PKG_CHECK_MODULES([libglib],
-		[glib-2.0 >= 2.6],,
-		[AC_MSG_ERROR([glib 2.6 is required])])
+	[glib-2.0 >= 2.6],,
+	[AC_MSG_ERROR([glib 2.6 is required])])
 
-	# use libgcrypt's MD5 routines with GLib < 2.16
-	AC_PATH_PROG(LIBGCRYPT_CONFIG, libgcrypt-config,
-		[AC_MSG_ERROR([libgcrypt-config required])])
-	libgcrypt_CFLAGS=`${LIBGCRYPT_CONFIG} --cflags`
-	libgcrypt_LIBS=`${LIBGCRYPT_CONFIG} --libs`
-fi
+AC_PATH_PROG(LIBGCRYPT_CONFIG, libgcrypt-config,
+	[AC_MSG_ERROR([libgcrypt-config required])])
+AC_SUBST(libgcrypt_CFLAGS, [`${LIBGCRYPT_CONFIG} --cflags`])
+AC_SUBST(libgcrypt_LIBS, [`${LIBGCRYPT_CONFIG} --libs`])
 
 dnl
 dnl HTTP client library
