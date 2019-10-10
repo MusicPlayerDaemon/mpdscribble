@@ -92,9 +92,9 @@ struct Scrobbler {
 	guint handshake_source_id;
 	guint submit_source_id;
 
-	char *session;
-	char *nowplay_url;
-	char *submit_url;
+	std::string session;
+	std::string nowplay_url;
+	std::string submit_url;
 
 	Record now_playing;
 
@@ -127,9 +127,6 @@ scrobbler_new(const ScrobblerConfig *config)
 	scrobbler->interval = 1;
 	scrobbler->handshake_source_id = 0;
 	scrobbler->submit_source_id = 0;
-	scrobbler->session = nullptr;
-	scrobbler->nowplay_url = nullptr;
-	scrobbler->submit_url = nullptr;
 
 	scrobbler->pending = 0;
 
@@ -146,10 +143,6 @@ scrobbler_free(Scrobbler *scrobbler)
 		g_source_remove(scrobbler->handshake_source_id);
 	if (scrobbler->submit_source_id != 0)
 		g_source_remove(scrobbler->submit_source_id);
-
-	g_free(scrobbler->session);
-	g_free(scrobbler->nowplay_url);
-	g_free(scrobbler->submit_url);
 
 	if (scrobbler->file != nullptr)
 		fclose(scrobbler->file);
@@ -184,6 +177,12 @@ static void first_var(GString * s, const char *key, const char *val)
 static void add_var(GString * s, const char *key, const char *val)
 {
 	add_var_internal(s, '&', key, -1, val);
+}
+
+static void
+add_var(GString * s, const char *key, const std::string &val)
+{
+	add_var(s, key, val.c_str());
 }
 
 static void
@@ -286,17 +285,16 @@ scrobbler_parse_handshake_response(Scrobbler *scrobbler, const char *line)
 	return false;
 }
 
-static char *
+static std::string
 next_line(const char **input_r, const char *end)
 {
 	const char *input = *input_r;
 	const char *newline = (const char *)memchr(input, '\n', end - input);
-	char *line;
 
 	if (newline == nullptr)
-		return g_strdup("");
+		return {};
 
-	line = g_strndup(input, newline - input);
+	std::string line(input, newline);
 	*input_r = newline + 1;
 
 	return line;
@@ -307,7 +305,6 @@ scrobbler_handshake_response(size_t length, const char *response, void *data)
 {
 	auto *scrobbler = (Scrobbler *)data;
 	const char *end = response + length;
-	char *line;
 	bool ret;
 
 	assert(scrobbler != nullptr);
@@ -316,9 +313,8 @@ scrobbler_handshake_response(size_t length, const char *response, void *data)
 
 	scrobbler->state = SCROBBLER_STATE_NOTHING;
 
-	line = next_line(&response, end);
-	ret = scrobbler_parse_handshake_response(scrobbler, line);
-	g_free(line);
+	auto line = next_line(&response, end);
+	ret = scrobbler_parse_handshake_response(scrobbler, line.c_str());
 	if (!ret) {
 		scrobbler_increase_interval(scrobbler);
 		scrobbler_schedule_handshake(scrobbler);
@@ -327,25 +323,22 @@ scrobbler_handshake_response(size_t length, const char *response, void *data)
 
 	scrobbler->session = next_line(&response, end);
 	g_debug("[%s] session: %s",
-		scrobbler->config->name.c_str(), scrobbler->session);
+		scrobbler->config->name.c_str(), scrobbler->session.c_str());
 
 	scrobbler->nowplay_url = next_line(&response, end);
 	g_debug("[%s] now playing url: %s",
-		scrobbler->config->name.c_str(), scrobbler->nowplay_url);
+		scrobbler->config->name.c_str(),
+		scrobbler->nowplay_url.c_str());
 
 	scrobbler->submit_url = next_line(&response, end);
 	g_debug("[%s] submit url: %s",
-		scrobbler->config->name.c_str(), scrobbler->submit_url);
+		scrobbler->config->name.c_str(),
+		scrobbler->submit_url.c_str());
 
-	if (*scrobbler->nowplay_url == 0 || *scrobbler->submit_url == 0) {
-		g_free(scrobbler->session);
-		scrobbler->session = nullptr;
-
-		g_free(scrobbler->nowplay_url);
-		scrobbler->nowplay_url = nullptr;
-
-		g_free(scrobbler->submit_url);
-		scrobbler->submit_url = nullptr;
+	if (scrobbler->nowplay_url.empty() || scrobbler->submit_url.empty()) {
+		scrobbler->session.clear();
+		scrobbler->nowplay_url.clear();
+		scrobbler->submit_url.clear();
 
 		scrobbler_increase_interval(scrobbler);
 		scrobbler_schedule_handshake(scrobbler);
@@ -606,7 +599,7 @@ scrobbler_send_now_playing(Scrobbler *scrobbler, const char *artist,
 	g_message("[%s] sending 'now playing' notification",
 		  scrobbler->config->name.c_str());
 
-	http_client_request(scrobbler->nowplay_url,
+	http_client_request(scrobbler->nowplay_url.c_str(),
 			    post_data->str,
 			    &scrobbler_submit_handler, scrobbler);
 
@@ -720,10 +713,11 @@ scrobbler_submit(Scrobbler *scrobbler)
 	g_debug("[%s] post data: %s",
 		scrobbler->config->name.c_str(), post_data->str);
 	g_debug("[%s] url: %s",
-		scrobbler->config->name.c_str(), scrobbler->submit_url);
+		scrobbler->config->name.c_str(),
+		scrobbler->submit_url.c_str());
 
 	scrobbler->pending = count;
-	http_client_request(scrobbler->submit_url,
+	http_client_request(scrobbler->submit_url.c_str(),
 			    post_data->str,
 			    &scrobbler_submit_handler, scrobbler);
 
