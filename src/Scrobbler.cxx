@@ -397,6 +397,9 @@ as_timestamp()
 	return buffer;
 }
 
+static constexpr size_t MD5_SIZE = 16;
+static constexpr size_t MD5_HEX_SIZE = MD5_SIZE * 2;
+
 /**
  * Calculate the MD5 checksum of the specified string.  The return
  * value is a newly allocated string containing the hexadecimal
@@ -417,8 +420,8 @@ static char *md5_hex(const char *p, int len)
 	binary = gcry_md_read(hd, GCRY_MD_MD5);
 	if (binary == nullptr)
 		g_error("gcry_md_read() failed\n");
-	result = (char *)g_malloc(gcry_md_get_algo_dlen(GCRY_MD_MD5) * 2 + 1);
-	for (size_t i = 0; i < gcry_md_get_algo_dlen(GCRY_MD_MD5); ++i)
+	result = (char *)g_malloc(MD5_HEX_SIZE + 1);
+	for (size_t i = 0; i < MD5_SIZE; ++i)
 		snprintf(result + i * 2, 3, "%02x", binary[i]);
 	gcry_md_close(hd);
 
