@@ -423,24 +423,24 @@ md5_hex(const char *p, int len)
 }
 
 static auto
-as_md5(const char *password, const char *timestamp)
+md5_hex(const std::string &s) noexcept
+{
+	return md5_hex(s.data(), s.size());
+}
+
+static auto
+as_md5(const std::string &password, const std::string &timestamp)
 {
 	std::array<char, MD5_HEX_SIZE + 1> buffer;
-	const char *password_md5;
 
-	if (strlen(password) != 32) {
+	const char *password_md5 = password.c_str();
+	if (password.length() != 32) {
 		/* assume it's not hashed yet */
-		buffer = md5_hex(password, -1);
-		password = password_md5 = &buffer.front();
-	} else
-		password_md5 = nullptr;
+		buffer = md5_hex(password);
+		password_md5 = &buffer.front();
+	}
 
-	char *cat = g_strconcat(password, timestamp, nullptr);
-
-	buffer = md5_hex(cat, -1);
-	g_free(cat);
-
-	return buffer;
+	return md5_hex(password_md5 + timestamp);
 }
 
 static void
@@ -451,7 +451,7 @@ scrobbler_handshake(Scrobbler *scrobbler)
 	scrobbler->state = SCROBBLER_STATE_HANDSHAKE;
 
 	const auto timestr = as_timestamp();
-	const auto md5 = as_md5(scrobbler->config.password.c_str(), timestr.c_str());
+	const auto md5 = as_md5(scrobbler->config.password, timestr);
 
 	/* construct the handshake url. */
 	std::string url(scrobbler->config.url);
