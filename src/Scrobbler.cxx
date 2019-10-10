@@ -115,7 +115,7 @@ struct Scrobbler {
 	~Scrobbler() noexcept;
 };
 
-static GSList *scrobblers;
+static std::forward_list<Scrobbler> scrobblers;
 
 Scrobbler::~Scrobbler() noexcept
 {
@@ -585,11 +585,9 @@ scrobbler_send_now_playing(Scrobbler *scrobbler, const char *artist,
 }
 
 static void
-scrobbler_schedule_now_playing_callback(gpointer data, gpointer user_data)
+scrobbler_schedule_now_playing(Scrobbler *scrobbler,
+			       const Record *song) noexcept
 {
-	auto *scrobbler = (Scrobbler *)data;
-	const auto *song = (const Record *)user_data;
-
 	if (scrobbler->file != nullptr)
 		/* there's no "now playing" support for files */
 		return;
@@ -625,8 +623,8 @@ as_now_playing(const char *artist, const char *track,
 
 	record.length = length;
 
-	g_slist_foreach(scrobblers,
-			scrobbler_schedule_now_playing_callback, &record);
+	for (auto &i : scrobblers)
+		scrobbler_schedule_now_playing(&i, &record);
 }
 
 static void
@@ -703,11 +701,8 @@ scrobbler_submit(Scrobbler *scrobbler)
 }
 
 static void
-scrobbler_push_callback(gpointer data, gpointer user_data)
+scrobbler_push(Scrobbler *scrobbler, const Record *record) noexcept
 {
-	auto *scrobbler = (Scrobbler *)data;
-	const auto *record = (const Record *)user_data;
-
 	if (scrobbler->file != nullptr) {
 		fprintf(scrobbler->file, "%s %s - %s\n",
 			log_date(),
@@ -772,13 +767,15 @@ as_songchange(const char *file, const char *artist, const char *track,
 		  record.time.c_str(), record.artist.c_str(),
 		  record.track.c_str(), record.length);
 
-	g_slist_foreach(scrobblers, scrobbler_push_callback, &record);
+	for (auto &i : scrobblers)
+		scrobbler_push(&i, &record);
 }
 
 static void
 AddScrobbler(const ScrobblerConfig &config)
 {
-	Scrobbler *scrobbler = new Scrobbler(config);
+	scrobblers.emplace_front(config);
+	Scrobbler *scrobbler = &scrobblers.front();
 
 	if (!config.journal.empty()) {
 		guint queue_length;
@@ -791,7 +788,6 @@ AddScrobbler(const ScrobblerConfig &config)
 			  config.journal.c_str());
 	}
 
-	scrobblers = g_slist_prepend(scrobblers, scrobbler);
 	if (!config.file.empty()) {
 		scrobbler->file = fopen(config.file.c_str(), "a");
 		if (scrobbler->file == nullptr)
@@ -837,10 +833,8 @@ scrobbler_schedule_submit(Scrobbler *scrobbler)
 }
 
 static void
-scrobbler_save_callback(gpointer data, gpointer)
+scrobbler_save_callback(Scrobbler *scrobbler) noexcept
 {
-	auto *scrobbler = (Scrobbler *)data;
-
 	if (scrobbler->file != nullptr || scrobbler->config.journal.empty())
 		return;
 
@@ -856,14 +850,13 @@ scrobbler_save_callback(gpointer data, gpointer)
 
 void as_save_cache()
 {
-	g_slist_foreach(scrobblers, scrobbler_save_callback, nullptr);
+	for (auto &i : scrobblers)
+		scrobbler_save_callback(&i);
 }
 
 static void
-scrobbler_submit_now_callback(gpointer data, gpointer)
+scrobbler_submit_now(Scrobbler *scrobbler) noexcept
 {
-	auto *scrobbler = (Scrobbler *)data;
-
 	scrobbler->interval = 1;
 
 	if (scrobbler->handshake_source_id != 0) {
@@ -881,19 +874,11 @@ scrobbler_submit_now_callback(gpointer data, gpointer)
 
 void as_submit_now()
 {
-	g_slist_foreach(scrobblers, scrobbler_submit_now_callback, nullptr);
-}
-
-static void
-scrobbler_free_callback(gpointer data, gpointer)
-{
-	auto *scrobbler = (Scrobbler *)data;
-
-	delete scrobbler;
+	for (auto &i : scrobblers)
+		scrobbler_submit_now(&i);
 }
 
 void as_cleanup()
 {
-	g_slist_foreach(scrobblers, scrobbler_free_callback, nullptr);
-	g_slist_free(scrobblers);
+	scrobblers.clear();
 }
