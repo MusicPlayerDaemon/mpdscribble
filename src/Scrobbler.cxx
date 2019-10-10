@@ -129,48 +129,54 @@ Scrobbler::~Scrobbler() noexcept
 }
 
 static void
-add_var_internal(GString * s, char sep, const char *key,
+add_var_internal(std::string &dest, char sep, const char *key,
 		 signed char idx, const char *val)
 {
-	g_string_append_c(s, sep);
-	g_string_append(s, key);
+	dest.push_back(sep);
+	dest.append(key);
 
-	if (idx >= 0)
-		g_string_append_printf(s, "[%i]", idx);
+	if (idx >= 0) {
+		char buffer[16];
+		snprintf(buffer, sizeof(buffer), "[%i]", idx);
+		dest.append(buffer);
+	}
 
-	g_string_append_c(s, '=');
+	dest.push_back('=');
 
 	if (val != nullptr) {
 		char *escaped = http_client_uri_escape(val);
-		g_string_append(s, escaped);
+		dest.append(escaped);
 		g_free(escaped);
 	}
 }
 
-static void first_var(GString * s, const char *key, const char *val)
+static void
+first_var(std::string &s, const char *key, const char *val)
 {
 	add_var_internal(s, '?', key, -1, val);
 }
 
-static void add_var(GString * s, const char *key, const char *val)
+static void
+add_var(std::string &s, const char *key, const char *val)
 {
 	add_var_internal(s, '&', key, -1, val);
 }
 
 static void
-add_var(GString * s, const char *key, const std::string &val)
+add_var(std::string &s, const char *key, const std::string &val)
 {
 	add_var(s, key, val.c_str());
 }
 
 static void
-add_var_i(GString * s, const char *key, signed char idx, const char *val)
+add_var_i(std::string &s, const char *key, signed char idx, const char *val)
 {
 	add_var_internal(s, '&', key, idx, val);
 }
 
 static void
-add_var_i(GString * s, const char *key, signed char idx, const std::string &val)
+add_var_i(std::string &s, const char *key, signed char idx,
+	  const std::string &val)
 {
 	add_var_i(s, key, idx, val.c_str());
 }
@@ -494,7 +500,6 @@ scrobbler_handshake(Scrobbler *scrobbler)
 {
 	assert(scrobbler->config.file.empty());
 
-	GString *url;
 	char *md5;
 
 	scrobbler->state = SCROBBLER_STATE_HANDSHAKE;
@@ -503,7 +508,7 @@ scrobbler_handshake(Scrobbler *scrobbler)
 	md5 = as_md5(scrobbler->config.password.c_str(), timestr.c_str());
 
 	/* construct the handshake url. */
-	url = g_string_new(scrobbler->config.url.c_str());
+	std::string url(scrobbler->config.url);
 	first_var(url, "hs", "true");
 	add_var(url, "p", "1.2");
 	add_var(url, "c", AS_CLIENT_ID);
@@ -516,10 +521,8 @@ scrobbler_handshake(Scrobbler *scrobbler)
 
 	//  notice ("handshake url:\n%s", url);
 
-	http_client_request(url->str, nullptr,
+	http_client_request(url.c_str(), nullptr,
 			    &scrobbler_handshake_handler, scrobbler);
-
-	g_string_free(url, true);
 }
 
 static gboolean
@@ -554,7 +557,6 @@ scrobbler_send_now_playing(Scrobbler *scrobbler, const char *artist,
 			   const char *number,
 			   const char *mbid, const int length)
 {
-	GString *post_data;
 	char len[16];
 
 	assert(scrobbler->config.file.empty());
@@ -565,7 +567,7 @@ scrobbler_send_now_playing(Scrobbler *scrobbler, const char *artist,
 
 	snprintf(len, sizeof(len), "%i", length);
 
-	post_data = g_string_new(nullptr);
+	std::string post_data;
 	add_var(post_data, "s", scrobbler->session);
 	add_var(post_data, "a", artist);
 	add_var(post_data, "t", track);
@@ -578,10 +580,8 @@ scrobbler_send_now_playing(Scrobbler *scrobbler, const char *artist,
 		  scrobbler->config.name.c_str());
 
 	http_client_request(scrobbler->nowplay_url.c_str(),
-			    post_data->str,
+			    post_data.c_str(),
 			    &scrobbler_submit_handler, scrobbler);
-
-	g_string_free(post_data, true);
 }
 
 static void
@@ -632,7 +632,6 @@ scrobbler_submit(Scrobbler *scrobbler)
 {
 	//MAX_SUBMIT_COUNT
 	unsigned count = 0;
-	GString *post_data;
 
 	assert(scrobbler->config.file.empty());
 	assert(scrobbler->state == SCROBBLER_STATE_READY);
@@ -656,7 +655,7 @@ scrobbler_submit(Scrobbler *scrobbler)
 	scrobbler->state = SCROBBLER_STATE_SUBMITTING;
 
 	/* construct the handshake url. */
-	post_data = g_string_new(nullptr);
+	std::string post_data;
 	add_var(post_data, "s", scrobbler->session);
 
 	for (const auto &i : scrobbler->queue) {
@@ -687,17 +686,15 @@ scrobbler_submit(Scrobbler *scrobbler)
 	g_message("[%s] submitting %i song%s",
 		  scrobbler->config.name.c_str(), count, count == 1 ? "" : "s");
 	g_debug("[%s] post data: %s",
-		scrobbler->config.name.c_str(), post_data->str);
+		scrobbler->config.name.c_str(), post_data.c_str());
 	g_debug("[%s] url: %s",
 		scrobbler->config.name.c_str(),
 		scrobbler->submit_url.c_str());
 
 	scrobbler->pending = count;
 	http_client_request(scrobbler->submit_url.c_str(),
-			    post_data->str,
+			    post_data.c_str(),
 			    &scrobbler_submit_handler, scrobbler);
-
-	g_string_free(post_data, true);
 }
 
 static void
