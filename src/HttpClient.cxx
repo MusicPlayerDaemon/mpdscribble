@@ -23,6 +23,8 @@
 
 #include <curl/curl.h>
 
+#include <boost/intrusive/list.hpp>
+
 #include <assert.h>
 
 enum {
@@ -30,7 +32,9 @@ enum {
 	MAX_RESPONSE_BODY = 8192,
 };
 
-struct HttpRequest {
+struct HttpRequest
+	: boost::intrusive::list_base_hook<boost::intrusive::link_mode<boost::intrusive::auto_unlink>>
+{
 	const HttpClientHandler &handler;
 	void *handler_ctx;
 
@@ -66,7 +70,8 @@ static struct {
 	GSList *fds;
 
 	/** a linked list of all active HTTP requests */
-	GSList *requests;
+	boost::intrusive::list<HttpRequest,
+			       boost::intrusive::constant_time_size<false>> requests;
 
 	/**
 	 * Set when inside http_multi_info_read(), to prevent
@@ -205,8 +210,6 @@ http_client_update_fds()
 static void
 http_request_abort(HttpRequest *request, GError *error)
 {
-	http_client.requests = g_slist_remove(http_client.requests, request);
-
 	request->handler.error(error, request->handler_ctx);
 	delete request;
 }
@@ -218,10 +221,9 @@ http_request_abort(HttpRequest *request, GError *error)
 static void
 http_client_abort_all_requests(GError *error)
 {
-	while (http_client.requests != nullptr) {
-		auto *request = (HttpRequest *)http_client.requests->data;
+	http_client.requests.clear_and_dispose([error](auto *request){
 		http_request_abort(request, g_error_copy(error));
-	}
+	});
 
 	g_error_free(error);
 }
@@ -232,13 +234,9 @@ http_client_abort_all_requests(GError *error)
 static HttpRequest *
 http_client_find_request(CURL *curl)
 {
-	for (GSList *i = http_client.requests; i != nullptr;
-	     i = g_slist_next(i)) {
-		auto *request = (HttpRequest *)i->data;
-
-		if (request->curl == curl)
-			return request;
-	}
+	for (auto &i : http_client.requests)
+		if (i.curl == curl)
+			return &i;
 
 	return nullptr;
 }
@@ -273,8 +271,6 @@ http_request_done(HttpRequest *request, CURLcode result, long status)
 		request->handler.response(std::move(request->response_body),
 					   request->handler_ctx);
 
-	/* remove it from the list and free resources */
-	http_client.requests = g_slist_remove(http_client.requests, request);
 	delete request;
 }
 
@@ -434,21 +430,12 @@ http_client_init()
 						g_main_context_default());
 }
 
-static void
-http_request_free_callback(gpointer data, G_GNUC_UNUSED gpointer user_data)
-{
-	auto *request = (HttpRequest *)data;
-
-	delete request;
-}
-
 void
 http_client_finish()
 {
 	/* free all requests */
 
-	g_slist_foreach(http_client.requests, http_request_free_callback, nullptr);
-	g_slist_free(http_client.requests);
+	http_client.requests.clear_and_dispose([](auto *request){ delete request; });
 
 	/* unregister all GPollFD instances */
 
@@ -558,13 +545,11 @@ http_client_request(const char *url, std::string &&post_data,
 		return;
 	}
 
-	http_client.requests = g_slist_prepend(http_client.requests, request);
+	http_client.requests.push_front(*request);
 
 	/* initiate the transfer */
 
 	if (!http_multi_perform()) {
-		http_client.requests = g_slist_remove(http_client.requests,
-						      request);
 		delete request;
 
 		GError *error = g_error_new_literal(curl_quark(), code,
