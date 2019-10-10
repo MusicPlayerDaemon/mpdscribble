@@ -20,7 +20,6 @@
 
 #include "lmc.h"
 #include "file.h"
-#include "compat.h"
 
 #include <mpd/message.h>
 

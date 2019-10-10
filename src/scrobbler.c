@@ -24,7 +24,6 @@
 #include "http_client.h"
 #include "config.h"
 #include "log.h" /* for log_date() */
-#include "compat.h"
 
 #include <glib.h>
 

@@ -1,8 +1,8 @@
 mpdscribble 0.23 - not yet released
-  * fix build failure with GLib < 2.16
   * remove libsoup support
   * require MPD 0.16
   * require libmpdclient 2.5
+  * require GLib 2.16
   * build with Meson/ninja instead of autotools
 
 

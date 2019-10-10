@@ -24,7 +24,6 @@
 #include "log.h"
 #include "lmc.h"
 #include "scrobbler.h"
-#include "compat.h"
 #include "http_client.h"
 
 #include <glib.h>

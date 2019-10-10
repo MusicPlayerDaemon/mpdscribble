@@ -22,7 +22,7 @@ if not get_option('syslog').disabled()
   endif
 endif
 
-glib_dep = dependency('glib-2.0', version: '>= 2.6')
+glib_dep = dependency('glib-2.0', version: '>= 2.16')
 libmpdclient_dep = dependency('libmpdclient', version: '>= 2.5')
 libgcrypt_dep = dependency('libgcrypt')
 libcurl_dep = dependency('libcurl')

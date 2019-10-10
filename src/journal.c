@@ -96,9 +96,6 @@ journal_commit_record(GQueue *queue, struct record *record)
 	record_clear(record);
 }
 
-/* g_time_val_from_iso8601() was introduced in GLib 2.12 */
-#if GLIB_CHECK_VERSION(2,12,0)
-
 /**
  * Imports an old (protocol v1.2) timestamp, format "%Y-%m-%d
  * %H:%M:%S".
@@ -131,8 +128,6 @@ import_old_timestamp(const char *p)
 	return g_strdup_printf("%ld", time_val.tv_sec);
 }
 
-#endif
-
 /**
  * Parses the time stamp.  If needed, converts the time stamp, and
  * returns an allocated string.
@@ -140,11 +135,9 @@ import_old_timestamp(const char *p)
 static char *
 parse_timestamp(const char *p)
 {
-#if GLIB_CHECK_VERSION(2,12,0)
 	char *ret = import_old_timestamp(p);
 	if (ret != NULL)
 		return ret;
-#endif
 
 	return g_strdup(p);
 }
