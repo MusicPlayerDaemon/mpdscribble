@@ -1,7 +1,7 @@
 ACLOCAL_AMFLAGS = -I m4
 AUTOMAKE_OPTIONS = foreign 1.10 dist-bzip2 subdir-objects
 
-doc_DATA = README.rst AUTHORS NEWS
+doc_DATA = README.rst INSTALL.rst AUTHORS NEWS
 dist_man_MANS = doc/mpdscribble.1
 dist_sysconf_DATA = doc/mpdscribble.conf
 

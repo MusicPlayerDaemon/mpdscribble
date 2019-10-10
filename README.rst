@@ -8,7 +8,7 @@ information about tracks being played to a scrobbler (e.g. last.fm).
 Installing mpdscribble
 ----------------------
 
-See the `INSTALL <INSTALL>`__ file.
+See the `INSTALL <INSTALL.rst>`__ file.
 
 
 Rating / Love
