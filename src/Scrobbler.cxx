@@ -83,14 +83,14 @@ typedef enum {
 struct Scrobbler {
 	const ScrobblerConfig *config;
 
-	FILE *file;
+	FILE *file = nullptr;
 
-	enum scrobbler_state state;
+	enum scrobbler_state state = SCROBBLER_STATE_NOTHING;
 
-	unsigned interval;
+	unsigned interval = 1;
 
-	guint handshake_source_id;
-	guint submit_source_id;
+	guint handshake_source_id = 0;
+	guint submit_source_id = 0;
 
 	std::string session;
 	std::string nowplay_url;
@@ -107,7 +107,7 @@ struct Scrobbler {
 	 * How many songs are we trying to submit right now?  This
 	 * many will be shifted from #queue if the submit succeeds.
 	 */
-	unsigned pending;
+	unsigned pending = 0;
 };
 
 static GSList *scrobblers;
@@ -122,13 +122,6 @@ scrobbler_new(const ScrobblerConfig *config)
 	Scrobbler *scrobbler = new Scrobbler;
 
 	scrobbler->config = config;
-	scrobbler->file = nullptr;
-	scrobbler->state = SCROBBLER_STATE_NOTHING;
-	scrobbler->interval = 1;
-	scrobbler->handshake_source_id = 0;
-	scrobbler->submit_source_id = 0;
-
-	scrobbler->pending = 0;
 
 	return scrobbler;
 }
