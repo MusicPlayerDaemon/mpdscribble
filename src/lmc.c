@@ -22,9 +22,7 @@
 #include "file.h"
 #include "compat.h"
 
-#if LIBMPDCLIENT_CHECK_VERSION(2,5,0)
 #include <mpd/message.h>
-#endif
 
 #include <glib.h>
 
@@ -47,9 +45,7 @@ static bool was_paused;
  */
 static bool love;
 
-#if LIBMPDCLIENT_CHECK_VERSION(2,5,0)
 static bool subscribed;
-#endif
 
 static char *g_host;
 static int g_port;
@@ -76,8 +72,6 @@ static void lmc_failure(void)
 	g_mpd = NULL;
 }
 
-#if LIBMPDCLIENT_CHECK_VERSION(2,4,0)
-
 static char *
 settings_name(const struct mpd_settings *settings)
 {
@@ -95,22 +89,15 @@ settings_name(const struct mpd_settings *settings)
 	return g_strdup_printf("%s:%u", host, port);
 }
 
-#endif
-
 static char *
 connection_settings_name(const struct mpd_connection *connection)
 {
-#if LIBMPDCLIENT_CHECK_VERSION(2,4,0)
 	const struct mpd_settings *settings =
 		mpd_connection_get_settings(connection);
 	if (settings == NULL)
 		return g_strdup("unknown");
 
 	return settings_name(settings);
-#else
-	(void)connection;
-	return g_strdup(g_host);
-#endif
 }
 
 static gboolean
@@ -139,13 +126,11 @@ lmc_reconnect(G_GNUC_UNUSED gpointer data)
 		  name);
 	g_free(name);
 
-#if LIBMPDCLIENT_CHECK_VERSION(2,5,0)
 	subscribed = mpd_run_subscribe(g_mpd, "mpdscribble");
 	if (!subscribed && !mpd_connection_clear_error(g_mpd)) {
 		lmc_failure();
 		return true;
 	}
-#endif
 
 	lmc_schedule_update();
 
@@ -340,8 +325,6 @@ lmc_schedule_update(void)
 	update_source_id = g_timeout_add_seconds(0, lmc_update, NULL);
 }
 
-#if LIBMPDCLIENT_CHECK_VERSION(2,5,0)
-
 static bool
 lmc_read_messages(void)
 {
@@ -364,8 +347,6 @@ lmc_read_messages(void)
 
 	return mpd_response_finish(g_mpd);
 }
-
-#endif
 
 static gboolean
 lmc_idle(G_GNUC_UNUSED GIOChannel *source,
@@ -390,14 +371,12 @@ lmc_idle(G_GNUC_UNUSED GIOChannel *source,
 		return false;
 	}
 
-#if LIBMPDCLIENT_CHECK_VERSION(2,5,0)
 	if (subscribed && (idle & MPD_IDLE_MESSAGE) != 0 &&
 	    !lmc_read_messages()) {
 		lmc_failure();
 		lmc_schedule_reconnect();
 		return false;
 	}
-#endif
 
 	if (idle & MPD_IDLE_PLAYER)
 		/* there was a change: query MPD */
@@ -419,11 +398,7 @@ lmc_schedule_idle(void)
 
 	idle_notified = false;
 
-	enum mpd_idle mask = MPD_IDLE_PLAYER;
-#if LIBMPDCLIENT_CHECK_VERSION(2,5,0)
-	if (subscribed)
-		mask |= MPD_IDLE_MESSAGE;
-#endif
+	enum mpd_idle mask = MPD_IDLE_PLAYER|MPD_IDLE_MESSAGE;
 
 	if (!mpd_send_idle_mask(g_mpd, mask)) {
 		lmc_failure();
