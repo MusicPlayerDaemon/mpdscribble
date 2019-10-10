@@ -36,7 +36,10 @@ test_cflags = [
   '-Wpointer-arith',
   '-Wstrict-prototypes',
   '-Wcast-qual',
+  '-Wcast-align',
   '-Wwrite-strings',
+  '-Wmissing-declarations', '-Wmissing-noreturn', '-Wmissing-format-attribute',
+  '-Wredundant-decls', '-Wundef',
 ]
 
 add_global_arguments(cc.get_supported_arguments(test_cflags), language: 'c')
