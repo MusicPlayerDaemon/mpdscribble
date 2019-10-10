@@ -406,40 +406,41 @@ static constexpr size_t MD5_HEX_SIZE = MD5_SIZE * 2;
  * value is a newly allocated string containing the hexadecimal
  * checksum.
  */
-static char *md5_hex(const char *p, int len)
+static std::array<char, MD5_HEX_SIZE + 1>
+md5_hex(const char *p, int len)
 {
-	char *result;
-
 	if (len == -1)
 		len = strlen(p);
 
 	std::array<uint8_t, MD5_SIZE> binary;
 	gcry_md_hash_buffer(GCRY_MD_MD5, &binary.front(), p, len);
 
-	result = (char *)g_malloc(MD5_HEX_SIZE + 1);
+	std::array<char, MD5_HEX_SIZE + 1> result;
 	for (size_t i = 0; i < MD5_SIZE; ++i)
-		snprintf(result + i * 2, 3, "%02x", binary[i]);
+		snprintf(&result[i * 2], 3, "%02x", binary[i]);
 
 	return result;
 }
 
-static char *as_md5(const char *password, const char *timestamp)
+static auto
+as_md5(const char *password, const char *timestamp)
 {
-	char *password_md5, *cat, *result;
+	std::array<char, MD5_HEX_SIZE + 1> buffer;
+	const char *password_md5;
 
-	if (strlen(password) != 32)
+	if (strlen(password) != 32) {
 		/* assume it's not hashed yet */
-		password = password_md5 = md5_hex(password, -1);
-	else
+		buffer = md5_hex(password, -1);
+		password = password_md5 = &buffer.front();
+	} else
 		password_md5 = nullptr;
 
-	cat = g_strconcat(password, timestamp, nullptr);
-	g_free(password_md5);
+	char *cat = g_strconcat(password, timestamp, nullptr);
 
-	result = md5_hex(cat, -1);
+	buffer = md5_hex(cat, -1);
 	g_free(cat);
 
-	return result;
+	return buffer;
 }
 
 static void
@@ -447,12 +448,10 @@ scrobbler_handshake(Scrobbler *scrobbler)
 {
 	assert(scrobbler->config.file.empty());
 
-	char *md5;
-
 	scrobbler->state = SCROBBLER_STATE_HANDSHAKE;
 
 	const auto timestr = as_timestamp();
-	md5 = as_md5(scrobbler->config.password.c_str(), timestr.c_str());
+	const auto md5 = as_md5(scrobbler->config.password.c_str(), timestr.c_str());
 
 	/* construct the handshake url. */
 	std::string url(scrobbler->config.url);
@@ -462,9 +461,7 @@ scrobbler_handshake(Scrobbler *scrobbler)
 	add_var(url, "v", AS_CLIENT_VERSION);
 	add_var(url, "u", scrobbler->config.username.c_str());
 	add_var(url, "t", timestr.c_str());
-	add_var(url, "a", md5);
-
-	g_free(md5);
+	add_var(url, "a", &md5.front());
 
 	//  notice ("handshake url:\n%s", url);
 
