@@ -21,48 +21,19 @@
 #ifndef RECORD_HXX
 #define RECORD_HXX
 
-#include <stddef.h>
+#include <string>
 
 struct Record {
-	char *artist;
-	char *track;
-	char *album;
-	char *number;
-	char *mbid;
-	char *time;
-	int length;
-	bool love;
-	const char *source;
+	std::string artist;
+	std::string track;
+	std::string album;
+	std::string number;
+	std::string mbid;
+	std::string time;
+	int length = 0;
+	bool love = false;
+	const char *source = "P";
 };
-
-/**
- * Copies attributes from one record to another.  Does not free
- * existing values in the destination record.
- */
-void
-record_copy(Record *dest, const Record *src);
-
-/**
- * Duplicates a record object.
- */
-Record *
-record_dup(const Record *src);
-
-/**
- * Deinitializes a record object, freeing all members.
- */
-void
-record_deinit(Record *record);
-
-/**
- * Frees a record object: free all members with record_deinit(), and
- * free the record pointer itself.
- */
-void
-record_free(Record *record);
-
-void
-record_clear(Record *record);
 
 /**
  * Does this record object have a defined and usable value?
@@ -70,7 +41,7 @@ record_clear(Record *record);
 static inline bool
 record_is_defined(const Record *record)
 {
-	return record->artist != nullptr && record->track != nullptr;
+	return !record->artist.empty() && !record->track.empty();
 }
 
-#endif /* RECORD_H */
+#endif

@@ -75,7 +75,6 @@ executable(
 
   'src/Main.cxx',
   'src/Daemon.cxx',
-  'src/Record.cxx',
   'src/Scrobbler.cxx',
   'src/HttpClient.cxx',
   'src/CommandLine.cxx',

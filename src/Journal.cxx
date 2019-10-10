@@ -39,6 +39,13 @@ journal_write_string(FILE *file, char field, const char *value)
 }
 
 static void
+journal_write_string(FILE *file, char field, const std::string &value)
+{
+	if (!value.empty())
+		fprintf(file, "%c = %s\n", field, value.c_str());
+}
+
+static void
 journal_write_record(FILE *file, const Record *record)
 {
 	assert(record->source != nullptr);
@@ -80,26 +87,22 @@ journal_write(const char *path, const std::list<Record> &queue)
 }
 
 static void
-journal_commit_record(std::list<Record> &queue, Record *record)
+journal_commit_record(std::list<Record> &queue, Record &&record)
 {
-	if (record->artist != nullptr && record->track != nullptr) {
+	if (!record.artist.empty() && !record.track.empty()) {
 		/* append record to the queue */
 
-		queue.emplace_back();
-		record_copy(&queue.back(), record);
+		queue.emplace_back(std::move(record));
 
 		journal_file_empty = false;
 	}
-
-	record_deinit(record);
-	record_clear(record);
 }
 
 /**
  * Imports an old (protocol v1.2) timestamp, format "%Y-%m-%d
  * %H:%M:%S".
  */
-static char *
+static std::string
 import_old_timestamp(const char *p)
 {
 	char *q;
@@ -107,7 +110,7 @@ import_old_timestamp(const char *p)
 	GTimeVal time_val;
 
 	if (strlen(p) <= 10 || p[10] != ' ')
-		return nullptr;
+		return {};
 
 	g_debug("importing time stamp '%s'", p);
 
@@ -120,25 +123,27 @@ import_old_timestamp(const char *p)
 	g_free(q);
 	if (!success) {
 		g_debug("import of '%s' failed", p);
-		return nullptr;
+		return {};
 	}
 
 	g_debug("'%s' -> %ld", p, time_val.tv_sec);
-	return g_strdup_printf("%ld", time_val.tv_sec);
+	char buffer[64];
+	snprintf(buffer, sizeof(buffer), "%ld", time_val.tv_sec);
+	return buffer;
 }
 
 /**
  * Parses the time stamp.  If needed, converts the time stamp, and
  * returns an allocated string.
  */
-static char *
+static std::string
 parse_timestamp(const char *p)
 {
-	char *ret = import_old_timestamp(p);
-	if (ret != nullptr)
+	auto ret = import_old_timestamp(p);
+	if (!ret.empty())
 		return ret;
 
-	return g_strdup(p);
+	return p;
 }
 
 std::list<Record>
@@ -161,8 +166,6 @@ journal_read(const char *path)
 		return {};
 	}
 
-	record_clear(&record);
-
 	std::list<Record> queue;
 	while (fgets(line, sizeof(line), file) != nullptr) {
 		char *key, *value;
@@ -181,16 +184,17 @@ journal_read(const char *path)
 		value = g_strstrip(value);
 
 		if (!strcmp("a", key)) {
-			journal_commit_record(queue, &record);
-			record.artist = g_strdup(value);
+			journal_commit_record(queue, std::move(record));
+			record = {};
+			record.artist = value;
 		} else if (!strcmp("t", key))
-			record.track = g_strdup(value);
+			record.track = value;
 		else if (!strcmp("b", key))
-			record.album = g_strdup(value);
+			record.album = value;
 		else if (!strcmp("n", key))
-			record.number = g_strdup(value);
+			record.number = value;
 		else if (!strcmp("m", key))
-			record.mbid = g_strdup(value);
+			record.mbid = value;
 		else if (!strcmp("i", key))
 			record.time = parse_timestamp(value);
 		else if (!strcmp("l", key))
@@ -203,7 +207,7 @@ journal_read(const char *path)
 
 	fclose(file);
 
-	journal_commit_record(queue, &record);
+	journal_commit_record(queue, std::move(record));
 
 	return queue;
 }

@@ -68,6 +68,5 @@ as_songchange(const char *file, const char *artist, const char *track,
 
 void as_save_cache();
 void as_submit_now();
-char *as_timestamp();
 
 #endif /* SCROBBLER_H */

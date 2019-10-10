@@ -131,8 +131,6 @@ scrobbler_new(const ScrobblerConfig *config)
 	scrobbler->nowplay_url = nullptr;
 	scrobbler->submit_url = nullptr;
 
-	record_clear(&scrobbler->now_playing);
-
 	scrobbler->pending = 0;
 
 	return scrobbler;
@@ -144,11 +142,6 @@ scrobbler_new(const ScrobblerConfig *config)
 static void
 scrobbler_free(Scrobbler *scrobbler)
 {
-	for (auto &i : scrobbler->queue)
-		record_deinit(&i);
-
-	record_deinit(&scrobbler->now_playing);
-
 	if (scrobbler->handshake_source_id != 0)
 		g_source_remove(scrobbler->handshake_source_id);
 	if (scrobbler->submit_source_id != 0)
@@ -197,6 +190,12 @@ static void
 add_var_i(GString * s, const char *key, signed char idx, const char *val)
 {
 	add_var_internal(s, '&', key, idx, val);
+}
+
+static void
+add_var_i(GString * s, const char *key, signed char idx, const std::string &val)
+{
+	add_var_i(s, key, idx, val.c_str());
 }
 
 static void
@@ -389,10 +388,8 @@ scrobbler_queue_remove_oldest(std::list<Record> &queue, unsigned count)
 {
 	assert(count > 0);
 
-	while (count--) {
-		record_free(&queue.front());
+	while (count--)
 		queue.pop_front();
-	}
 }
 
 static void
@@ -420,9 +417,7 @@ scrobbler_submit_response(size_t length, const char *response, void *data)
 		} else {
 			assert(record_is_defined(&scrobbler->now_playing));
 
-			record_deinit(&scrobbler->now_playing);
-			memset(&scrobbler->now_playing, 0,
-			       sizeof(scrobbler->now_playing));
+			scrobbler->now_playing = {};
 		}
 
 
@@ -463,13 +458,17 @@ static const struct http_client_handler scrobbler_submit_handler = {
 	.error = scrobbler_submit_error,
 };
 
-char *as_timestamp()
+static std::string
+as_timestamp()
 {
 	/* create timestamp for 1.2 protocol. */
 	GTimeVal time_val;
 
 	g_get_current_time(&time_val);
-	return g_strdup_printf("%ld", (glong)time_val.tv_sec);
+
+	char buffer[64];
+	snprintf(buffer, sizeof(buffer), "%ld", time_val.tv_sec);
+	return buffer;
 }
 
 /**
@@ -525,12 +524,12 @@ scrobbler_handshake(Scrobbler *scrobbler)
 	assert(scrobbler->config->file.empty());
 
 	GString *url;
-	char *timestr, *md5;
+	char *md5;
 
 	scrobbler->state = SCROBBLER_STATE_HANDSHAKE;
 
-	timestr = as_timestamp();
-	md5 = as_md5(scrobbler->config->password.c_str(), timestr);
+	const auto timestr = as_timestamp();
+	md5 = as_md5(scrobbler->config->password.c_str(), timestr.c_str());
 
 	/* construct the handshake url. */
 	url = g_string_new(scrobbler->config->url.c_str());
@@ -539,10 +538,9 @@ scrobbler_handshake(Scrobbler *scrobbler)
 	add_var(url, "c", AS_CLIENT_ID);
 	add_var(url, "v", AS_CLIENT_VERSION);
 	add_var(url, "u", scrobbler->config->username.c_str());
-	add_var(url, "t", timestr);
+	add_var(url, "t", timestr.c_str());
 	add_var(url, "a", md5);
 
-	g_free(timestr);
 	g_free(md5);
 
 	//  notice ("handshake url:\n%s", url);
@@ -625,8 +623,7 @@ scrobbler_schedule_now_playing_callback(gpointer data, gpointer user_data)
 		/* there's no "now playing" support for files */
 		return;
 
-	record_deinit(&scrobbler->now_playing);
-	record_copy(&scrobbler->now_playing, song);
+	scrobbler->now_playing = *song;
 
 	if (scrobbler->state == SCROBBLER_STATE_READY &&
 	    scrobbler->submit_source_id == 0)
@@ -640,18 +637,25 @@ as_now_playing(const char *artist, const char *track,
 {
 	Record record;
 
-	record.artist = g_strdup(artist);
-	record.track = g_strdup(track);
-	record.album = g_strdup(album);
-	record.number = g_strdup(number);
-	record.mbid = g_strdup(mbid);
-	record.time = nullptr;
+	if (artist != nullptr)
+		record.artist = artist;
+
+	if (track != nullptr)
+		record.track = track;
+
+	if (album != nullptr)
+		record.album = album;
+
+	if (number != nullptr)
+		record.number = number;
+
+	if (mbid != nullptr)
+		record.mbid = mbid;
+
 	record.length = length;
 
 	g_slist_foreach(scrobblers,
 			scrobbler_schedule_now_playing_callback, &record);
-
-	record_deinit(&record);
 }
 
 static void
@@ -670,11 +674,11 @@ scrobbler_submit(Scrobbler *scrobbler)
 		   scheduled - these should be sent after song submissions */
 		if (record_is_defined(&scrobbler->now_playing))
 			scrobbler_send_now_playing(scrobbler,
-						   scrobbler->now_playing.artist,
-						   scrobbler->now_playing.track,
-						   scrobbler->now_playing.album,
-						   scrobbler->now_playing.number,
-						   scrobbler->now_playing.mbid,
+						   scrobbler->now_playing.artist.c_str(),
+						   scrobbler->now_playing.track.c_str(),
+						   scrobbler->now_playing.album.c_str(),
+						   scrobbler->now_playing.number.c_str(),
+						   scrobbler->now_playing.mbid.c_str(),
 						   scrobbler->now_playing.length);
 
 		return;
@@ -734,13 +738,13 @@ scrobbler_push_callback(gpointer data, gpointer user_data)
 
 	if (scrobbler->file != nullptr) {
 		fprintf(scrobbler->file, "%s %s - %s\n",
-			log_date(), record->artist, record->track);
+			log_date(),
+			record->artist.c_str(), record->track.c_str());
 		fflush(scrobbler->file);
 		return;
 	}
 
-	scrobbler->queue.emplace_back();
-	record_copy(&scrobbler->queue.back(), record);
+	scrobbler->queue.emplace_back(*record);
 
 	if (scrobbler->state == SCROBBLER_STATE_READY &&
 	    scrobbler->submit_source_id == 0)
@@ -775,23 +779,28 @@ as_songchange(const char *file, const char *artist, const char *track,
 		return;
 	}
 
-	record.artist = g_strdup(artist);
-	record.track = g_strdup(track);
-	record.album = g_strdup(album);
-	record.number = g_strdup(number);
-	record.mbid = g_strdup(mbid);
+	record.artist = artist;
+	record.track = track;
+
+	if (album != nullptr)
+		record.album = album;
+
+	if (number != nullptr)
+		record.number = number;
+
+	if (mbid != nullptr)
+		record.mbid = mbid;
+
 	record.length = length;
-	record.time = time2 ? g_strdup(time2) : as_timestamp();
+	record.time = time2 ? time2 : as_timestamp();
 	record.love = love;
 	record.source = strstr(file, "://") == nullptr ? "P" : "R";
 
 	g_message("%s, songchange: %s - %s (%i)\n",
-		  record.time, record.artist,
-		  record.track, record.length);
+		  record.time.c_str(), record.artist.c_str(),
+		  record.track.c_str(), record.length);
 
 	g_slist_foreach(scrobblers, scrobbler_push_callback, &record);
-
-	record_deinit(&record);
 }
 
 static void
