@@ -355,7 +355,7 @@ scrobbler_handshake_error(GError *error, void *data)
 	scrobbler_schedule_handshake(scrobbler);
 }
 
-static const struct http_client_handler scrobbler_handshake_handler = {
+static constexpr HttpClientHandler scrobbler_handshake_handler = {
 	.response = scrobbler_handshake_response,
 	.error = scrobbler_handshake_error,
 };
@@ -430,7 +430,7 @@ scrobbler_submit_error(GError *error, void *data)
 	scrobbler_schedule_submit(scrobbler);
 }
 
-static const struct http_client_handler scrobbler_submit_handler = {
+static constexpr HttpClientHandler scrobbler_submit_handler = {
 	.response = scrobbler_submit_response,
 	.error = scrobbler_submit_error,
 };

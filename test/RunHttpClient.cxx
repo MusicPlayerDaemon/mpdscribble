@@ -25,7 +25,7 @@ my_error(GError *_error, G_GNUC_UNUSED void *ctx)
 	quit = true;
 }
 
-static const struct http_client_handler my_handler = {
+static constexpr HttpClientHandler my_handler = {
 	.response = my_response,
 	.error = my_error,
 };

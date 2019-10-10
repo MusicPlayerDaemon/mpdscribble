@@ -25,7 +25,7 @@
 
 #include <stddef.h>
 
-struct http_client_handler {
+struct HttpClientHandler {
 	void (*response)(size_t length, const char *data, void *ctx);
 	void (*error)(GError *error, void *ctx);
 };
@@ -51,6 +51,6 @@ http_client_uri_escape(const char *src);
 
 void
 http_client_request(const char *url, const char *post_data,
-		    const struct http_client_handler *handler, void *ctx);
+		    const HttpClientHandler *handler, void *ctx);
 
 #endif /* CONN_H */

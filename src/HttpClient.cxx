@@ -30,8 +30,8 @@ enum {
 	MAX_RESPONSE_BODY = 8192,
 };
 
-struct http_request {
-	const struct http_client_handler *handler;
+struct HttpRequest {
+	const HttpClientHandler *handler;
 	void *handler_ctx;
 
 	/** the CURL easy handle */
@@ -87,12 +87,12 @@ curl_quark()
 }
 
 /**
- * Frees all resources of a #http_request object.  Also unregisters
+ * Frees all resources of a #HttpRequest object.  Also unregisters
  * the CURL easy handle from the CURL multi handle.  This function
  * does not affect the linked list http_client.requests.
  */
 static void
-http_request_free(struct http_request *request)
+http_request_free(HttpRequest *request)
 {
 	g_string_free(request->body, true);
 	curl_multi_remove_handle(http_client.multi, request->curl);
@@ -198,7 +198,7 @@ http_client_update_fds()
  * handler.
  */
 static void
-http_request_abort(struct http_request *request, GError *error)
+http_request_abort(HttpRequest *request, GError *error)
 {
 	http_client.requests = g_slist_remove(http_client.requests, request);
 
@@ -214,7 +214,7 @@ static void
 http_client_abort_all_requests(GError *error)
 {
 	while (http_client.requests != nullptr) {
-		auto *request = (struct http_request *)http_client.requests->data;
+		auto *request = (HttpRequest *)http_client.requests->data;
 		http_request_abort(request, g_error_copy(error));
 	}
 
@@ -224,12 +224,12 @@ http_client_abort_all_requests(GError *error)
 /**
  * Find a request by its CURL "easy" handle.
  */
-static struct http_request *
+static HttpRequest *
 http_client_find_request(CURL *curl)
 {
 	for (GSList *i = http_client.requests; i != nullptr;
 	     i = g_slist_next(i)) {
-		auto *request = (struct http_request *)i->data;
+		auto *request = (HttpRequest *)i->data;
 
 		if (request->curl == curl)
 			return request;
@@ -242,7 +242,7 @@ http_client_find_request(CURL *curl)
  * A HTTP request is finished: invoke its callback and free it.
  */
 static void
-http_request_done(struct http_request *request, CURLcode result, long status)
+http_request_done(HttpRequest *request, CURLcode result, long status)
 {
 	/* invoke the handler method */
 
@@ -289,7 +289,7 @@ http_multi_info_read()
 	while ((msg = curl_multi_info_read(http_client.multi,
 					   &msgs_in_queue)) != nullptr) {
 		if (msg->msg == CURLMSG_DONE) {
-			struct http_request *request =
+			HttpRequest *request =
 				http_client_find_request(msg->easy_handle);
 			assert(request != nullptr);
 
@@ -433,7 +433,7 @@ http_client_init()
 static void
 http_request_free_callback(gpointer data, G_GNUC_UNUSED gpointer user_data)
 {
-	auto *request = (struct http_request *)data;
+	auto *request = (HttpRequest *)data;
 
 	http_request_free(request);
 }
@@ -487,7 +487,7 @@ http_client_uri_escape(const char *src)
 static size_t
 http_request_writefunction(void *ptr, size_t size, size_t nmemb, void *stream)
 {
-	auto *request = (struct http_request *)stream;
+	auto *request = (HttpRequest *)stream;
 
 	g_string_append_len(request->body, (const char *)ptr, size * nmemb);
 
@@ -500,9 +500,9 @@ http_request_writefunction(void *ptr, size_t size, size_t nmemb, void *stream)
 
 void
 http_client_request(const char *url, const char *post_data,
-		    const struct http_client_handler *handler, void *ctx)
+		    const HttpClientHandler *handler, void *ctx)
 {
-	struct http_request *request = g_new(struct http_request, 1);
+	HttpRequest *request = g_new(HttpRequest, 1);
 
 	request->handler = handler;
 	request->handler_ctx = ctx;
