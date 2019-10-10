@@ -10,6 +10,7 @@ Requirements
 - libsoup (2.2 or 2.4) or libcurl
 - `libcurl <https://curl.haxx.se/>`__
 - `libgcrypt <https://gnupg.org/software/libgcrypt/index.html>`__
+- `Meson 0.47 <http://mesonbuild.com/>`__ and `Ninja <https://ninja-build.org/>`__
 
 
 Compiling mpdscribble

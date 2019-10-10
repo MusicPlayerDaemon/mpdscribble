@@ -1,0 +1,3 @@
+option('syslog', type: 'feature', description: 'syslog support')
+
+option('test', type: 'boolean', value: false, description: 'Build the unit tests and debug programs')
