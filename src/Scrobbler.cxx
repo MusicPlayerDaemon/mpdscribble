@@ -78,8 +78,8 @@ typedef enum {
 	AS_SUBMIT_HANDSHAKE,
 } as_submitting;
 
-struct scrobbler {
-	const struct scrobbler_config *config;
+struct Scrobbler {
+	const ScrobblerConfig *config;
 
 	FILE *file;
 
@@ -114,10 +114,10 @@ static GSList *scrobblers;
  * Creates a new scrobbler object based on the specified
  * configuration.
  */
-static struct scrobbler *
-scrobbler_new(const struct scrobbler_config *config)
+static Scrobbler *
+scrobbler_new(const ScrobblerConfig *config)
 {
-	struct scrobbler *scrobbler = g_new(struct scrobbler, 1);
+	Scrobbler *scrobbler = g_new(Scrobbler, 1);
 
 	scrobbler->config = config;
 	scrobbler->file = nullptr;
@@ -148,7 +148,7 @@ record_free_callback(gpointer data, gpointer)
  * Frees a scrobbler object.
  */
 static void
-scrobbler_free(struct scrobbler *scrobbler)
+scrobbler_free(Scrobbler *scrobbler)
 {
 	g_queue_foreach(scrobbler->queue, record_free_callback, nullptr);
 	g_queue_free(scrobbler->queue);
@@ -206,16 +206,16 @@ add_var_i(GString * s, const char *key, signed char idx, const char *val)
 }
 
 static void
-scrobbler_schedule_handshake(struct scrobbler *scrobbler);
+scrobbler_schedule_handshake(Scrobbler *scrobbler);
 
 static void
-scrobbler_submit(struct scrobbler *scrobbler);
+scrobbler_submit(Scrobbler *scrobbler);
 
 static void
-scrobbler_schedule_submit(struct scrobbler *scrobbler);
+scrobbler_schedule_submit(Scrobbler *scrobbler);
 
 static void
-scrobbler_increase_interval(struct scrobbler *scrobbler)
+scrobbler_increase_interval(Scrobbler *scrobbler)
 {
 	if (scrobbler->interval < 60)
 		scrobbler->interval = 60;
@@ -260,7 +260,7 @@ scrobbler_parse_submit_response(const char *scrobbler_name,
 }
 
 static bool
-scrobbler_parse_handshake_response(struct scrobbler *scrobbler, const char *line)
+scrobbler_parse_handshake_response(Scrobbler *scrobbler, const char *line)
 {
 	static const char *BANNED = "BANNED";
 	static const char *BADAUTH = "BADAUTH";
@@ -312,7 +312,7 @@ next_line(const char **input_r, const char *end)
 static void
 scrobbler_handshake_response(size_t length, const char *response, void *data)
 {
-	auto *scrobbler = (struct scrobbler *)data;
+	auto *scrobbler = (Scrobbler *)data;
 	const char *end = response + length;
 	char *line;
 	bool ret;
@@ -369,7 +369,7 @@ scrobbler_handshake_response(size_t length, const char *response, void *data)
 static void
 scrobbler_handshake_error(GError *error, void *data)
 {
-	auto *scrobbler = (struct scrobbler *)data;
+	auto *scrobbler = (Scrobbler *)data;
 
 	assert(scrobbler != nullptr);
 	assert(scrobbler->config->file == nullptr);
@@ -404,7 +404,7 @@ scrobbler_queue_remove_oldest(GQueue *queue, unsigned count)
 static void
 scrobbler_submit_response(size_t length, const char *response, void *data)
 {
-	auto *scrobbler = (struct scrobbler *)data;
+	auto *scrobbler = (Scrobbler *)data;
 
 	assert(scrobbler->config->file == nullptr);
 	assert(scrobbler->state == SCROBBLER_STATE_SUBMITTING);
@@ -449,7 +449,7 @@ scrobbler_submit_response(size_t length, const char *response, void *data)
 static void
 scrobbler_submit_error(GError *error, void *data)
 {
-	auto *scrobbler = (struct scrobbler *)data;
+	auto *scrobbler = (Scrobbler *)data;
 
 	assert(scrobbler->config->file == nullptr);
 	assert(scrobbler->state == SCROBBLER_STATE_SUBMITTING);
@@ -526,7 +526,7 @@ static char *as_md5(const char *password, const char *timestamp)
 }
 
 static void
-scrobbler_handshake(struct scrobbler *scrobbler)
+scrobbler_handshake(Scrobbler *scrobbler)
 {
 	assert(scrobbler->config->file == nullptr);
 
@@ -562,7 +562,7 @@ scrobbler_handshake(struct scrobbler *scrobbler)
 static gboolean
 scrobbler_handshake_timer(gpointer data)
 {
-	auto *scrobbler = (struct scrobbler *)data;
+	auto *scrobbler = (Scrobbler *)data;
 
 	assert(scrobbler->config->file == nullptr);
 	assert(scrobbler->state == SCROBBLER_STATE_NOTHING);
@@ -574,7 +574,7 @@ scrobbler_handshake_timer(gpointer data)
 }
 
 static void
-scrobbler_schedule_handshake(struct scrobbler *scrobbler)
+scrobbler_schedule_handshake(Scrobbler *scrobbler)
 {
 	assert(scrobbler->config->file == nullptr);
 	assert(scrobbler->state == SCROBBLER_STATE_NOTHING);
@@ -586,7 +586,7 @@ scrobbler_schedule_handshake(struct scrobbler *scrobbler)
 }
 
 static void
-scrobbler_send_now_playing(struct scrobbler *scrobbler, const char *artist,
+scrobbler_send_now_playing(Scrobbler *scrobbler, const char *artist,
 			   const char *track, const char *album,
 			   const char *number,
 			   const char *mbid, const int length)
@@ -624,7 +624,7 @@ scrobbler_send_now_playing(struct scrobbler *scrobbler, const char *artist,
 static void
 scrobbler_schedule_now_playing_callback(gpointer data, gpointer user_data)
 {
-	auto *scrobbler = (struct scrobbler *)data;
+	auto *scrobbler = (Scrobbler *)data;
 	const auto *song = (const Record *)user_data;
 
 	if (scrobbler->file != nullptr)
@@ -661,7 +661,7 @@ as_now_playing(const char *artist, const char *track,
 }
 
 static void
-scrobbler_submit(struct scrobbler *scrobbler)
+scrobbler_submit(Scrobbler *scrobbler)
 {
 	//MAX_SUBMIT_COUNT
 	unsigned count = 0;
@@ -733,7 +733,7 @@ scrobbler_submit(struct scrobbler *scrobbler)
 static void
 scrobbler_push_callback(gpointer data, gpointer user_data)
 {
-	auto *scrobbler = (struct scrobbler *)data;
+	auto *scrobbler = (Scrobbler *)data;
 	const auto *record = (const Record *)user_data;
 
 	if (scrobbler->file != nullptr) {
@@ -800,8 +800,8 @@ as_songchange(const char *file, const char *artist, const char *track,
 static void
 scrobbler_new_callback(gpointer data, gpointer)
 {
-	const auto config = (const struct scrobbler_config *)data;
-	struct scrobbler *scrobbler = scrobbler_new(config);
+	const auto config = (const ScrobblerConfig *)data;
+	Scrobbler *scrobbler = scrobbler_new(config);
 
 	if (config->journal != nullptr) {
 		guint queue_length;
@@ -834,7 +834,7 @@ void as_init(GSList *scrobbler_configs)
 static gboolean
 scrobbler_submit_timer(gpointer data)
 {
-	auto *scrobbler = (struct scrobbler *)data;
+	auto *scrobbler = (Scrobbler *)data;
 
 	assert(scrobbler->state == SCROBBLER_STATE_READY);
 
@@ -845,7 +845,7 @@ scrobbler_submit_timer(gpointer data)
 }
 
 static void
-scrobbler_schedule_submit(struct scrobbler *scrobbler)
+scrobbler_schedule_submit(Scrobbler *scrobbler)
 {
 	assert(scrobbler->submit_source_id == 0);
 	assert(!g_queue_is_empty(scrobbler->queue) ||
@@ -859,7 +859,7 @@ scrobbler_schedule_submit(struct scrobbler *scrobbler)
 static void
 scrobbler_save_callback(gpointer data, gpointer)
 {
-	auto *scrobbler = (struct scrobbler *)data;
+	auto *scrobbler = (Scrobbler *)data;
 
 	if (scrobbler->file != nullptr || scrobbler->config->journal == nullptr)
 		return;
@@ -881,7 +881,7 @@ void as_save_cache()
 static void
 scrobbler_submit_now_callback(gpointer data, gpointer)
 {
-	auto *scrobbler = (struct scrobbler *)data;
+	auto *scrobbler = (Scrobbler *)data;
 
 	scrobbler->interval = 1;
 
@@ -906,7 +906,7 @@ void as_submit_now()
 static void
 scrobbler_free_callback(gpointer data, gpointer)
 {
-	auto *scrobbler = (struct scrobbler *)data;
+	auto *scrobbler = (Scrobbler *)data;
 
 	scrobbler_free(scrobbler);
 }

@@ -23,7 +23,7 @@
 
 #include <glib.h>
 
-struct scrobbler_config {
+struct ScrobblerConfig {
 	/**
 	 * The name of the mpdscribble.conf section.  It is used in
 	 * log messages.

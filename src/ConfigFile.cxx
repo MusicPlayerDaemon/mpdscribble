@@ -191,10 +191,10 @@ load_unsigned(GKeyFile *file, const char *name, unsigned *value_r)
 	return true;
 }
 
-static struct scrobbler_config *
+static ScrobblerConfig *
 load_scrobbler_config(GKeyFile *file, const char *group)
 {
-	struct scrobbler_config *scrobbler = g_new(struct scrobbler_config, 1);
+	ScrobblerConfig *scrobbler = g_new(ScrobblerConfig, 1);
 	GError *error = nullptr;
 
 	/* Use default host for mpdscribble group, for backward compatability */
@@ -294,7 +294,7 @@ load_config_file(const char *path)
 
 	groups = g_key_file_get_groups(file, nullptr);
 	while(groups[++i]) {
-		struct scrobbler_config *scrobbler =
+		ScrobblerConfig *scrobbler =
 			load_scrobbler_config(file, groups[i]);
 		if (scrobbler != nullptr)
 			file_config.scrobblers =
@@ -337,7 +337,7 @@ int file_read_config()
 static void
 scrobbler_config_free_callback(gpointer data, G_GNUC_UNUSED gpointer user_data)
 {
-	auto *scrobbler = (struct scrobbler_config *)data;
+	auto *scrobbler = (ScrobblerConfig *)data;
 
 	g_free(scrobbler->name);
 	g_free(scrobbler->url);
