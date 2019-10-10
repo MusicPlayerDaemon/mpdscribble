@@ -36,9 +36,6 @@ add_var_internal(std::string &dest, char sep, const char *key,
 
 	dest.push_back('=');
 
-	if (val != nullptr) {
-		char *escaped = http_client_uri_escape(val);
-		dest.append(escaped);
-		g_free(escaped);
-	}
+	if (val != nullptr)
+		dest.append(http_client_uri_escape(val));
 }

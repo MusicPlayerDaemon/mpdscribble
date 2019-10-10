@@ -48,7 +48,7 @@ http_client_finish();
  * Escapes URI parameters with '%'.  Free the return value with
  * g_free().
  */
-char *
+std::string
 http_client_uri_escape(const char *src);
 
 void

@@ -465,7 +465,7 @@ http_client_finish()
 	curl_global_cleanup();
 }
 
-char *
+std::string
 http_client_uri_escape(const char *src)
 {
 	/* curl_escape() is deprecated, but for some reason,
@@ -474,7 +474,7 @@ http_client_uri_escape(const char *src)
 	char *tmp = curl_escape(src, 0);
 	/* call g_strdup(), because the caller expects a pointer which
 	   can be freed with g_free() */
-	char *dest = g_strdup(tmp == nullptr ? src : tmp);
+	std::string dest(tmp == nullptr ? src : tmp);
 	curl_free(tmp);
 	return dest;
 }
