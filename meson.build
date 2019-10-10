@@ -40,9 +40,25 @@ test_cflags = [
   '-Wwrite-strings',
   '-Wmissing-declarations', '-Wmissing-noreturn', '-Wmissing-format-attribute',
   '-Wredundant-decls', '-Wundef',
+
+  '-fvisibility=hidden',
 ]
 
+test_ldflags = [
+]
+
+if get_option('buildtype') != 'debug'
+  test_cflags += [
+    '-ffunction-sections',
+    '-fdata-sections',
+  ]
+  test_ldflags += [
+    '-Wl,--gc-sections',
+  ]
+endif
+
 add_global_arguments(cc.get_supported_arguments(test_cflags), language: 'c')
+add_global_link_arguments(cc.get_supported_link_arguments(test_ldflags), language: 'c')
 
 configure_file(output: 'config.h', configuration: conf)
 
