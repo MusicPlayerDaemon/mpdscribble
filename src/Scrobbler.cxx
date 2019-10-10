@@ -117,7 +117,7 @@ static GSList *scrobblers;
 static Scrobbler *
 scrobbler_new(const ScrobblerConfig *config)
 {
-	Scrobbler *scrobbler = g_new(Scrobbler, 1);
+	Scrobbler *scrobbler = new Scrobbler;
 
 	scrobbler->config = config;
 	scrobbler->file = nullptr;
@@ -167,7 +167,7 @@ scrobbler_free(Scrobbler *scrobbler)
 	if (scrobbler->file != nullptr)
 		fclose(scrobbler->file);
 
-	g_free(scrobbler);
+	delete scrobbler;
 }
 
 static void
