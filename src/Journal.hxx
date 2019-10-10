@@ -21,9 +21,14 @@
 #ifndef JOURNAL_HXX
 #define JOURNAL_HXX
 
-#include <glib.h>
+#include <list>
 
-bool journal_write(const char *path, GQueue *queue);
-void journal_read(const char *path, GQueue *queue);
+struct Record;
+
+bool
+journal_write(const char *path, const std::list<Record> &queue);
+
+std::list<Record>
+journal_read(const char *path);
 
 #endif

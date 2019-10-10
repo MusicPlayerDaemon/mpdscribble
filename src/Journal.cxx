@@ -21,6 +21,8 @@
 #include "Journal.hxx"
 #include "Record.hxx"
 
+#include <glib.h>
+
 #include <assert.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -37,11 +39,8 @@ journal_write_string(FILE *file, char field, const char *value)
 }
 
 static void
-journal_write_record(gpointer data, gpointer user_data)
+journal_write_record(FILE *file, const Record *record)
 {
-	auto *record = (Record *)data;
-	FILE *file = (FILE *)user_data;
-
 	assert(record->source != nullptr);
 
 	journal_write_string(file, 'a', record->artist);
@@ -58,11 +57,12 @@ journal_write_record(gpointer data, gpointer user_data)
 		record->length, record->source);
 }
 
-bool journal_write(const char *path, GQueue *queue)
+bool
+journal_write(const char *path, const std::list<Record> &queue)
 {
 	FILE *handle;
 
-	if (g_queue_is_empty(queue) && journal_file_empty)
+	if (queue.empty() && journal_file_empty)
 		return false;
 
 	handle = fopen(path, "wb");
@@ -71,7 +71,8 @@ bool journal_write(const char *path, GQueue *queue)
 		return false;
 	}
 
-	g_queue_foreach(queue, journal_write_record, handle);
+	for (const auto &i : queue)
+		journal_write_record(handle, &i);
 
 	fclose(handle);
 
@@ -79,20 +80,18 @@ bool journal_write(const char *path, GQueue *queue)
 }
 
 static void
-journal_commit_record(GQueue *queue, Record *record)
+journal_commit_record(std::list<Record> &queue, Record *record)
 {
 	if (record->artist != nullptr && record->track != nullptr) {
-		/* append record to the queue; reuse allocated strings */
+		/* append record to the queue */
 
-		g_queue_push_tail(queue, g_memdup(record, sizeof(*record)));
+		queue.emplace_back();
+		record_copy(&queue.back(), record);
 
 		journal_file_empty = false;
-	} else {
-		/* free and clear the record, it was not used */
-
-		record_deinit(record);
 	}
 
+	record_deinit(record);
 	record_clear(record);
 }
 
@@ -142,7 +141,8 @@ parse_timestamp(const char *p)
 	return g_strdup(p);
 }
 
-void journal_read(const char *path, GQueue *queue)
+std::list<Record>
+journal_read(const char *path)
 {
 	FILE *file;
 	char line[1024];
@@ -158,11 +158,12 @@ void journal_read(const char *path, GQueue *queue)
 			   first time */
 			g_warning("Failed to load %s: %s",
 				  path, g_strerror(errno));
-		return;
+		return {};
 	}
 
 	record_clear(&record);
 
+	std::list<Record> queue;
 	while (fgets(line, sizeof(line), file) != nullptr) {
 		char *key, *value;
 
@@ -203,4 +204,6 @@ void journal_read(const char *path, GQueue *queue)
 	fclose(file);
 
 	journal_commit_record(queue, &record);
+
+	return queue;
 }

@@ -21,8 +21,6 @@
 #ifndef SCROBBLER_HXX
 #define SCROBBLER_HXX
 
-#include <glib.h>
-
 #include <forward_list>
 #include <string>
 

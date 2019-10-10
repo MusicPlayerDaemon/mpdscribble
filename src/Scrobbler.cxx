@@ -29,6 +29,8 @@
 
 #include <gcrypt.h>
 
+#include <list>
+
 #include <assert.h>
 #include <ctype.h>
 #include <errno.h>
@@ -99,7 +101,7 @@ struct Scrobbler {
 	/**
 	 * A queue of #record objects.
 	 */
-	GQueue *queue;
+	std::list<Record> queue;
 
 	/**
 	 * How many songs are we trying to submit right now?  This
@@ -131,17 +133,9 @@ scrobbler_new(const ScrobblerConfig *config)
 
 	record_clear(&scrobbler->now_playing);
 
-	scrobbler->queue = g_queue_new();
 	scrobbler->pending = 0;
 
 	return scrobbler;
-}
-
-static void
-record_free_callback(gpointer data, gpointer)
-{
-	auto *song = (Record *)data;
-	record_free(song);
 }
 
 /**
@@ -150,8 +144,8 @@ record_free_callback(gpointer data, gpointer)
 static void
 scrobbler_free(Scrobbler *scrobbler)
 {
-	g_queue_foreach(scrobbler->queue, record_free_callback, nullptr);
-	g_queue_free(scrobbler->queue);
+	for (auto &i : scrobbler->queue)
+		record_deinit(&i);
 
 	record_deinit(&scrobbler->now_playing);
 
@@ -391,13 +385,13 @@ static const struct http_client_handler scrobbler_handshake_handler = {
 };
 
 static void
-scrobbler_queue_remove_oldest(GQueue *queue, unsigned count)
+scrobbler_queue_remove_oldest(std::list<Record> &queue, unsigned count)
 {
 	assert(count > 0);
 
 	while (count--) {
-		auto *tmp = (Record *)g_queue_pop_head(queue);
-		record_free(tmp);
+		record_free(&queue.front());
+		queue.pop_front();
 	}
 }
 
@@ -671,7 +665,7 @@ scrobbler_submit(Scrobbler *scrobbler)
 	assert(scrobbler->state == SCROBBLER_STATE_READY);
 	assert(scrobbler->submit_source_id == 0);
 
-	if (g_queue_is_empty(scrobbler->queue)) {
+	if (scrobbler->queue.empty()) {
 		/* the submission queue is empty.  See if a "now playing" song is
 		   scheduled - these should be sent after song submissions */
 		if (record_is_defined(&scrobbler->now_playing))
@@ -692,10 +686,11 @@ scrobbler_submit(Scrobbler *scrobbler)
 	post_data = g_string_new(nullptr);
 	add_var(post_data, "s", scrobbler->session);
 
-	for (GList *list = g_queue_peek_head_link(scrobbler->queue);
-	     list != nullptr && count < MAX_SUBMIT_COUNT;
-	     list = g_list_next(list)) {
-		auto *song = (Record *)list->data;
+	for (const auto &i : scrobbler->queue) {
+		if (count >= MAX_SUBMIT_COUNT)
+			break;
+
+		const auto *song = &i;
 		char len[16];
 
 		snprintf(len, sizeof(len), "%i", song->length);
@@ -744,7 +739,8 @@ scrobbler_push_callback(gpointer data, gpointer user_data)
 		return;
 	}
 
-	g_queue_push_tail(scrobbler->queue, record_dup(record));
+	scrobbler->queue.emplace_back();
+	record_copy(&scrobbler->queue.back(), record);
 
 	if (scrobbler->state == SCROBBLER_STATE_READY &&
 	    scrobbler->submit_source_id == 0)
@@ -806,9 +802,9 @@ AddScrobbler(const ScrobblerConfig *config)
 	if (!config->journal.empty()) {
 		guint queue_length;
 
-		journal_read(config->journal.c_str(), scrobbler->queue);
+		scrobbler->queue = journal_read(config->journal.c_str());
 
-		queue_length = g_queue_get_length(scrobbler->queue);
+		queue_length = scrobbler->queue.size();
 		g_message("loaded %i song%s from %s",
 			  queue_length, queue_length == 1 ? "" : "s",
 			  config->journal.c_str());
@@ -851,7 +847,7 @@ static void
 scrobbler_schedule_submit(Scrobbler *scrobbler)
 {
 	assert(scrobbler->submit_source_id == 0);
-	assert(!g_queue_is_empty(scrobbler->queue) ||
+	assert(!scrobbler->queue.empty() ||
 	       record_is_defined(&scrobbler->now_playing));
 
 	scrobbler->submit_source_id =
@@ -869,7 +865,7 @@ scrobbler_save_callback(gpointer data, gpointer)
 
 	if (journal_write(scrobbler->config->journal.c_str(),
 			  scrobbler->queue)) {
-		guint queue_length = g_queue_get_length(scrobbler->queue);
+		unsigned queue_length = scrobbler->queue.size();
 		g_message("[%s] saved %i song%s to %s",
 			  scrobbler->config->name.c_str(),
 			  queue_length, queue_length == 1 ? "" : "s",
