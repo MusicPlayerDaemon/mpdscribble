@@ -39,7 +39,7 @@ record_copy(Record *dest, const Record *src)
 Record *
 record_dup(const Record *src)
 {
-	Record *dest = g_new(Record, 1);
+	Record *dest = new Record;
 	record_copy(dest, src);
 	return dest;
 }
@@ -59,7 +59,7 @@ void
 record_free(Record *record)
 {
 	record_deinit(record);
-	g_free(record);
+	delete record;
 }
 
 void
