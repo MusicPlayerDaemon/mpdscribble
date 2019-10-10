@@ -18,7 +18,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#include "record.h"
+#include "Record.hxx"
 
 #include <glib.h>
 
@@ -65,12 +65,12 @@ record_free(struct record *record)
 void
 record_clear(struct record *record)
 {
-	record->artist = NULL;
-	record->track = NULL;
-	record->album = NULL;
-	record->number = NULL;
-	record->mbid = NULL;
-	record->time = NULL;
+	record->artist = nullptr;
+	record->track = nullptr;
+	record->album = nullptr;
+	record->number = nullptr;
+	record->mbid = nullptr;
+	record->time = nullptr;
 	record->length = 0;
 	record->love = false;
 	record->source = "P";

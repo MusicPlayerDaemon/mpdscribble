@@ -18,30 +18,10 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 
-#ifndef LMC_H
-#define LMC_H
-
-#include <mpd/client.h>
-
-#include <stdbool.h>
-
-void lmc_connect(char *host, int port);
-void lmc_disconnect(void);
-
+#ifndef CMDLINE_HXX
+#define CMDLINE_HXX
 
 void
-song_paused(void);
+parse_cmdline(int argc, char **argv);
 
-void
-song_continued(void);
-
-void
-song_started(const struct mpd_song *song);
-
-void
-song_playing(const struct mpd_song *song, int elapsed);
-
-void
-song_ended(const struct mpd_song *song, bool love);
-
-#endif /* LMC_H */
+#endif

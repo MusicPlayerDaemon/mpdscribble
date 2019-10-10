@@ -17,42 +17,13 @@
  * with this program; if not, write to the Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
-#ifndef FILE_H
-#define FILE_H
+
+#ifndef JOURNAL_HXX
+#define JOURNAL_HXX
 
 #include <glib.h>
 
-enum file_location { file_etc, file_home, file_unknown, };
+bool journal_write(const char *path, GQueue *queue);
+void journal_read(const char *path, GQueue *queue);
 
-struct config {
-	/** don't daemonize the mpdscribble process */
-	gboolean no_daemon;
-
-	char *pidfile;
-
-	char *daemon_user;
-
-	char *log;
-	char *conf;
-	char *host;
-	char *proxy;
-	unsigned port;
-
-	/**
-	 * The interval in seconds after which the journal is saved to
-	 * the file system.
-	 */
-	unsigned journal_interval;
-
-	int verbose;
-	enum file_location loc;
-
-	GSList *scrobblers;
-};
-
-extern struct config file_config;
-
-int file_read_config(void);
-void file_cleanup(void);
-
-#endif /* FILE_H */
+#endif

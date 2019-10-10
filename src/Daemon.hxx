@@ -18,10 +18,41 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 
-#ifndef CMDLINE_H
-#define CMDLINE_H
+#ifndef DAEMON_HXX
+#define DAEMON_HXX
 
 void
-parse_cmdline(int argc, char **argv);
+daemonize_init(const char *user, const char *pidfile);
+
+void
+daemonize_finish();
+
+/**
+ * Close stdin (fd 0) and re-open it as /dev/null.
+ */
+void
+daemonize_close_stdin();
+
+/**
+ * Close stdout and stderr and re-open it as /dev/null.
+ */
+void
+daemonize_close_stdout_stderr();
+
+void
+daemonize_set_user();
+
+/**
+ * Daemonize the process: detach it from the parent process and the
+ * session.
+ */
+void
+daemonize_detach();
+
+/**
+ * Writes the id of the current process to the configured pidfile.
+ */
+void
+daemonize_write_pidfile();
 
 #endif

@@ -18,14 +18,13 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 
-#include "file.h"
-#include "scrobbler.h"
+#include "ConfigFile.hxx"
+#include "Scrobbler.hxx"
 #include "config.h"
 
 #include <glib.h>
 
 #include <assert.h>
-#include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -46,12 +45,7 @@
 
 #define AS_HOST "http://post.audioscrobbler.com/"
 
-struct config file_config = {
-	.port = 0,
-	.journal_interval = 600,
-	.verbose = -1,
-	.loc = file_unknown,
-};
+struct config file_config;
 
 static int file_exists(const char *filename)
 {
@@ -70,11 +64,11 @@ file_expand_tilde(const char *path)
 	if (!home)
 		home = "./";
 
-	return g_strconcat(home, path + 1, NULL);
+	return g_strconcat(home, path + 1, nullptr);
 }
 
 static char *
-get_default_config_path(void)
+get_default_config_path()
 {
 #ifndef G_OS_WIN32
 	char *file = file_expand_tilde(FILE_HOME_CONF);
@@ -85,7 +79,7 @@ get_default_config_path(void)
 		g_free(file);
 
 		if (!file_exists(FILE_CONF))
-			return NULL;
+			return nullptr;
 
 		file_config.loc = file_etc;
 		return g_strdup(FILE_CONF);
@@ -96,7 +90,7 @@ get_default_config_path(void)
 }
 
 static char *
-get_default_log_path(void)
+get_default_log_path()
 {
 #ifndef G_OS_WIN32
 	return g_strdup("syslog");
@@ -106,7 +100,7 @@ get_default_log_path(void)
 }
 
 static char *
-get_default_cache_path(void)
+get_default_cache_path()
 {
 #ifndef G_OS_WIN32
 	switch (file_config.loc) {
@@ -117,11 +111,11 @@ get_default_cache_path(void)
 		return g_strdup(FILE_CACHE);
 
 	case file_unknown:
-		return NULL;
+		return nullptr;
 	}
 
 	assert(false);
-	return NULL;
+	return nullptr;
 #else
 	return g_strdup("mpdscribble.cache");
 #endif
@@ -132,7 +126,7 @@ get_string(GKeyFile *file, const char *group_name, const char *key,
 	   GError **error_r)
 {
 	char *value = g_key_file_get_string(file, group_name, key, error_r);
-	if (value != NULL)
+	if (value != nullptr)
 		g_strchomp(value);
 	return value;
 }
@@ -140,15 +134,15 @@ get_string(GKeyFile *file, const char *group_name, const char *key,
 static bool
 load_string(GKeyFile *file, const char *name, char **value_r)
 {
-	GError *error = NULL;
+	GError *error = nullptr;
 	char *value;
 
-	if (*value_r != NULL)
+	if (*value_r != nullptr)
 		/* already set by command line */
 		return false;
 
 	value = get_string(file, PACKAGE, name, &error);
-	if (error != NULL) {
+	if (error != nullptr) {
 		if (error->code != G_KEY_FILE_ERROR_KEY_NOT_FOUND)
 			g_error("%s\n", error->message);
 		g_error_free(error);
@@ -163,7 +157,7 @@ load_string(GKeyFile *file, const char *name, char **value_r)
 static bool
 load_integer(GKeyFile * file, const char *name, int *value_r)
 {
-	GError *error = NULL;
+	GError *error = nullptr;
 	int value;
 
 	if (*value_r != -1)
@@ -171,7 +165,7 @@ load_integer(GKeyFile * file, const char *name, int *value_r)
 		return false;
 
 	value = g_key_file_get_integer(file, PACKAGE, name, &error);
-	if (error != NULL) {
+	if (error != nullptr) {
 		if (error->code != G_KEY_FILE_ERROR_KEY_NOT_FOUND)
 			g_error("%s\n", error->message);
 		g_error_free(error);
@@ -201,57 +195,57 @@ static struct scrobbler_config *
 load_scrobbler_config(GKeyFile *file, const char *group)
 {
 	struct scrobbler_config *scrobbler = g_new(struct scrobbler_config, 1);
-	GError *error = NULL;
+	GError *error = nullptr;
 
 	/* Use default host for mpdscribble group, for backward compatability */
 	if(strcmp(group, "mpdscribble") == 0) {
-		char *username = get_string(file, group, "username", NULL);
-		if (username == NULL) {
+		char *username = get_string(file, group, "username", nullptr);
+		if (username == nullptr) {
 			/* the default section does not contain a
 			   username: don't set up the last.fm default
 			   scrobbler */
 			g_free(scrobbler);
-			return NULL;
+			return nullptr;
 		}
 
 		g_free(username);
 
 		scrobbler->name = g_strdup("last.fm");
 		scrobbler->url = g_strdup(AS_HOST);
-		scrobbler->file = NULL;
+		scrobbler->file = nullptr;
 	} else {
 		scrobbler->name = g_strdup(group);
 		scrobbler->file = get_string(file, group,
-							"file", NULL);
+							"file", nullptr);
 
-		if (scrobbler->file == NULL) {
+		if (scrobbler->file == nullptr) {
 			scrobbler->url = get_string(file, group, "url", &error);
-			if (error != NULL)
+			if (error != nullptr)
 				g_error("%s\n", error->message);
 		} else
-			scrobbler->url = NULL;
+			scrobbler->url = nullptr;
 	}
 
-	if (scrobbler->file == NULL) {
+	if (scrobbler->file == nullptr) {
 		scrobbler->username = get_string(file, group, "username", &error);
 
 		scrobbler->username = get_string(file, group, "username", &error);
-		if (error != NULL)
+		if (error != nullptr)
 			g_error("%s\n", error->message);
 
 		scrobbler->password = get_string(file, group, "password", &error);
-		if (error != NULL)
+		if (error != nullptr)
 			g_error("%s\n", error->message);
 	} else {
-		scrobbler->username = NULL;
-		scrobbler->password = NULL;
+		scrobbler->username = nullptr;
+		scrobbler->password = nullptr;
 	}
 
-	scrobbler->journal = get_string(file, group, "journal", NULL);
-	if (scrobbler->journal == NULL && strcmp(group, "mpdscribble") == 0) {
+	scrobbler->journal = get_string(file, group, "journal", nullptr);
+	if (scrobbler->journal == nullptr && strcmp(group, "mpdscribble") == 0) {
 		/* mpdscribble <= 0.17 compatibility */
-		scrobbler->journal = get_string(file, group, "cache", NULL);
-		if (scrobbler->journal == NULL)
+		scrobbler->journal = get_string(file, group, "cache", nullptr);
+		if (scrobbler->journal == nullptr)
 			scrobbler->journal = get_default_cache_path();
 	}
 
@@ -266,9 +260,9 @@ load_config_file(const char *path)
 	char **groups;
 	int i = -1;
 	GKeyFile *file;
-	GError *error = NULL;
+	GError *error = nullptr;
 
-	ret = g_file_get_contents(path, &data1, NULL, &error);
+	ret = g_file_get_contents(path, &data1, nullptr, &error);
 	if (!ret)
 		g_error("%s\n", error->message);
 
@@ -276,14 +270,14 @@ load_config_file(const char *path)
 	   hack here: prepend the string "[mpdscribble]" to have all
 	   values in the "mpdscribble" section */
 
-	data2 = g_strconcat("[" PACKAGE "]\n", data1, NULL);
+	data2 = g_strconcat("[" PACKAGE "]\n", data1, nullptr);
 	g_free(data1);
 
 	file = g_key_file_new();
 	g_key_file_load_from_data(file, data2, strlen(data2),
 				  G_KEY_FILE_NONE, &error);
 	g_free(data2);
-	if (error != NULL)
+	if (error != nullptr)
 		g_error("%s\n", error->message);
 
 	load_string(file, "pidfile", &file_config.pidfile);
@@ -298,11 +292,11 @@ load_config_file(const char *path)
 			      &file_config.journal_interval);
 	load_integer(file, "verbose", &file_config.verbose);
 
-	groups = g_key_file_get_groups(file, NULL);
+	groups = g_key_file_get_groups(file, nullptr);
 	while(groups[++i]) {
 		struct scrobbler_config *scrobbler =
 			load_scrobbler_config(file, groups[i]);
-		if (scrobbler != NULL)
+		if (scrobbler != nullptr)
 			file_config.scrobblers =
 				g_slist_prepend(file_config.scrobblers,
 						scrobbler);
@@ -312,20 +306,20 @@ load_config_file(const char *path)
 	g_key_file_free(file);
 }
 
-int file_read_config(void)
+int file_read_config()
 {
-	if (file_config.conf == NULL)
+	if (file_config.conf == nullptr)
 		file_config.conf = get_default_config_path();
 
 	/* parse config file options. */
 
-	if (file_config.conf != NULL)
+	if (file_config.conf != nullptr)
 		load_config_file(file_config.conf);
 
 	if (!file_config.conf)
 		g_error("cannot find configuration file\n");
 
-	if (file_config.scrobblers == NULL)
+	if (file_config.scrobblers == nullptr)
 		g_error("No audioscrobbler host configured in %s",
 			file_config.conf);
 
@@ -343,7 +337,7 @@ int file_read_config(void)
 static void
 scrobbler_config_free_callback(gpointer data, G_GNUC_UNUSED gpointer user_data)
 {
-	struct scrobbler_config *scrobbler = data;
+	auto *scrobbler = (struct scrobbler_config *)data;
 
 	g_free(scrobbler->name);
 	g_free(scrobbler->url);
@@ -354,13 +348,13 @@ scrobbler_config_free_callback(gpointer data, G_GNUC_UNUSED gpointer user_data)
 	g_free(scrobbler);
 }
 
-void file_cleanup(void)
+void file_cleanup()
 {
 	g_free(file_config.host);
 	g_free(file_config.log);
 	g_free(file_config.conf);
 
 	g_slist_foreach(file_config.scrobblers,
-			scrobbler_config_free_callback, NULL);
+			scrobbler_config_free_callback, nullptr);
 	g_slist_free(file_config.scrobblers);
 }

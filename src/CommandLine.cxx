@@ -18,13 +18,12 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 
-#include "cmdline.h"
-#include "file.h"
+#include "CommandLine.hxx"
+#include "ConfigFile.hxx"
 #include "config.h"
 
 #include <glib.h>
 
-#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -43,29 +42,30 @@ static gboolean option_version;
 
 static const GOptionEntry entries[] = {
 	{ "version", 'V', 0, G_OPTION_ARG_NONE, &option_version,
-	  "print version number", NULL },
+	  "print version number", nullptr },
 	{ "no-daemon", 'D', 0, G_OPTION_ARG_NONE, &file_config.no_daemon,
-	  "don't daemonize", NULL },
+	  "don't daemonize", nullptr },
 	{ "verbose", 'v', 0, G_OPTION_ARG_INT, &file_config.verbose,
-	  "verbosity (0-2, default 2)", NULL },
+	  "verbosity (0-2, default 2)", nullptr },
 	{ "conf", 0, 0, G_OPTION_ARG_STRING, &file_config.conf,
-	  "load configuration from this file", NULL },
+	  "load configuration from this file", nullptr },
 	{ "pidfile", 0, 0, G_OPTION_ARG_STRING, &file_config.pidfile,
-	  "write the process id to this file", NULL },
+	  "write the process id to this file", nullptr },
 	{ "daemon-user", 0, 0, G_OPTION_ARG_STRING, &file_config.daemon_user,
-	  "run daemon as this user", NULL },
+	  "run daemon as this user", nullptr },
 	{ "log", 0, 0, G_OPTION_ARG_STRING, &file_config.log,
-	  "log file or 'syslog'", NULL },
+	  "log file or 'syslog'", nullptr },
 	{ "host", 0, 0, G_OPTION_ARG_STRING, &file_config.host,
-	  "MPD host name to connect to, or Unix domain socket path", NULL },
+	  "MPD host name to connect to, or Unix domain socket path", nullptr },
 	{ "port", 0, 0, G_OPTION_ARG_INT, &file_config.port,
-	  "MPD port to connect to", NULL },
+	  "MPD port to connect to", nullptr },
 	{ "proxy", 0, 0, G_OPTION_ARG_STRING, &file_config.host,
-	  "HTTP proxy URI", NULL },
-	{ .long_name = NULL }
+	  "HTTP proxy URI", nullptr },
+	{ .long_name = nullptr }
 };
 
-static void version(void)
+static void
+version()
 {
 	fputs(blurb, stdout);
 
@@ -83,12 +83,12 @@ static void version(void)
 void
 parse_cmdline(int argc, char **argv)
 {
-	GError *error = NULL;
+	GError *error = nullptr;
 	GOptionContext *context;
 	bool ret;
 
-	context = g_option_context_new(NULL);
-	g_option_context_add_main_entries(context, entries, NULL);
+	context = g_option_context_new(nullptr);
+	g_option_context_add_main_entries(context, entries, nullptr);
 
 	g_option_context_set_summary(context, summary);
 

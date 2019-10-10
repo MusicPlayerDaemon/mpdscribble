@@ -18,14 +18,27 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 
-#ifndef JOURNAL_H
-#define JOURNAL_H
+#ifndef MPD_OBSERVER_HXX
+#define MPD_OBSERVER_HXX
 
-#include <glib.h>
+#include <mpd/client.h>
 
-#include <stdbool.h>
+void lmc_connect(char *host, int port);
+void lmc_disconnect();
 
-bool journal_write(const char *path, GQueue *queue);
-void journal_read(const char *path, GQueue *queue);
+void
+song_paused();
+
+void
+song_continued();
+
+void
+song_started(const struct mpd_song *song);
+
+void
+song_playing(const struct mpd_song *song, int elapsed);
+
+void
+song_ended(const struct mpd_song *song, bool love);
 
 #endif

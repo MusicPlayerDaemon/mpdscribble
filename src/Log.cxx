@@ -18,7 +18,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 
-#include "log.h"
+#include "Log.hxx"
 #include "config.h"
 
 #include <glib.h>
@@ -51,15 +51,15 @@ chomp_length(const char *p)
 }
 
 const char *
-log_date(void)
+log_date()
 {
 	static char buf[32];
 	time_t t;
 	struct tm *tmp;
 
-	t = time(NULL);
+	t = time(nullptr);
 	tmp = localtime(&t);
-	if (tmp == NULL) {
+	if (tmp == nullptr) {
 		buf[0] = 0;
 		return buf;
 	}
@@ -78,7 +78,7 @@ file_log_func(const gchar *log_domain, GLogLevelFlags log_level,
 	if (log_level > log_threshold)
 		return;
 
-	if (log_domain == NULL)
+	if (log_domain == nullptr)
 		log_domain = "";
 
 	fprintf(log_file, "%s %s%s%.*s\n",
@@ -90,21 +90,21 @@ file_log_func(const gchar *log_domain, GLogLevelFlags log_level,
 static void
 log_init_file(const char *path)
 {
-	assert(path != NULL);
-	assert(log_file == NULL);
+	assert(path != nullptr);
+	assert(log_file == nullptr);
 
 	if (strcmp(path, "-") == 0) {
 		log_file = stderr;
 	} else {
 		log_file = fopen(path, "ab");
-		if (log_file == NULL)
+		if (log_file == nullptr)
 			g_error("cannot open %s: %s\n",
 				path, g_strerror(errno));
 	}
 
-	setvbuf(log_file, NULL, _IONBF, 0);
+	setvbuf(log_file, nullptr, _IONBF, 0);
 
-	g_log_set_default_handler(file_log_func, NULL);
+	g_log_set_default_handler(file_log_func, nullptr);
 }
 
 #ifdef HAVE_SYSLOG
@@ -147,12 +147,12 @@ syslog_log_func(G_GNUC_UNUSED const gchar *log_domain,
 }
 
 static void
-log_init_syslog(void)
+log_init_syslog()
 {
-	assert(log_file == NULL);
+	assert(log_file == nullptr);
 
 	openlog(PACKAGE, 0, LOG_DAEMON);
-	g_log_set_default_handler(syslog_log_func, NULL);
+	g_log_set_default_handler(syslog_log_func, nullptr);
 }
 
 #endif
@@ -160,9 +160,9 @@ log_init_syslog(void)
 void
 log_init(const char *path, int verbose)
 {
-	assert(path != NULL);
+	assert(path != nullptr);
 	assert(verbose >= 0);
-	assert(log_file == NULL);
+	assert(log_file == nullptr);
 
 	if (verbose == 0)
 		log_threshold = G_LOG_LEVEL_ERROR;
@@ -182,13 +182,13 @@ log_init(const char *path, int verbose)
 }
 
 void
-log_deinit(void)
+log_deinit()
 {
 #ifndef HAVE_SYSLOG
-	assert(log_file != NULL);
+	assert(log_file != nullptr);
 
 #else
-	if (log_file == NULL)
+	if (log_file == nullptr)
 		closelog();
 	else
 #endif

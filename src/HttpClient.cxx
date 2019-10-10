@@ -17,14 +17,13 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#include "http_client.h"
-#include "file.h"
+#include "HttpClient.hxx"
+#include "ConfigFile.hxx"
 #include "config.h"
 
 #include <curl/curl.h>
 
 #include <assert.h>
-#include <stdbool.h>
 
 enum {
 	/** maximum length of a response body */
@@ -82,7 +81,7 @@ static struct {
 } http_client;
 
 static inline GQuark
-curl_quark(void)
+curl_quark()
 {
     return g_quark_from_static_string("curl");
 }
@@ -135,7 +134,7 @@ http_client_fd_events(int fd, fd_set *rfds,
  * registers new ones.
  */
 static void
-http_client_update_fds(void)
+http_client_update_fds()
 {
 	fd_set rfds, wfds, efds;
 
@@ -153,10 +152,10 @@ http_client_update_fds(void)
 	}
 
 	GSList *fds = http_client.fds;
-	http_client.fds = NULL;
+	http_client.fds = nullptr;
 
-	while (fds != NULL) {
-		GPollFD *poll_fd = fds->data;
+	while (fds != nullptr) {
+		GPollFD *poll_fd = (GPollFD *)fds->data;
 		gushort events = http_client_fd_events(poll_fd->fd, &rfds,
 						       &wfds, &efds);
 
@@ -214,8 +213,8 @@ http_request_abort(struct http_request *request, GError *error)
 static void
 http_client_abort_all_requests(GError *error)
 {
-	while (http_client.requests != NULL) {
-		struct http_request *request = http_client.requests->data;
+	while (http_client.requests != nullptr) {
+		auto *request = (struct http_request *)http_client.requests->data;
 		http_request_abort(request, g_error_copy(error));
 	}
 
@@ -228,15 +227,15 @@ http_client_abort_all_requests(GError *error)
 static struct http_request *
 http_client_find_request(CURL *curl)
 {
-	for (GSList *i = http_client.requests; i != NULL;
+	for (GSList *i = http_client.requests; i != nullptr;
 	     i = g_slist_next(i)) {
-		struct http_request *request = i->data;
+		auto *request = (struct http_request *)i->data;
 
 		if (request->curl == curl)
 			return request;
 	}
 
-	return NULL;
+	return nullptr;
 }
 
 /**
@@ -279,7 +278,7 @@ http_request_done(struct http_request *request, CURLcode result, long status)
  * Check for finished HTTP responses.
  */
 static void
-http_multi_info_read(void)
+http_multi_info_read()
 {
 	assert(!http_client.locked);
 	http_client.locked = true;
@@ -288,11 +287,11 @@ http_multi_info_read(void)
 	int msgs_in_queue;
 
 	while ((msg = curl_multi_info_read(http_client.multi,
-					   &msgs_in_queue)) != NULL) {
+					   &msgs_in_queue)) != nullptr) {
 		if (msg->msg == CURLMSG_DONE) {
 			struct http_request *request =
 				http_client_find_request(msg->easy_handle);
-			assert(request != NULL);
+			assert(request != nullptr);
 
 			long status = 0;
 			curl_easy_getinfo(msg->easy_handle,
@@ -309,7 +308,7 @@ http_multi_info_read(void)
  * Give control to CURL.
  */
 static bool
-http_multi_perform(void)
+http_multi_perform()
 {
 	CURLMcode mcode;
 
@@ -359,7 +358,7 @@ curl_source_prepare(G_GNUC_UNUSED GSource *source, G_GNUC_UNUSED gint *timeout_)
 			  curl_multi_strerror(mcode));
 #endif
 
-	return FALSE;
+	return false;
 }
 
 /**
@@ -374,17 +373,17 @@ curl_source_check(G_GNUC_UNUSED GSource *source)
 		   curl_multi_perform(), even if there was no file
 		   descriptor event */
 		http_client.timeout = false;
-		return TRUE;
+		return true;
 	}
 #endif
 
-	for (GSList *i = http_client.fds; i != NULL; i = i->next) {
-		GPollFD *poll_fd = i->data;
+	for (GSList *i = http_client.fds; i != nullptr; i = i->next) {
+		GPollFD *poll_fd = (GPollFD *)i->data;
 		if (poll_fd->revents != 0)
-			return TRUE;
+			return true;
 	}
 
-	return FALSE;
+	return false;
 }
 
 /**
@@ -414,7 +413,7 @@ static GSourceFuncs curl_source_funcs = {
 };
 
 void
-http_client_init(void)
+http_client_init()
 {
 	CURLcode code = curl_global_init(CURL_GLOBAL_ALL);
 	if (code != CURLE_OK)
@@ -422,7 +421,7 @@ http_client_init(void)
 			curl_easy_strerror(code));
 
 	http_client.multi = curl_multi_init();
-	if (http_client.multi == NULL)
+	if (http_client.multi == nullptr)
 		g_error("curl_multi_init() failed");
 
 	http_client.source = g_source_new(&curl_source_funcs,
@@ -434,17 +433,17 @@ http_client_init(void)
 static void
 http_request_free_callback(gpointer data, G_GNUC_UNUSED gpointer user_data)
 {
-	struct http_request *request = data;
+	auto *request = (struct http_request *)data;
 
 	http_request_free(request);
 }
 
 void
-http_client_finish(void)
+http_client_finish()
 {
 	/* free all requests */
 
-	g_slist_foreach(http_client.requests, http_request_free_callback, NULL);
+	g_slist_foreach(http_client.requests, http_request_free_callback, nullptr);
 	g_slist_free(http_client.requests);
 
 	/* unregister all GPollFD instances */
@@ -468,7 +467,7 @@ http_client_uri_escape(const char *src)
 #if GLIB_CHECK_VERSION(2,16,0)
 	/* if GLib is recent enough, prefer that over CURL
 	   functions */
-	return g_uri_escape_string(src, NULL, false);
+	return g_uri_escape_string(src, nullptr, false);
 #else
 	/* curl_escape() is deprecated, but for some reason,
 	   curl_easy_escape() wants to have a CURL object, which we
@@ -476,7 +475,7 @@ http_client_uri_escape(const char *src)
 	char *tmp = curl_escape(src, 0);
 	/* call g_strdup(), because the caller expects a pointer which
 	   can be freed with g_free() */
-	char *dest = g_strdup(tmp == NULL ? src : tmp);
+	char *dest = g_strdup(tmp == nullptr ? src : tmp);
 	curl_free(tmp);
 	return dest;
 #endif
@@ -488,9 +487,9 @@ http_client_uri_escape(const char *src)
 static size_t
 http_request_writefunction(void *ptr, size_t size, size_t nmemb, void *stream)
 {
-	struct http_request *request = stream;
+	auto *request = (struct http_request *)stream;
 
-	g_string_append_len(request->body, ptr, size * nmemb);
+	g_string_append_len(request->body, (const char *)ptr, size * nmemb);
 
 	if (request->body->len > MAX_RESPONSE_BODY)
 		/* response body too large */
@@ -511,7 +510,7 @@ http_client_request(const char *url, const char *post_data,
 	/* create a CURL request */
 
 	request->curl = curl_easy_init();
-	if (request->curl == NULL) {
+	if (request->curl == nullptr) {
 		g_free(request);
 
 		GError *error = g_error_new_literal(curl_quark(), 0,
@@ -542,11 +541,11 @@ http_client_request(const char *url, const char *post_data,
 	curl_easy_setopt(request->curl, CURLOPT_ERRORBUFFER, request->error);
 	curl_easy_setopt(request->curl, CURLOPT_BUFFERSIZE, 2048);
 
-	if (file_config.proxy != NULL)
+	if (file_config.proxy != nullptr)
 		curl_easy_setopt(request->curl, CURLOPT_PROXY, file_config.proxy);
 
 	request->post_data = g_strdup(post_data);
-	if (request->post_data != NULL) {
+	if (request->post_data != nullptr) {
 		curl_easy_setopt(request->curl, CURLOPT_POST, true);
 		curl_easy_setopt(request->curl, CURLOPT_POSTFIELDS,
 				 request->post_data);

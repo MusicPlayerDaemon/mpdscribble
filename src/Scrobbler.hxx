@@ -18,12 +18,10 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 
-#ifndef SCROBBLER_H
-#define SCROBBLER_H
+#ifndef SCROBBLER_HXX
+#define SCROBBLER_HXX
 
 #include <glib.h>
-
-#include <stdbool.h>
 
 struct scrobbler_config {
 	/**
@@ -51,7 +49,7 @@ struct scrobbler_config {
 };
 
 void as_init(GSList *scrobbler_configs);
-void as_cleanup(void);
+void as_cleanup();
 
 void
 as_now_playing(const char *artist, const char *track,
@@ -65,8 +63,8 @@ as_songchange(const char *file, const char *artist, const char *track,
 	      bool love,
 	      const char *time);
 
-void as_save_cache(void);
-void as_submit_now(void);
-char *as_timestamp(void);
+void as_save_cache();
+void as_submit_now();
+char *as_timestamp();
 
 #endif /* SCROBBLER_H */

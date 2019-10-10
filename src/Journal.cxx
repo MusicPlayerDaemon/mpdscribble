@@ -18,8 +18,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 
-#include "journal.h"
-#include "record.h"
+#include "Journal.hxx"
+#include "Record.hxx"
 
 #include <assert.h>
 #include <stdlib.h>
@@ -32,17 +32,17 @@ static int journal_file_empty;
 static void
 journal_write_string(FILE *file, char field, const char *value)
 {
-	if (value != NULL)
+	if (value != nullptr)
 		fprintf(file, "%c = %s\n", field, value);
 }
 
 static void
 journal_write_record(gpointer data, gpointer user_data)
 {
-	struct record *record = data;
-	FILE *file = user_data;
+	auto *record = (struct record *)data;
+	FILE *file = (FILE *)user_data;
 
-	assert(record->source != NULL);
+	assert(record->source != nullptr);
 
 	journal_write_string(file, 'a', record->artist);
 	journal_write_string(file, 't', record->track);
@@ -81,7 +81,7 @@ bool journal_write(const char *path, GQueue *queue)
 static void
 journal_commit_record(GQueue *queue, struct record *record)
 {
-	if (record->artist != NULL && record->track != NULL) {
+	if (record->artist != nullptr && record->track != nullptr) {
 		/* append record to the queue; reuse allocated strings */
 
 		g_queue_push_tail(queue, g_memdup(record, sizeof(*record)));
@@ -108,7 +108,7 @@ import_old_timestamp(const char *p)
 	GTimeVal time_val;
 
 	if (strlen(p) <= 10 || p[10] != ' ')
-		return NULL;
+		return nullptr;
 
 	g_debug("importing time stamp '%s'", p);
 
@@ -121,7 +121,7 @@ import_old_timestamp(const char *p)
 	g_free(q);
 	if (!success) {
 		g_debug("import of '%s' failed", p);
-		return NULL;
+		return nullptr;
 	}
 
 	g_debug("'%s' -> %ld", p, time_val.tv_sec);
@@ -136,7 +136,7 @@ static char *
 parse_timestamp(const char *p)
 {
 	char *ret = import_old_timestamp(p);
-	if (ret != NULL)
+	if (ret != nullptr)
 		return ret;
 
 	return g_strdup(p);
@@ -151,7 +151,7 @@ void journal_read(const char *path, GQueue *queue)
 	journal_file_empty = true;
 
 	file = fopen(path, "r");
-	if (file == NULL) {
+	if (file == nullptr) {
 		if (errno != ENOENT)
 			/* ENOENT is ignored silently, because the
 			   user might be starting mpdscribble for the
@@ -163,7 +163,7 @@ void journal_read(const char *path, GQueue *queue)
 
 	record_clear(&record);
 
-	while (fgets(line, sizeof(line), file) != NULL) {
+	while (fgets(line, sizeof(line), file) != nullptr) {
 		char *key, *value;
 
 		key = g_strchug(line);
@@ -171,7 +171,7 @@ void journal_read(const char *path, GQueue *queue)
 			continue;
 
 		value = strchr(key, '=');
-		if (value == NULL || value == key)
+		if (value == nullptr || value == key)
 			continue;
 
 		*value++ = 0;

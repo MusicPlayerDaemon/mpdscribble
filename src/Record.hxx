@@ -18,39 +18,59 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#ifndef HTTP_CLIENT_H
-#define HTTP_CLIENT_H
-
-#include <glib.h>
+#ifndef RECORD_HXX
+#define RECORD_HXX
 
 #include <stddef.h>
 
-struct http_client_handler {
-	void (*response)(size_t length, const char *data, void *ctx);
-	void (*error)(GError *error, void *ctx);
+struct record {
+	char *artist;
+	char *track;
+	char *album;
+	char *number;
+	char *mbid;
+	char *time;
+	int length;
+	bool love;
+	const char *source;
 };
 
 /**
- * Perform global initialization on the HTTP client library.
+ * Copies attributes from one record to another.  Does not free
+ * existing values in the destination record.
  */
 void
-http_client_init(void);
+record_copy(struct record *dest, const struct record *src);
 
 /**
- * Global deinitializaton.
+ * Duplicates a record object.
  */
-void
-http_client_finish(void);
+struct record *
+record_dup(const struct record *src);
 
 /**
- * Escapes URI parameters with '%'.  Free the return value with
- * g_free().
+ * Deinitializes a record object, freeing all members.
  */
-char *
-http_client_uri_escape(const char *src);
+void
+record_deinit(struct record *record);
+
+/**
+ * Frees a record object: free all members with record_deinit(), and
+ * free the record pointer itself.
+ */
+void
+record_free(struct record *record);
 
 void
-http_client_request(const char *url, const char *post_data,
-		    const struct http_client_handler *handler, void *ctx);
+record_clear(struct record *record);
 
-#endif /* CONN_H */
+/**
+ * Does this record object have a defined and usable value?
+ */
+static inline bool
+record_is_defined(const struct record *record)
+{
+	return record->artist != nullptr && record->track != nullptr;
+}
+
+#endif /* RECORD_H */

@@ -18,20 +18,19 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 
-#include "daemon.h"
-#include "cmdline.h"
-#include "file.h"
-#include "log.h"
-#include "lmc.h"
-#include "scrobbler.h"
-#include "http_client.h"
+#include "Daemon.hxx"
+#include "CommandLine.hxx"
+#include "ConfigFile.hxx"
+#include "Log.hxx"
+#include "MpdObserver.hxx"
+#include "Scrobbler.hxx"
+#include "HttpClient.hxx"
 
 #include <glib.h>
 #ifndef WIN32
 #include <glib-unix.h>
 #endif
 
-#include <stdbool.h>
 #include <signal.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -54,15 +53,15 @@ static gboolean submit_signal_handler(G_GNUC_UNUSED gpointer user_data) {
 	return true;
 }
 
-static void setup_signals(void)
+static void setup_signals()
 {
 	signal(SIGPIPE, SIG_IGN);
 
-	g_unix_signal_add(SIGINT, exit_signal_handler, NULL);
-	g_unix_signal_add(SIGTERM, exit_signal_handler, NULL);
-	g_unix_signal_add(SIGHUP, exit_signal_handler, NULL);
+	g_unix_signal_add(SIGINT, exit_signal_handler, nullptr);
+	g_unix_signal_add(SIGTERM, exit_signal_handler, nullptr);
+	g_unix_signal_add(SIGHUP, exit_signal_handler, nullptr);
 
-	g_unix_signal_add(SIGUSR1, submit_signal_handler, NULL);
+	g_unix_signal_add(SIGUSR1, submit_signal_handler, nullptr);
 }
 #endif
 
@@ -121,7 +120,7 @@ timer_save_journal(G_GNUC_UNUSED gpointer data)
  * Pause mode on the current song was activated.
  */
 void
-song_paused(void)
+song_paused()
 {
 	g_timer_stop(timer);
 }
@@ -130,7 +129,7 @@ song_paused(void)
  * The current song continues to play (after pause).
  */
 void
-song_continued(void)
+song_continued()
 {
 	g_timer_continue(timer);
 }
@@ -150,7 +149,7 @@ song_started(const struct mpd_song *song)
 void
 song_playing(const struct mpd_song *song, int elapsed)
 {
-	int prev_elapsed = g_timer_elapsed(timer, NULL);
+	int prev_elapsed = g_timer_elapsed(timer, nullptr);
 
 	if (song_repeated(song, elapsed, prev_elapsed)) {
 		/* the song is playing repeatedly: make it virtually
@@ -168,7 +167,7 @@ song_playing(const struct mpd_song *song, int elapsed)
 void
 song_ended(const struct mpd_song *song, bool love)
 {
-	int elapsed = g_timer_elapsed(timer, NULL);
+	int elapsed = g_timer_elapsed(timer, nullptr);
 
 	if (!played_long_enough(elapsed, mpd_song_get_duration(song)))
 		return;
@@ -183,9 +182,9 @@ song_ended(const struct mpd_song *song, bool love)
 		      mpd_song_get_tag(song, MPD_TAG_MUSICBRAINZ_TRACKID, 0),
 		      mpd_song_get_duration(song) > 0
 		      ? mpd_song_get_duration(song)
-		      : g_timer_elapsed(timer, NULL),
+		      : g_timer_elapsed(timer, nullptr),
 		      love,
-		      NULL);
+		      nullptr);
 }
 
 int main(int argc, char **argv)
@@ -212,7 +211,7 @@ int main(int argc, char **argv)
 #endif
 		daemonize_close_stdout_stderr();
 
-	main_loop = g_main_loop_new(NULL, FALSE);
+	main_loop = g_main_loop_new(nullptr, false);
 
 	lmc_connect(file_config.host, file_config.port);
 	http_client_init();
@@ -227,7 +226,7 @@ int main(int argc, char **argv)
 	/* set up timeouts */
 
 	save_source_id = g_timeout_add_seconds(file_config.journal_interval,
-					       timer_save_journal, NULL);
+					       timer_save_journal, nullptr);
 
 	/* run the main loop */
 

@@ -1,7 +1,6 @@
-#include "http_client.h"
+#include "HttpClient.hxx"
 
 #include <assert.h>
-#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -39,12 +38,12 @@ main(int argc, char **argv)
 		return EXIT_FAILURE;
 	}
 
-	main_loop = g_main_loop_new(NULL, FALSE);
+	main_loop = g_main_loop_new(nullptr, false);
 
 	http_client_init();
 
 	const char *url = argv[1];
-	http_client_request(url, NULL, &my_handler, NULL);
+	http_client_request(url, nullptr, &my_handler, nullptr);
 	if (!quit)
 		g_main_loop_run(main_loop);
 	assert(quit);
@@ -52,7 +51,7 @@ main(int argc, char **argv)
 
 	http_client_finish();
 
-	if (error != NULL) {
+	if (error != nullptr) {
 		fprintf(stderr, "%s\n", error->message);
 		g_error_free(error);
 		return EXIT_FAILURE;

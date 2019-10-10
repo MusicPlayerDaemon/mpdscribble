@@ -18,12 +18,11 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 
-#include "daemon.h"
+#include "Daemon.hxx"
 
 #include <glib.h>
 
 #ifndef G_OS_WIN32
-#include <stdbool.h>
 #include <assert.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -55,7 +54,7 @@ static char *pidfile;
 #endif
 
 void
-daemonize_close_stdin(void)
+daemonize_close_stdin()
 {
 #ifndef G_OS_WIN32
 	int fd = open("/dev/null", O_RDONLY);
@@ -70,7 +69,7 @@ daemonize_close_stdin(void)
 }
 
 void
-daemonize_close_stdout_stderr(void)
+daemonize_close_stdout_stderr()
 {
 #ifndef G_OS_WIN32
 	int fd = open("/dev/null", O_WRONLY);
@@ -90,10 +89,10 @@ daemonize_close_stdout_stderr(void)
 }
 
 void
-daemonize_set_user(void)
+daemonize_set_user()
 {
 #ifndef G_OS_WIN32
-	if (user_name == NULL)
+	if (user_name == nullptr)
 		return;
 
 	/* get uid */
@@ -119,7 +118,7 @@ daemonize_set_user(void)
 }
 
 void
-daemonize_detach(void)
+daemonize_detach()
 {
 #ifndef G_OS_WIN32
 	int ret;
@@ -147,18 +146,18 @@ daemonize_detach(void)
 }
 
 void
-daemonize_write_pidfile(void)
+daemonize_write_pidfile()
 {
 #ifndef G_OS_WIN32
 	FILE *file;
 
-	if (pidfile == NULL)
+	if (pidfile == nullptr)
 		return;
 
 	unlink(pidfile);
 
 	file = fopen(pidfile, "w");
-	if (file == NULL)
+	if (file == nullptr)
 		g_error("Failed to create pidfile %s: %s",
 			pidfile, g_strerror(errno));
 
@@ -171,13 +170,13 @@ void
 daemonize_init(const char *user, const char *_pidfile)
 {
 #ifndef G_OS_WIN32
-	if (user != NULL && strcmp(user, g_get_user_name()) != 0) {
+	if (user != nullptr && strcmp(user, g_get_user_name()) != 0) {
 		struct passwd *pwd;
 
 		user_name = g_strdup(user);
 
 		pwd = getpwnam(user_name);
-		if (pwd == NULL)
+		if (pwd == nullptr)
 			g_error("no such user \"%s\"", user_name);
 
 		user_uid = pwd->pw_uid;
@@ -192,10 +191,10 @@ daemonize_init(const char *user, const char *_pidfile)
 }
 
 void
-daemonize_finish(void)
+daemonize_finish()
 {
 #ifndef G_OS_WIN32
-	if (pidfile != NULL)
+	if (pidfile != nullptr)
 		unlink(pidfile);
 
 	g_free(user_name);

@@ -18,41 +18,16 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 
-#ifndef DAEMON_H
-#define DAEMON_H
+#ifndef LOG_HXX
+#define LOG_HXX
 
 void
-daemonize_init(const char *user, const char *pidfile);
+log_init(const char *path, int verbose);
 
 void
-daemonize_finish(void);
+log_deinit();
 
-/**
- * Close stdin (fd 0) and re-open it as /dev/null.
- */
-void
-daemonize_close_stdin(void);
-
-/**
- * Close stdout and stderr and re-open it as /dev/null.
- */
-void
-daemonize_close_stdout_stderr(void);
-
-void
-daemonize_set_user(void);
-
-/**
- * Daemonize the process: detach it from the parent process and the
- * session.
- */
-void
-daemonize_detach(void);
-
-/**
- * Writes the id of the current process to the configured pidfile.
- */
-void
-daemonize_write_pidfile(void);
+const char *
+log_date();
 
 #endif

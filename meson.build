@@ -1,13 +1,13 @@
-project('mpdscribble', 'c',
+project('mpdscribble', 'cpp',
   version: '0.23',
   meson_version: '>= 0.47',
   default_options: [
-    'c_std=c99'
+    'cpp_std=c++14',
   ],
   license: 'GPLv2+',
 )
 
-cc = meson.get_compiler('c')
+cc = meson.get_compiler('cpp')
 
 conf = configuration_data()
 conf.set_quoted('PACKAGE', meson.project_name())
@@ -31,16 +31,17 @@ test_cflags = [
   '-Wall',
   '-Wextra',
   '-Wno-deprecated-declarations',
-  '-Wmissing-prototypes',
   '-Wshadow',
   '-Wpointer-arith',
-  '-Wstrict-prototypes',
   '-Wcast-qual',
   '-Wcast-align',
   '-Wwrite-strings',
   '-Wmissing-declarations', '-Wmissing-noreturn', '-Wmissing-format-attribute',
   '-Wredundant-decls', '-Wundef',
 
+  '-Wno-missing-field-initializers',
+
+  '-fno-rtti', '-fno-exceptions',
   '-fvisibility=hidden',
 ]
 
@@ -57,8 +58,8 @@ if get_option('buildtype') != 'debug'
   ]
 endif
 
-add_global_arguments(cc.get_supported_arguments(test_cflags), language: 'c')
-add_global_link_arguments(cc.get_supported_link_arguments(test_ldflags), language: 'c')
+add_global_arguments(cc.get_supported_arguments(test_cflags), language: 'cpp')
+add_global_link_arguments(cc.get_supported_link_arguments(test_ldflags), language: 'cpp')
 
 configure_file(output: 'config.h', configuration: conf)
 
@@ -72,16 +73,16 @@ inc = include_directories(
 executable(
   'mpdscribble',
 
-  'src/mpdscribble.c',
-  'src/daemon.c',
-  'src/record.c',
-  'src/scrobbler.c',
-  'src/http_client.c',
-  'src/cmdline.c',
-  'src/file.c',
-  'src/journal.c',
-  'src/lmc.c',
-  'src/log.c',
+  'src/Main.cxx',
+  'src/Daemon.cxx',
+  'src/Record.cxx',
+  'src/Scrobbler.cxx',
+  'src/HttpClient.cxx',
+  'src/CommandLine.cxx',
+  'src/ConfigFile.cxx',
+  'src/Journal.cxx',
+  'src/MpdObserver.cxx',
+  'src/Log.cxx',
 
   include_directories: inc,
   dependencies: [
