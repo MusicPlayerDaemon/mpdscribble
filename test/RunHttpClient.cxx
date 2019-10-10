@@ -43,7 +43,7 @@ main(int argc, char **argv)
 	http_client_init();
 
 	const char *url = argv[1];
-	http_client_request(url, {}, &my_handler, nullptr);
+	http_client_request(url, {}, my_handler, nullptr);
 	if (!quit)
 		g_main_loop_run(main_loop);
 	assert(quit);

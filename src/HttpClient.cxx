@@ -31,7 +31,7 @@ enum {
 };
 
 struct HttpRequest {
-	const HttpClientHandler *handler;
+	const HttpClientHandler &handler;
 	void *handler_ctx;
 
 	/** the CURL easy handle */
@@ -93,7 +93,7 @@ curl_quark()
 HttpRequest::HttpRequest(std::string &&_request_body,
 			 const HttpClientHandler &_handler,
 			 void *_ctx) noexcept
-	:handler(&_handler), handler_ctx(_ctx),
+	:handler(_handler), handler_ctx(_ctx),
 	 request_body(std::move(_request_body))
 {
 }
@@ -207,7 +207,7 @@ http_request_abort(HttpRequest *request, GError *error)
 {
 	http_client.requests = g_slist_remove(http_client.requests, request);
 
-	request->handler->error(error, request->handler_ctx);
+	request->handler.error(error, request->handler_ctx);
 	delete request;
 }
 
@@ -258,19 +258,19 @@ http_request_done(HttpRequest *request, CURLcode result, long status)
 		GError *error =
 			g_error_new_literal(curl_quark(), 0,
 					    "response body is too large");
-		request->handler->error(error, request->handler_ctx);
+		request->handler.error(error, request->handler_ctx);
 	} else if (result != CURLE_OK) {
 		GError *error = g_error_new(curl_quark(), result,
 					    "curl failed: %s",
 					    request->error);
-		request->handler->error(error, request->handler_ctx);
+		request->handler.error(error, request->handler_ctx);
 	} else if (status < 200 || status >= 300) {
 		GError *error = g_error_new(curl_quark(), 0,
 					    "got HTTP status %ld",
 					    status);
-		request->handler->error(error, request->handler_ctx);
+		request->handler.error(error, request->handler_ctx);
 	} else
-		request->handler->response(std::move(request->response_body),
+		request->handler.response(std::move(request->response_body),
 					   request->handler_ctx);
 
 	/* remove it from the list and free resources */
@@ -504,10 +504,10 @@ http_request_writefunction(void *ptr, size_t size, size_t nmemb, void *stream)
 
 void
 http_client_request(const char *url, std::string &&post_data,
-		    const HttpClientHandler *handler, void *ctx)
+		    const HttpClientHandler &handler, void *ctx)
 {
 	HttpRequest *request = new HttpRequest(std::move(post_data),
-					       *handler, ctx);
+					       handler, ctx);
 
 	/* create a CURL request */
 
@@ -517,7 +517,7 @@ http_client_request(const char *url, std::string &&post_data,
 
 		GError *error = g_error_new_literal(curl_quark(), 0,
 						    "curl_easy_init() failed");
-		handler->error(error, ctx);
+		handler.error(error, ctx);
 		return;
 	}
 
@@ -528,7 +528,7 @@ http_client_request(const char *url, std::string &&post_data,
 
 		GError *error = g_error_new_literal(curl_quark(), 0,
 						    "curl_multi_add_handle() failed");
-		handler->error(error, ctx);
+		handler.error(error, ctx);
 		return;
 	}
 
@@ -560,7 +560,7 @@ http_client_request(const char *url, std::string &&post_data,
 
 		GError *error = g_error_new_literal(curl_quark(), code,
 						    "curl_easy_setopt() failed");
-		handler->error(error, ctx);
+		handler.error(error, ctx);
 		return;
 	}
 
@@ -575,7 +575,7 @@ http_client_request(const char *url, std::string &&post_data,
 
 		GError *error = g_error_new_literal(curl_quark(), code,
 						    "http_multi_perform() failed");
-		handler->error(error, ctx);
+		handler.error(error, ctx);
 		return;
 	}
 

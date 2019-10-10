@@ -53,6 +53,6 @@ http_client_uri_escape(const char *src);
 
 void
 http_client_request(const char *url, std::string &&post_data,
-		    const HttpClientHandler *handler, void *ctx);
+		    const HttpClientHandler &handler, void *ctx);
 
 #endif /* CONN_H */
