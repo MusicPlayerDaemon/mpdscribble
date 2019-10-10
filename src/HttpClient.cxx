@@ -98,7 +98,7 @@ http_request_free(HttpRequest *request)
 	curl_multi_remove_handle(http_client.multi, request->curl);
 	curl_easy_cleanup(request->curl);
 	g_free(request->post_data);
-	g_free(request);
+	delete request;
 }
 
 /**
@@ -502,7 +502,7 @@ void
 http_client_request(const char *url, const char *post_data,
 		    const HttpClientHandler *handler, void *ctx)
 {
-	HttpRequest *request = g_new(HttpRequest, 1);
+	HttpRequest *request = new HttpRequest;
 
 	request->handler = handler;
 	request->handler_ctx = ctx;
@@ -511,7 +511,7 @@ http_client_request(const char *url, const char *post_data,
 
 	request->curl = curl_easy_init();
 	if (request->curl == nullptr) {
-		g_free(request);
+		delete request;
 
 		GError *error = g_error_new_literal(curl_quark(), 0,
 						    "curl_easy_init() failed");
@@ -522,7 +522,7 @@ http_client_request(const char *url, const char *post_data,
 	CURLMcode mcode = curl_multi_add_handle(http_client.multi, request->curl);
 	if (mcode != CURLM_OK) {
 		curl_easy_cleanup(request->curl);
-		g_free(request);
+		delete request;
 
 		GError *error = g_error_new_literal(curl_quark(), 0,
 						    "curl_multi_add_handle() failed");
@@ -555,7 +555,7 @@ http_client_request(const char *url, const char *post_data,
 	if (code != CURLE_OK) {
 		curl_multi_remove_handle(http_client.multi, request->curl);
 		curl_easy_cleanup(request->curl);
-		g_free(request);
+		delete request;
 
 		GError *error = g_error_new_literal(curl_quark(), code,
 						    "curl_easy_setopt() failed");
