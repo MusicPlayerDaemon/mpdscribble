@@ -22,6 +22,7 @@
 #include "Record.hxx"
 #include "Journal.hxx"
 #include "HttpClient.hxx"
+#include "Form.hxx"
 #include "config.h"
 #include "Log.hxx" /* for log_date() */
 
@@ -126,59 +127,6 @@ Scrobbler::~Scrobbler() noexcept
 
 	if (file != nullptr)
 		fclose(file);
-}
-
-static void
-add_var_internal(std::string &dest, char sep, const char *key,
-		 signed char idx, const char *val)
-{
-	dest.push_back(sep);
-	dest.append(key);
-
-	if (idx >= 0) {
-		char buffer[16];
-		snprintf(buffer, sizeof(buffer), "[%i]", idx);
-		dest.append(buffer);
-	}
-
-	dest.push_back('=');
-
-	if (val != nullptr) {
-		char *escaped = http_client_uri_escape(val);
-		dest.append(escaped);
-		g_free(escaped);
-	}
-}
-
-static void
-first_var(std::string &s, const char *key, const char *val)
-{
-	add_var_internal(s, '?', key, -1, val);
-}
-
-static void
-add_var(std::string &s, const char *key, const char *val)
-{
-	add_var_internal(s, '&', key, -1, val);
-}
-
-static void
-add_var(std::string &s, const char *key, const std::string &val)
-{
-	add_var(s, key, val.c_str());
-}
-
-static void
-add_var_i(std::string &s, const char *key, signed char idx, const char *val)
-{
-	add_var_internal(s, '&', key, idx, val);
-}
-
-static void
-add_var_i(std::string &s, const char *key, signed char idx,
-	  const std::string &val)
-{
-	add_var_i(s, key, idx, val.c_str());
 }
 
 static void
