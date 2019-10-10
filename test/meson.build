@@ -1,5 +1,5 @@
 executable(
-  'run_http_client',
+  'RunHttpClient',
 
   'RunHttpClient.cxx',
   '../src/HttpClient.cxx',
