@@ -30,6 +30,7 @@
 
 #include <gcrypt.h>
 
+#include <array>
 #include <list>
 
 #include <assert.h>
@@ -407,23 +408,17 @@ static constexpr size_t MD5_HEX_SIZE = MD5_SIZE * 2;
  */
 static char *md5_hex(const char *p, int len)
 {
-	gcry_md_hd_t hd;
-	unsigned char *binary;
 	char *result;
 
 	if (len == -1)
 		len = strlen(p);
 
-	if (gcry_md_open(&hd, GCRY_MD_MD5, 0) != GPG_ERR_NO_ERROR)
-		g_error("gcry_md_open() failed\n");
-	gcry_md_write(hd, p, len);
-	binary = gcry_md_read(hd, GCRY_MD_MD5);
-	if (binary == nullptr)
-		g_error("gcry_md_read() failed\n");
+	std::array<uint8_t, MD5_SIZE> binary;
+	gcry_md_hash_buffer(GCRY_MD_MD5, &binary.front(), p, len);
+
 	result = (char *)g_malloc(MD5_HEX_SIZE + 1);
 	for (size_t i = 0; i < MD5_SIZE; ++i)
 		snprintf(result + i * 2, 3, "%02x", binary[i]);
-	gcry_md_close(hd);
 
 	return result;
 }
