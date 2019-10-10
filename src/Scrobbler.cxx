@@ -799,9 +799,8 @@ as_songchange(const char *file, const char *artist, const char *track,
 }
 
 static void
-scrobbler_new_callback(gpointer data, gpointer)
+AddScrobbler(const ScrobblerConfig *config)
 {
-	const auto config = (const ScrobblerConfig *)data;
 	Scrobbler *scrobbler = scrobbler_new(config);
 
 	if (!config->journal.empty()) {
@@ -826,11 +825,13 @@ scrobbler_new_callback(gpointer data, gpointer)
 		scrobbler_schedule_handshake(scrobbler);
 }
 
-void as_init(GSList *scrobbler_configs)
+void
+as_init(const std::forward_list<ScrobblerConfig> &scrobbler_configs)
 {
 	g_message("starting mpdscribble (" AS_CLIENT_ID " " AS_CLIENT_VERSION ")\n");
 
-	g_slist_foreach(scrobbler_configs, scrobbler_new_callback, nullptr);
+	for (const auto &i : scrobbler_configs)
+		AddScrobbler(&i);
 }
 
 static gboolean

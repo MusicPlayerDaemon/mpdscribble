@@ -21,6 +21,10 @@
 #ifndef CONFIG_HXX
 #define CONFIG_HXX
 
+#include "Scrobbler.hxx"
+
+#include <forward_list>
+
 #include <glib.h>
 
 enum file_location { file_etc, file_home, file_unknown, };
@@ -48,7 +52,7 @@ struct config {
 	int verbose = -1;
 	enum file_location loc = file_unknown;
 
-	GSList *scrobblers;
+	std::forward_list<ScrobblerConfig> scrobblers;
 };
 
 extern struct config file_config;

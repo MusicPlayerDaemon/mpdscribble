@@ -303,10 +303,10 @@ load_config_file(const char *path)
 	while(groups[++i]) {
 		ScrobblerConfig *scrobbler =
 			load_scrobbler_config(file, groups[i]);
-		if (scrobbler != nullptr)
-			file_config.scrobblers =
-				g_slist_prepend(file_config.scrobblers,
-						scrobbler);
+		if (scrobbler != nullptr) {
+			file_config.scrobblers.emplace_front(std::move(*scrobbler));
+			delete scrobbler;
+		}
 	}
 	g_strfreev(groups);
 
@@ -326,7 +326,7 @@ int file_read_config()
 	if (!file_config.conf)
 		g_error("cannot find configuration file\n");
 
-	if (file_config.scrobblers == nullptr)
+	if (file_config.scrobblers.empty())
 		g_error("No audioscrobbler host configured in %s",
 			file_config.conf);
 
@@ -341,21 +341,11 @@ int file_read_config()
 	return 1;
 }
 
-static void
-scrobbler_config_free_callback(gpointer data, G_GNUC_UNUSED gpointer user_data)
-{
-	auto *scrobbler = (ScrobblerConfig *)data;
-
-	delete scrobbler;
-}
-
 void file_cleanup()
 {
 	g_free(file_config.host);
 	g_free(file_config.log);
 	g_free(file_config.conf);
 
-	g_slist_foreach(file_config.scrobblers,
-			scrobbler_config_free_callback, nullptr);
-	g_slist_free(file_config.scrobblers);
+	file_config.scrobblers.clear();
 }

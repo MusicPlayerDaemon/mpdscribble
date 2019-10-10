@@ -23,6 +23,7 @@
 
 #include <glib.h>
 
+#include <forward_list>
 #include <string>
 
 struct ScrobblerConfig {
@@ -50,7 +51,9 @@ struct ScrobblerConfig {
 	std::string file;
 };
 
-void as_init(GSList *scrobbler_configs);
+void
+as_init(const std::forward_list<ScrobblerConfig> &scrobblers);
+
 void as_cleanup();
 
 void
