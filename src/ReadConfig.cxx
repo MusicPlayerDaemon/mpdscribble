@@ -18,7 +18,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 
-#include "ConfigFile.hxx"
+#include "ReadConfig.hxx"
+#include "Config.hxx"
 #include "Scrobbler.hxx"
 #include "config.h"
 
@@ -44,8 +45,6 @@
 #endif
 
 #define AS_HOST "http://post.audioscrobbler.com/"
-
-struct config file_config;
 
 static int file_exists(const char *filename)
 {

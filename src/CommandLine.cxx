@@ -19,7 +19,7 @@
 */
 
 #include "CommandLine.hxx"
-#include "ConfigFile.hxx"
+#include "Config.hxx"
 #include "config.h"
 
 #include <glib.h>

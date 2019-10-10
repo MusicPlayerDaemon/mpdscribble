@@ -19,7 +19,7 @@
 */
 
 #include "MpdObserver.hxx"
-#include "ConfigFile.hxx"
+#include "Config.hxx"
 
 #include <mpd/message.h>
 

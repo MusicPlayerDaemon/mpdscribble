@@ -18,7 +18,7 @@
  */
 
 #include "HttpClient.hxx"
-#include "ConfigFile.hxx"
+#include "Config.hxx"
 #include "config.h"
 
 #include <curl/curl.h>

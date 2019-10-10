@@ -18,42 +18,6 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 
-#ifndef CONFIG_FILE_HXX
-#define CONFIG_FILE_HXX
+#include "Config.hxx"
 
-#include <glib.h>
-
-enum file_location { file_etc, file_home, file_unknown, };
-
-struct config {
-	/** don't daemonize the mpdscribble process */
-	gboolean no_daemon;
-
-	char *pidfile;
-
-	char *daemon_user;
-
-	char *log;
-	char *conf;
-	char *host;
-	char *proxy;
-	unsigned port = 0;
-
-	/**
-	 * The interval in seconds after which the journal is saved to
-	 * the file system.
-	 */
-	unsigned journal_interval = 600;
-
-	int verbose = -1;
-	enum file_location loc = file_unknown;
-
-	GSList *scrobblers;
-};
-
-extern struct config file_config;
-
-int file_read_config();
-void file_cleanup();
-
-#endif /* FILE_H */
+struct config file_config;

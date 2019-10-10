@@ -3,7 +3,7 @@ executable(
 
   'RunHttpClient.cxx',
   '../src/HttpClient.cxx',
-  '../src/ConfigFile.cxx',
+  '../src/Config.cxx',
 
   include_directories: inc,
   dependencies: [

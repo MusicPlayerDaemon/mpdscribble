@@ -20,7 +20,8 @@
 
 #include "Daemon.hxx"
 #include "CommandLine.hxx"
-#include "ConfigFile.hxx"
+#include "ReadConfig.hxx"
+#include "Config.hxx"
 #include "Log.hxx"
 #include "MpdObserver.hxx"
 #include "Scrobbler.hxx"
