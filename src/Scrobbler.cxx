@@ -285,10 +285,11 @@ next_line(const char **input_r, const char *end)
 }
 
 static void
-scrobbler_handshake_response(size_t length, const char *response, void *data)
+scrobbler_handshake_response(std::string &&body, void *data)
 {
 	auto *scrobbler = (Scrobbler *)data;
-	const char *end = response + length;
+	const char *response = body.data();
+	const char *end = response + body.length();
 	bool ret;
 
 	assert(scrobbler != nullptr);
@@ -370,7 +371,7 @@ scrobbler_queue_remove_oldest(std::list<Record> &queue, unsigned count)
 }
 
 static void
-scrobbler_submit_response(size_t length, const char *response, void *data)
+scrobbler_submit_response(std::string &&body, void *data)
 {
 	auto *scrobbler = (Scrobbler *)data;
 
@@ -378,12 +379,12 @@ scrobbler_submit_response(size_t length, const char *response, void *data)
 	assert(scrobbler->state == SCROBBLER_STATE_SUBMITTING);
 	scrobbler->state = SCROBBLER_STATE_READY;
 
-	const char *newline = (const char *)memchr(response, '\n', length);
-	if (newline != nullptr)
-		length = newline - response;
+	auto newline = body.find('\n');
+	if (newline != body.npos)
+		body.resize(newline);
 
 	switch (scrobbler_parse_submit_response(scrobbler->config.name.c_str(),
-						response, length)) {
+						body.data(), body.length())) {
 	case AS_SUBMIT_OK:
 		scrobbler->interval = 1;
 

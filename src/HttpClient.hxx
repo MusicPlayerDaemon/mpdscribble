@@ -23,10 +23,12 @@
 
 #include <glib.h>
 
+#include <string>
+
 #include <stddef.h>
 
 struct HttpClientHandler {
-	void (*response)(size_t length, const char *data, void *ctx);
+	void (*response)(std::string &&body, void *ctx);
 	void (*error)(GError *error, void *ctx);
 };
 

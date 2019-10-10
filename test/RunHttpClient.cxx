@@ -10,9 +10,9 @@ static GError *error;
 static bool quit;
 
 static void
-my_response(size_t length, const char *data, G_GNUC_UNUSED void *ctx)
+my_response(std::string &&body, void *)
 {
-	write(STDOUT_FILENO, data, length);
+	write(STDOUT_FILENO, body.data(), body.size());
 	g_main_loop_quit(main_loop);
 	quit = true;
 }

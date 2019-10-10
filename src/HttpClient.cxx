@@ -41,7 +41,7 @@ struct HttpRequest {
 	char *post_data;
 
 	/** the response body */
-	GString *body;
+	std::string response_body;
 
 	/** error message provided by libcurl */
 	char error[CURL_ERROR_SIZE];
@@ -94,7 +94,6 @@ curl_quark()
 static void
 http_request_free(HttpRequest *request)
 {
-	g_string_free(request->body, true);
 	curl_multi_remove_handle(http_client.multi, request->curl);
 	curl_easy_cleanup(request->curl);
 	g_free(request->post_data);
@@ -249,7 +248,7 @@ http_request_done(HttpRequest *request, CURLcode result, long status)
 	if (result == CURLE_WRITE_ERROR &&
 	    /* handle the postponed error that was caught in
 	       http_request_writefunction() */
-	    request->body->len > MAX_RESPONSE_BODY) {
+	    request->response_body.length() > MAX_RESPONSE_BODY) {
 		GError *error =
 			g_error_new_literal(curl_quark(), 0,
 					    "response body is too large");
@@ -265,8 +264,7 @@ http_request_done(HttpRequest *request, CURLcode result, long status)
 					    status);
 		request->handler->error(error, request->handler_ctx);
 	} else
-		request->handler->response(request->body->len,
-					   request->body->str,
+		request->handler->response(std::move(request->response_body),
 					   request->handler_ctx);
 
 	/* remove it from the list and free resources */
@@ -489,9 +487,9 @@ http_request_writefunction(void *ptr, size_t size, size_t nmemb, void *stream)
 {
 	auto *request = (HttpRequest *)stream;
 
-	g_string_append_len(request->body, (const char *)ptr, size * nmemb);
+	request->response_body.append((const char *)ptr, size * nmemb);
 
-	if (request->body->len > MAX_RESPONSE_BODY)
+	if (request->response_body.length() > MAX_RESPONSE_BODY)
 		/* response body too large */
 		return 0;
 
@@ -562,8 +560,6 @@ http_client_request(const char *url, const char *post_data,
 		handler->error(error, ctx);
 		return;
 	}
-
-	request->body = g_string_sized_new(256);
 
 	http_client.requests = g_slist_prepend(http_client.requests, request);
 
