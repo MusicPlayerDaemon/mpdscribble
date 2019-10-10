@@ -22,6 +22,7 @@ if not get_option('syslog').disabled()
   endif
 endif
 
+boost_dep = dependency('boost', version: '>= 1.62')
 glib_dep = dependency('glib-2.0', version: '>= 2.16')
 libmpdclient_dep = dependency('libmpdclient', version: '>= 2.5')
 libgcrypt_dep = dependency('libgcrypt')
@@ -87,6 +88,7 @@ executable(
 
   include_directories: inc,
   dependencies: [
+    boost_dep,
     glib_dep,
     libmpdclient_dep,
     libgcrypt_dep,
