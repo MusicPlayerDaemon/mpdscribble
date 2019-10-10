@@ -46,6 +46,8 @@ struct HttpRequest {
 	/** error message provided by libcurl */
 	char error[CURL_ERROR_SIZE];
 
+	HttpRequest(std::string &&_request_body,
+		    const HttpClientHandler &_handler, void *_ctx) noexcept;
 	~HttpRequest() noexcept;
 };
 
@@ -86,6 +88,14 @@ static inline GQuark
 curl_quark()
 {
     return g_quark_from_static_string("curl");
+}
+
+HttpRequest::HttpRequest(std::string &&_request_body,
+			 const HttpClientHandler &_handler,
+			 void *_ctx) noexcept
+	:handler(&_handler), handler_ctx(_ctx),
+	 request_body(std::move(_request_body))
+{
 }
 
 HttpRequest::~HttpRequest() noexcept
@@ -496,10 +506,8 @@ void
 http_client_request(const char *url, std::string &&post_data,
 		    const HttpClientHandler *handler, void *ctx)
 {
-	HttpRequest *request = new HttpRequest;
-
-	request->handler = handler;
-	request->handler_ctx = ctx;
+	HttpRequest *request = new HttpRequest(std::move(post_data),
+					       *handler, ctx);
 
 	/* create a CURL request */
 
@@ -538,7 +546,6 @@ http_client_request(const char *url, std::string &&post_data,
 	if (file_config.proxy != nullptr)
 		curl_easy_setopt(request->curl, CURLOPT_PROXY, file_config.proxy);
 
-	request->request_body = std::move(post_data);
 	if (!request->request_body.empty()) {
 		curl_easy_setopt(request->curl, CURLOPT_POST, true);
 		curl_easy_setopt(request->curl, CURLOPT_POSTFIELDS,
