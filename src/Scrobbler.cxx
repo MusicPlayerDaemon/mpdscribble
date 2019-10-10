@@ -81,7 +81,7 @@ typedef enum {
 } as_submitting;
 
 struct Scrobbler {
-	const ScrobblerConfig *config;
+	const ScrobblerConfig &config;
 
 	FILE *file = nullptr;
 
@@ -110,7 +110,7 @@ struct Scrobbler {
 	unsigned pending = 0;
 
 	Scrobbler(const ScrobblerConfig &_config) noexcept
-		:config(&_config) {}
+		:config(_config) {}
 
 	~Scrobbler() noexcept;
 };
@@ -196,7 +196,7 @@ scrobbler_increase_interval(Scrobbler *scrobbler)
 		scrobbler->interval = 60 * 60 * 2;
 
 	g_warning("[%s] waiting %u seconds before trying again",
-		  scrobbler->config->name.c_str(), scrobbler->interval);
+		  scrobbler->config.name.c_str(), scrobbler->interval);
 }
 
 static as_submitting
@@ -240,24 +240,24 @@ scrobbler_parse_handshake_response(Scrobbler *scrobbler, const char *line)
 	   and as_parse_submit_response. */
 	if (!strncmp(line, OK, strlen(OK))) {
 		g_message("[%s] handshake successful",
-			  scrobbler->config->name.c_str());
+			  scrobbler->config.name.c_str());
 		return true;
 	} else if (!strncmp(line, BANNED, strlen(BANNED))) {
 		g_warning("[%s] handshake failed, we're banned (%s)",
-			  scrobbler->config->name.c_str(), line);
+			  scrobbler->config.name.c_str(), line);
 	} else if (!strncmp(line, BADAUTH, strlen(BADAUTH))) {
 		g_warning("[%s] handshake failed, "
 			  "username or password incorrect (%s)",
-			  scrobbler->config->name.c_str(), line);
+			  scrobbler->config.name.c_str(), line);
 	} else if (!strncmp(line, BADTIME, strlen(BADTIME))) {
 		g_warning("[%s] handshake failed, clock not synchronized (%s)",
-			  scrobbler->config->name.c_str(), line);
+			  scrobbler->config.name.c_str(), line);
 	} else if (!strncmp(line, FAILED, strlen(FAILED))) {
 		g_warning("[%s] handshake failed (%s)",
-			  scrobbler->config->name.c_str(), line);
+			  scrobbler->config.name.c_str(), line);
 	} else {
 		g_warning("[%s] error parsing handshake response (%s)",
-			  scrobbler->config->name.c_str(), line);
+			  scrobbler->config.name.c_str(), line);
 	}
 
 	return false;
@@ -286,7 +286,7 @@ scrobbler_handshake_response(size_t length, const char *response, void *data)
 	bool ret;
 
 	assert(scrobbler != nullptr);
-	assert(scrobbler->config->file.empty());
+	assert(scrobbler->config.file.empty());
 	assert(scrobbler->state == SCROBBLER_STATE_HANDSHAKE);
 
 	scrobbler->state = SCROBBLER_STATE_NOTHING;
@@ -301,16 +301,16 @@ scrobbler_handshake_response(size_t length, const char *response, void *data)
 
 	scrobbler->session = next_line(&response, end);
 	g_debug("[%s] session: %s",
-		scrobbler->config->name.c_str(), scrobbler->session.c_str());
+		scrobbler->config.name.c_str(), scrobbler->session.c_str());
 
 	scrobbler->nowplay_url = next_line(&response, end);
 	g_debug("[%s] now playing url: %s",
-		scrobbler->config->name.c_str(),
+		scrobbler->config.name.c_str(),
 		scrobbler->nowplay_url.c_str());
 
 	scrobbler->submit_url = next_line(&response, end);
 	g_debug("[%s] submit url: %s",
-		scrobbler->config->name.c_str(),
+		scrobbler->config.name.c_str(),
 		scrobbler->submit_url.c_str());
 
 	if (scrobbler->nowplay_url.empty() || scrobbler->submit_url.empty()) {
@@ -336,13 +336,13 @@ scrobbler_handshake_error(GError *error, void *data)
 	auto *scrobbler = (Scrobbler *)data;
 
 	assert(scrobbler != nullptr);
-	assert(scrobbler->config->file.empty());
+	assert(scrobbler->config.file.empty());
 	assert(scrobbler->state == SCROBBLER_STATE_HANDSHAKE);
 
 	scrobbler->state = SCROBBLER_STATE_NOTHING;
 
 	g_warning("[%s] handshake error: %s",
-		  scrobbler->config->name.c_str(), error->message);
+		  scrobbler->config.name.c_str(), error->message);
 	g_error_free(error);
 
 	scrobbler_increase_interval(scrobbler);
@@ -368,7 +368,7 @@ scrobbler_submit_response(size_t length, const char *response, void *data)
 {
 	auto *scrobbler = (Scrobbler *)data;
 
-	assert(scrobbler->config->file.empty());
+	assert(scrobbler->config.file.empty());
 	assert(scrobbler->state == SCROBBLER_STATE_SUBMITTING);
 	scrobbler->state = SCROBBLER_STATE_READY;
 
@@ -376,7 +376,7 @@ scrobbler_submit_response(size_t length, const char *response, void *data)
 	if (newline != nullptr)
 		length = newline - response;
 
-	switch (scrobbler_parse_submit_response(scrobbler->config->name.c_str(),
+	switch (scrobbler_parse_submit_response(scrobbler->config.name.c_str(),
 						response, length)) {
 	case AS_SUBMIT_OK:
 		scrobbler->interval = 1;
@@ -411,13 +411,13 @@ scrobbler_submit_error(GError *error, void *data)
 {
 	auto *scrobbler = (Scrobbler *)data;
 
-	assert(scrobbler->config->file.empty());
+	assert(scrobbler->config.file.empty());
 	assert(scrobbler->state == SCROBBLER_STATE_SUBMITTING);
 
 	scrobbler->state = SCROBBLER_STATE_READY;
 
 	g_warning("[%s] submit error: %s",
-		  scrobbler->config->name.c_str(), error->message);
+		  scrobbler->config.name.c_str(), error->message);
 	g_error_free(error);
 
 	scrobbler_increase_interval(scrobbler);
@@ -492,7 +492,7 @@ static char *as_md5(const char *password, const char *timestamp)
 static void
 scrobbler_handshake(Scrobbler *scrobbler)
 {
-	assert(scrobbler->config->file.empty());
+	assert(scrobbler->config.file.empty());
 
 	GString *url;
 	char *md5;
@@ -500,15 +500,15 @@ scrobbler_handshake(Scrobbler *scrobbler)
 	scrobbler->state = SCROBBLER_STATE_HANDSHAKE;
 
 	const auto timestr = as_timestamp();
-	md5 = as_md5(scrobbler->config->password.c_str(), timestr.c_str());
+	md5 = as_md5(scrobbler->config.password.c_str(), timestr.c_str());
 
 	/* construct the handshake url. */
-	url = g_string_new(scrobbler->config->url.c_str());
+	url = g_string_new(scrobbler->config.url.c_str());
 	first_var(url, "hs", "true");
 	add_var(url, "p", "1.2");
 	add_var(url, "c", AS_CLIENT_ID);
 	add_var(url, "v", AS_CLIENT_VERSION);
-	add_var(url, "u", scrobbler->config->username.c_str());
+	add_var(url, "u", scrobbler->config.username.c_str());
 	add_var(url, "t", timestr.c_str());
 	add_var(url, "a", md5);
 
@@ -527,7 +527,7 @@ scrobbler_handshake_timer(gpointer data)
 {
 	auto *scrobbler = (Scrobbler *)data;
 
-	assert(scrobbler->config->file.empty());
+	assert(scrobbler->config.file.empty());
 	assert(scrobbler->state == SCROBBLER_STATE_NOTHING);
 
 	scrobbler->handshake_source_id = 0;
@@ -539,7 +539,7 @@ scrobbler_handshake_timer(gpointer data)
 static void
 scrobbler_schedule_handshake(Scrobbler *scrobbler)
 {
-	assert(scrobbler->config->file.empty());
+	assert(scrobbler->config.file.empty());
 	assert(scrobbler->state == SCROBBLER_STATE_NOTHING);
 	assert(scrobbler->handshake_source_id == 0);
 
@@ -557,7 +557,7 @@ scrobbler_send_now_playing(Scrobbler *scrobbler, const char *artist,
 	GString *post_data;
 	char len[16];
 
-	assert(scrobbler->config->file.empty());
+	assert(scrobbler->config.file.empty());
 	assert(scrobbler->state == SCROBBLER_STATE_READY);
 	assert(scrobbler->submit_source_id == 0);
 
@@ -575,7 +575,7 @@ scrobbler_send_now_playing(Scrobbler *scrobbler, const char *artist,
 	add_var(post_data, "m", mbid);
 
 	g_message("[%s] sending 'now playing' notification",
-		  scrobbler->config->name.c_str());
+		  scrobbler->config.name.c_str());
 
 	http_client_request(scrobbler->nowplay_url.c_str(),
 			    post_data->str,
@@ -636,7 +636,7 @@ scrobbler_submit(Scrobbler *scrobbler)
 	unsigned count = 0;
 	GString *post_data;
 
-	assert(scrobbler->config->file.empty());
+	assert(scrobbler->config.file.empty());
 	assert(scrobbler->state == SCROBBLER_STATE_READY);
 	assert(scrobbler->submit_source_id == 0);
 
@@ -687,11 +687,11 @@ scrobbler_submit(Scrobbler *scrobbler)
 	}
 
 	g_message("[%s] submitting %i song%s",
-		  scrobbler->config->name.c_str(), count, count == 1 ? "" : "s");
+		  scrobbler->config.name.c_str(), count, count == 1 ? "" : "s");
 	g_debug("[%s] post data: %s",
-		scrobbler->config->name.c_str(), post_data->str);
+		scrobbler->config.name.c_str(), post_data->str);
 	g_debug("[%s] url: %s",
-		scrobbler->config->name.c_str(),
+		scrobbler->config.name.c_str(),
 		scrobbler->submit_url.c_str());
 
 	scrobbler->pending = count;
@@ -776,27 +776,27 @@ as_songchange(const char *file, const char *artist, const char *track,
 }
 
 static void
-AddScrobbler(const ScrobblerConfig *config)
+AddScrobbler(const ScrobblerConfig &config)
 {
-	Scrobbler *scrobbler = new Scrobbler(*config);
+	Scrobbler *scrobbler = new Scrobbler(config);
 
-	if (!config->journal.empty()) {
+	if (!config.journal.empty()) {
 		guint queue_length;
 
-		scrobbler->queue = journal_read(config->journal.c_str());
+		scrobbler->queue = journal_read(config.journal.c_str());
 
 		queue_length = scrobbler->queue.size();
 		g_message("loaded %i song%s from %s",
 			  queue_length, queue_length == 1 ? "" : "s",
-			  config->journal.c_str());
+			  config.journal.c_str());
 	}
 
 	scrobblers = g_slist_prepend(scrobblers, scrobbler);
-	if (!config->file.empty()) {
-		scrobbler->file = fopen(config->file.c_str(), "a");
+	if (!config.file.empty()) {
+		scrobbler->file = fopen(config.file.c_str(), "a");
 		if (scrobbler->file == nullptr)
 			g_error("Failed to open file '%s' of scrobbler '%s': %s\n",
-				config->file.c_str(), config->name.c_str(),
+				config.file.c_str(), config.name.c_str(),
 				g_strerror(errno));
 	} else
 		scrobbler_schedule_handshake(scrobbler);
@@ -808,7 +808,7 @@ as_init(const std::forward_list<ScrobblerConfig> &scrobbler_configs)
 	g_message("starting mpdscribble (" AS_CLIENT_ID " " AS_CLIENT_VERSION ")\n");
 
 	for (const auto &i : scrobbler_configs)
-		AddScrobbler(&i);
+		AddScrobbler(i);
 }
 
 static gboolean
@@ -841,16 +841,16 @@ scrobbler_save_callback(gpointer data, gpointer)
 {
 	auto *scrobbler = (Scrobbler *)data;
 
-	if (scrobbler->file != nullptr || scrobbler->config->journal.empty())
+	if (scrobbler->file != nullptr || scrobbler->config.journal.empty())
 		return;
 
-	if (journal_write(scrobbler->config->journal.c_str(),
+	if (journal_write(scrobbler->config.journal.c_str(),
 			  scrobbler->queue)) {
 		unsigned queue_length = scrobbler->queue.size();
 		g_message("[%s] saved %i song%s to %s",
-			  scrobbler->config->name.c_str(),
+			  scrobbler->config.name.c_str(),
 			  queue_length, queue_length == 1 ? "" : "s",
-			  scrobbler->config->journal.c_str());
+			  scrobbler->config.journal.c_str());
 	}
 }
 
