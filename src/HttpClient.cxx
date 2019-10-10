@@ -468,11 +468,6 @@ http_client_finish()
 char *
 http_client_uri_escape(const char *src)
 {
-#if GLIB_CHECK_VERSION(2,16,0)
-	/* if GLib is recent enough, prefer that over CURL
-	   functions */
-	return g_uri_escape_string(src, nullptr, false);
-#else
 	/* curl_escape() is deprecated, but for some reason,
 	   curl_easy_escape() wants to have a CURL object, which we
 	   don't have right now */
@@ -482,7 +477,6 @@ http_client_uri_escape(const char *src)
 	char *dest = g_strdup(tmp == nullptr ? src : tmp);
 	curl_free(tmp);
 	return dest;
-#endif
 }
 
 /**
