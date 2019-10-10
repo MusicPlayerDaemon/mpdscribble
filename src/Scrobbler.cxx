@@ -108,39 +108,24 @@ struct Scrobbler {
 	 * many will be shifted from #queue if the submit succeeds.
 	 */
 	unsigned pending = 0;
+
+	Scrobbler(const ScrobblerConfig &_config) noexcept
+		:config(&_config) {}
+
+	~Scrobbler() noexcept;
 };
 
 static GSList *scrobblers;
 
-/**
- * Creates a new scrobbler object based on the specified
- * configuration.
- */
-static Scrobbler *
-scrobbler_new(const ScrobblerConfig *config)
+Scrobbler::~Scrobbler() noexcept
 {
-	Scrobbler *scrobbler = new Scrobbler;
+	if (handshake_source_id != 0)
+		g_source_remove(handshake_source_id);
+	if (submit_source_id != 0)
+		g_source_remove(submit_source_id);
 
-	scrobbler->config = config;
-
-	return scrobbler;
-}
-
-/**
- * Frees a scrobbler object.
- */
-static void
-scrobbler_free(Scrobbler *scrobbler)
-{
-	if (scrobbler->handshake_source_id != 0)
-		g_source_remove(scrobbler->handshake_source_id);
-	if (scrobbler->submit_source_id != 0)
-		g_source_remove(scrobbler->submit_source_id);
-
-	if (scrobbler->file != nullptr)
-		fclose(scrobbler->file);
-
-	delete scrobbler;
+	if (file != nullptr)
+		fclose(file);
 }
 
 static void
@@ -793,7 +778,7 @@ as_songchange(const char *file, const char *artist, const char *track,
 static void
 AddScrobbler(const ScrobblerConfig *config)
 {
-	Scrobbler *scrobbler = scrobbler_new(config);
+	Scrobbler *scrobbler = new Scrobbler(*config);
 
 	if (!config->journal.empty()) {
 		guint queue_length;
@@ -904,7 +889,7 @@ scrobbler_free_callback(gpointer data, gpointer)
 {
 	auto *scrobbler = (Scrobbler *)data;
 
-	scrobbler_free(scrobbler);
+	delete scrobbler;
 }
 
 void as_cleanup()
