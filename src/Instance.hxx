@@ -28,7 +28,7 @@
 
 struct config;
 
-struct Instance {
+struct Instance final : MpdObserverListener {
 	GMainLoop *main_loop;
 	GTimer *timer;
 
@@ -42,6 +42,17 @@ struct Instance {
 	void Run() noexcept {
 		g_main_loop_run(main_loop);
 	}
+
+	void OnMpdSongChanged(const struct mpd_song *song) noexcept;
+
+	/* virtual methods from MpdObserverListener */
+	void OnMpdStarted(const struct mpd_song *song) noexcept override;
+	void OnMpdPlaying(const struct mpd_song *song,
+			  int elapsed) noexcept override;
+	void OnMpdEnded(const struct mpd_song *song,
+			bool love) noexcept override;
+	void OnMpdPaused() noexcept override;
+	void OnMpdResumed() noexcept override;
 };
 
 #endif

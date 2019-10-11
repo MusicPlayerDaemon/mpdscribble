@@ -129,8 +129,10 @@ MpdObserver::ScheduleConnect() noexcept
 	reconnect_source_id = g_timeout_add_seconds(15, OnConnectTimer, this);
 }
 
-MpdObserver::MpdObserver(const char *_host, int _port) noexcept
-	:host(_host), port(_port),
+MpdObserver::MpdObserver(MpdObserverListener &_listener,
+			 const char *_host, int _port) noexcept
+	:listener(_listener),
+	 host(_host), port(_port),
 	 reconnect_source_id(g_timeout_add_seconds(0, OnConnectTimer,
 						   this))
 {
@@ -225,7 +227,7 @@ MpdObserver::Update() noexcept
 
 	if (state == MPD_STATE_PAUSE) {
 		if (!was_paused)
-			song_paused();
+			listener.OnMpdPaused();
 		was_paused = true;
 
 		ScheduleIdle();
@@ -249,7 +251,7 @@ MpdObserver::Update() noexcept
 	if (was_paused) {
 		if (current_song != nullptr &&
 		    mpd_song_get_id(current_song) == last_id)
-			song_continued();
+			listener.OnMpdResumed();
 		was_paused = false;
 	}
 
@@ -257,7 +259,7 @@ MpdObserver::Update() noexcept
 	if (prev != nullptr &&
 	    (current_song == nullptr ||
 	     mpd_song_get_id(prev) != mpd_song_get_id(current_song))) {
-		song_ended(prev, love);
+		listener.OnMpdEnded(prev, love);
 		love = false;
 	}
 
@@ -265,12 +267,12 @@ MpdObserver::Update() noexcept
 		if (mpd_song_get_id(current_song) != last_id) {
 			/* new song. */
 
-			song_started(current_song);
+			listener.OnMpdStarted(current_song);
 			last_id = mpd_song_get_id(current_song);
 		} else {
 			/* still playing the previous song */
 
-			song_playing(current_song, elapsed);
+			listener.OnMpdPlaying(current_song, elapsed);
 		}
 	}
 

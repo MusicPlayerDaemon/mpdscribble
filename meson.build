@@ -41,6 +41,7 @@ test_cflags = [
   '-Wredundant-decls', '-Wundef',
 
   '-Wno-missing-field-initializers',
+  '-Wno-non-virtual-dtor',
 
   '-fno-rtti', '-fno-exceptions',
   '-fvisibility=hidden',

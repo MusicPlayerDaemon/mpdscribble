@@ -25,7 +25,20 @@
 
 #include <glib.h>
 
+class MpdObserverListener {
+public:
+	virtual void OnMpdStarted(const struct mpd_song *song) noexcept = 0;
+	virtual void OnMpdPlaying(const struct mpd_song *song,
+				  int elapsed) noexcept = 0;
+	virtual void OnMpdEnded(const struct mpd_song *song,
+				bool love) noexcept = 0;
+	virtual void OnMpdPaused() noexcept = 0;
+	virtual void OnMpdResumed() noexcept = 0;
+};
+
 class MpdObserver {
+	MpdObserverListener &listener;
+
 	const char *const host;
 	const int port;
 
@@ -48,7 +61,8 @@ class MpdObserver {
 		idle_source_id = 0;
 
 public:
-	MpdObserver(const char *_host, int _port) noexcept;
+	MpdObserver(MpdObserverListener &_listener,
+		    const char *_host, int _port) noexcept;
 	~MpdObserver() noexcept;
 
 private:
@@ -75,20 +89,5 @@ private:
 				       GIOCondition condition,
 				       gpointer data) noexcept;
 };
-
-void
-song_paused();
-
-void
-song_continued();
-
-void
-song_started(const struct mpd_song *song);
-
-void
-song_playing(const struct mpd_song *song, int elapsed);
-
-void
-song_ended(const struct mpd_song *song, bool love);
 
 #endif

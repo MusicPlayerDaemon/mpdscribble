@@ -89,16 +89,16 @@ song_repeated(const struct mpd_song *song, int elapsed, int prev_elapsed)
 				   mpd_song_get_duration(song));
 }
 
-static void song_changed(const struct mpd_song *song)
+void
+Instance::OnMpdSongChanged(const struct mpd_song *song) noexcept
 {
 	g_message("new song detected (%s - %s), id: %u, pos: %u\n",
 		  mpd_song_get_tag(song, MPD_TAG_ARTIST, 0),
 		  mpd_song_get_tag(song, MPD_TAG_TITLE, 0),
 		  mpd_song_get_id(song), mpd_song_get_pos(song));
 
-	g_timer_start(global_instance->timer);
+	g_timer_start(timer);
 
-	auto &scrobblers = global_instance->scrobblers;
 	scrobblers.NowPlaying(mpd_song_get_tag(song, MPD_TAG_ARTIST, 0),
 			      mpd_song_get_tag(song, MPD_TAG_TITLE, 0),
 			      mpd_song_get_tag(song, MPD_TAG_ALBUM, 0),
@@ -122,34 +122,34 @@ timer_save_journal(G_GNUC_UNUSED gpointer data)
  * Pause mode on the current song was activated.
  */
 void
-song_paused()
+Instance::OnMpdPaused() noexcept
 {
-	g_timer_stop(global_instance->timer);
+	g_timer_stop(timer);
 }
 
 /**
  * The current song continues to play (after pause).
  */
 void
-song_continued()
+Instance::OnMpdResumed()
 {
-	g_timer_continue(global_instance->timer);
+	g_timer_continue(timer);
 }
 
 /**
  * MPD started playing this song.
  */
 void
-song_started(const struct mpd_song *song)
+Instance::OnMpdStarted(const struct mpd_song *song) noexcept
 {
-	song_changed(song);
+	OnMpdSongChanged(song);
 }
 
 /**
  * MPD is still playing the song.
  */
 void
-song_playing(const struct mpd_song *song, int elapsed)
+Instance::OnMpdPlaying(const struct mpd_song *song, int elapsed) noexcept
 {
 	int prev_elapsed = g_timer_elapsed(global_instance->timer, nullptr);
 
@@ -158,8 +158,8 @@ song_playing(const struct mpd_song *song, int elapsed)
 		   stop and re-start */
 		g_debug("repeated song detected");
 
-		song_ended(song, false);
-		song_started(song);
+		OnMpdEnded(song, false);
+		OnMpdStarted(song);
 	}
 }
 
@@ -167,16 +167,15 @@ song_playing(const struct mpd_song *song, int elapsed)
  * MPD stopped playing this song.
  */
 void
-song_ended(const struct mpd_song *song, bool love)
+Instance::OnMpdEnded(const struct mpd_song *song, bool love) noexcept
 {
-	int elapsed = g_timer_elapsed(global_instance->timer, nullptr);
+	int elapsed = g_timer_elapsed(timer, nullptr);
 
 	if (!played_long_enough(elapsed, mpd_song_get_duration(song)))
 		return;
 
 	/* FIXME:
 	   libmpdclient doesn't have any way to fetch the musicbrainz id. */
-	auto &scrobblers = global_instance->scrobblers;
 	scrobblers.SongChange(mpd_song_get_uri(song),
 			      mpd_song_get_tag(song, MPD_TAG_ARTIST, 0),
 			      mpd_song_get_tag(song, MPD_TAG_TITLE, 0),
