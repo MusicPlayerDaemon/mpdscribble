@@ -21,53 +21,23 @@
 #include "MpdObserver.hxx"
 #include "Config.hxx"
 
-#include <mpd/message.h>
-
-#include <glib.h>
-
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 
-static struct mpd_connection *g_mpd;
-static bool idle_notified;
-static unsigned last_id = -1;
-static struct mpd_song *current_song;
-static bool was_paused;
-
-/**
- * Is the current song being "loved"?  That variable gets set when the
- * client-to-client command "love" is received.
- */
-static bool love;
-
-static bool subscribed;
-
-static char *g_host;
-static int g_port;
-
-static guint reconnect_source_id, update_source_id, idle_source_id;
-
-static void
-lmc_schedule_reconnect();
-
-static void
-lmc_schedule_update();
-
-static void
-lmc_schedule_idle();
-
-static void lmc_failure()
+void
+MpdObserver::HandleError() noexcept
 {
-	char *msg = g_strescape(mpd_connection_get_error_message(g_mpd), nullptr);
-
+	char *msg = g_strescape(mpd_connection_get_error_message(connection),
+				nullptr);
 	g_warning("mpd error (%u): %s\n",
-		  mpd_connection_get_error(g_mpd), msg);
+		  mpd_connection_get_error(connection), msg);
 	g_free(msg);
-	mpd_connection_free(g_mpd);
-	g_mpd = nullptr;
+
+	mpd_connection_free(connection);
+	connection = nullptr;
 }
 
 static char *
@@ -98,64 +68,75 @@ connection_settings_name(const struct mpd_connection *connection)
 	return settings_name(settings);
 }
 
-static gboolean
-lmc_reconnect(G_GNUC_UNUSED gpointer data)
+bool
+MpdObserver::Connect()
 {
-	g_mpd = mpd_connection_new(g_host, g_port, 0);
-	if (mpd_connection_get_error(g_mpd) != MPD_ERROR_SUCCESS) {
-		lmc_failure();
-		return true;
+	assert(connection == nullptr);
+
+	connection = mpd_connection_new(host, port, 0);
+	if (mpd_connection_get_error(connection) != MPD_ERROR_SUCCESS) {
+		HandleError();
+		return false;
 	}
 
-	const unsigned *version = mpd_connection_get_server_version(g_mpd);
+	const unsigned *version = mpd_connection_get_server_version(connection);
 
-	if (mpd_connection_cmp_server_version(g_mpd, 0, 16, 0) < 0) {
+	if (mpd_connection_cmp_server_version(connection, 0, 16, 0) < 0) {
 		g_warning("Error: MPD version %d.%d.%d is too old (%s needed)",
 			  version[0], version[1], version[2],
 			  "0.16.0");
-		mpd_connection_free(g_mpd);
-		g_mpd = nullptr;
-		return true;
+		mpd_connection_free(connection);
+		connection = nullptr;
+		return false;
 	}
 
-	char *name = connection_settings_name(g_mpd);
+	char *name = connection_settings_name(connection);
 	g_message("connected to mpd %i.%i.%i at %s\n",
 		  version[0], version[1], version[2],
 		  name);
 	g_free(name);
 
-	subscribed = mpd_run_subscribe(g_mpd, "mpdscribble");
-	if (!subscribed && !mpd_connection_clear_error(g_mpd)) {
-		lmc_failure();
-		return true;
+	subscribed = mpd_run_subscribe(connection, "mpdscribble");
+	if (!subscribed && !mpd_connection_clear_error(connection)) {
+		HandleError();
+		return false;
 	}
 
-	lmc_schedule_update();
+	return true;
+}
 
-	reconnect_source_id = 0;
+gboolean
+MpdObserver::OnConnectTimer(gpointer data) noexcept
+{
+	auto &o = *(MpdObserver *)data;
+
+	if (!o.Connect())
+		return true;
+
+	o.ScheduleUpdate();
+	o.reconnect_source_id = 0;
 	return false;
 }
 
-static void
-lmc_schedule_reconnect()
+void
+MpdObserver::ScheduleConnect() noexcept
 {
+	assert(connection == nullptr);
 	assert(reconnect_source_id == 0);
 
 	g_message("waiting 15 seconds before reconnecting\n");
 
-	reconnect_source_id = g_timeout_add_seconds(15, lmc_reconnect, nullptr);
+	reconnect_source_id = g_timeout_add_seconds(15, OnConnectTimer, this);
 }
 
-void lmc_connect(char *host, int port)
+MpdObserver::MpdObserver(const char *_host, int _port) noexcept
+	:host(_host), port(_port),
+	 reconnect_source_id(g_timeout_add_seconds(0, OnConnectTimer,
+						   this))
 {
-	g_host = host;
-	g_port = port;
-
-	if (lmc_reconnect(nullptr))
-		lmc_schedule_reconnect();
 }
 
-void lmc_disconnect()
+MpdObserver::~MpdObserver() noexcept
 {
 	if (reconnect_source_id != 0)
 		g_source_remove(reconnect_source_id);
@@ -166,34 +147,30 @@ void lmc_disconnect()
 	if (idle_source_id != 0)
 		g_source_remove(idle_source_id);
 
-	if (g_mpd) {
-		mpd_connection_free(g_mpd);
-		g_mpd = nullptr;
-	}
+	if (connection != nullptr)
+		mpd_connection_free(connection);
 
-	if (current_song != nullptr) {
+	if (current_song != nullptr)
 		mpd_song_free(current_song);
-		current_song = nullptr;
-	}
 }
 
-static enum mpd_state
-lmc_current(struct mpd_song **song_r, unsigned *elapsed_r)
+enum mpd_state
+MpdObserver::QueryState(struct mpd_song **song_r, unsigned *elapsed_r) noexcept
 {
 	struct mpd_status *status;
 	enum mpd_state state;
 	struct mpd_song *song;
 
-	assert(g_mpd != nullptr);
+	assert(connection != nullptr);
 
-	mpd_command_list_begin(g_mpd, true);
-	mpd_send_status(g_mpd);
-	mpd_send_current_song(g_mpd);
-	mpd_command_list_end(g_mpd);
+	mpd_command_list_begin(connection, true);
+	mpd_send_status(connection);
+	mpd_send_current_song(connection);
+	mpd_command_list_end(connection);
 
-	status = mpd_recv_status(g_mpd);
+	status = mpd_recv_status(connection);
 	if (!status) {
-		lmc_failure();
+		HandleError();
 		return MPD_STATE_UNKNOWN;
 	}
 
@@ -203,32 +180,32 @@ lmc_current(struct mpd_song **song_r, unsigned *elapsed_r)
 	mpd_status_free(status);
 
 	if (state != MPD_STATE_PLAY) {
-		if (!mpd_response_finish(g_mpd)) {
-			lmc_failure();
+		if (!mpd_response_finish(connection)) {
+			HandleError();
 			return MPD_STATE_UNKNOWN;
 		}
 
 		return state;
 	}
 
-	if (!mpd_response_next(g_mpd)) {
-		lmc_failure();
+	if (!mpd_response_next(connection)) {
+		HandleError();
 		return MPD_STATE_UNKNOWN;
 	}
 
-	song = mpd_recv_song(g_mpd);
+	song = mpd_recv_song(connection);
 	if (song == nullptr) {
-		if (!mpd_response_finish(g_mpd)) {
-			lmc_failure();
+		if (!mpd_response_finish(connection)) {
+			HandleError();
 			return MPD_STATE_UNKNOWN;
 		}
 
 		return MPD_STATE_UNKNOWN;
 	}
 
-	if (!mpd_response_finish(g_mpd)) {
+	if (!mpd_response_finish(connection)) {
 		mpd_song_free(song);
-		lmc_failure();
+		HandleError();
 		return MPD_STATE_UNKNOWN;
 	}
 
@@ -236,27 +213,23 @@ lmc_current(struct mpd_song **song_r, unsigned *elapsed_r)
 	return MPD_STATE_PLAY;
 }
 
-/**
- * Update: determine MPD's current song and enqueue submissions.
- */
-static gboolean
-lmc_update(G_GNUC_UNUSED gpointer data)
+void
+MpdObserver::Update() noexcept
 {
 	struct mpd_song *prev;
 	enum mpd_state state;
 	unsigned elapsed = 0;
 
 	prev = current_song;
-	state = lmc_current(&current_song, &elapsed);
+	state = QueryState(&current_song, &elapsed);
 
 	if (state == MPD_STATE_PAUSE) {
 		if (!was_paused)
 			song_paused();
 		was_paused = true;
 
-		lmc_schedule_idle();
-		update_source_id = 0;
-		return false;
+		ScheduleIdle();
+		return;
 	} else if (state != MPD_STATE_PLAY) {
 		current_song = nullptr;
 		last_id = -1;
@@ -304,35 +277,42 @@ lmc_update(G_GNUC_UNUSED gpointer data)
 	if (prev != nullptr)
 		mpd_song_free(prev);
 
-	if (g_mpd == nullptr) {
-		lmc_schedule_reconnect();
-		update_source_id = 0;
-		return false;
+	if (connection == nullptr) {
+		ScheduleConnect();
+		return;
 	}
 
-	lmc_schedule_idle();
-	update_source_id = 0;
+	ScheduleIdle();
+	return;
+}
+
+gboolean
+MpdObserver::OnUpdateTimer(gpointer data) noexcept
+{
+	auto &o = *(MpdObserver *)data;
+	o.update_source_id = 0;
+	o.Update();
 	return false;
 }
 
-static void
-lmc_schedule_update()
+void
+MpdObserver::ScheduleUpdate() noexcept
 {
 	assert(update_source_id == 0);
 
-	update_source_id = g_timeout_add_seconds(0, lmc_update, nullptr);
+	update_source_id = g_timeout_add_seconds(0, OnUpdateTimer, this);
 }
 
-static bool
-lmc_read_messages()
+bool
+MpdObserver::ReadMessages() noexcept
 {
 	assert(subscribed);
 
-	if (!mpd_send_read_messages(g_mpd))
-		return mpd_connection_clear_error(g_mpd);
+	if (!mpd_send_read_messages(connection))
+		return mpd_connection_clear_error(connection);
 
 	struct mpd_message *msg;
-	while ((msg = mpd_recv_message(g_mpd)) != nullptr) {
+	while ((msg = mpd_recv_message(connection)) != nullptr) {
 		const char *text = mpd_message_get_text(msg);
 		if (strcmp(text, "love") == 0)
 			love = true;
@@ -343,70 +323,78 @@ lmc_read_messages()
 		mpd_message_free(msg);
 	}
 
-	return mpd_response_finish(g_mpd);
+	return mpd_response_finish(connection);
 }
 
-static gboolean
-lmc_idle(G_GNUC_UNUSED GIOChannel *source,
-	 G_GNUC_UNUSED GIOCondition condition,
-	 G_GNUC_UNUSED gpointer data)
+void
+MpdObserver::OnIdleResponse() noexcept
 {
 	bool success;
 	enum mpd_idle idle;
 
-	assert(idle_source_id != 0);
-	assert(g_mpd != nullptr);
-	assert(mpd_connection_get_error(g_mpd) == MPD_ERROR_SUCCESS);
+	assert(connection != nullptr);
+	assert(mpd_connection_get_error(connection) == MPD_ERROR_SUCCESS);
 
-	idle_source_id = 0;
-
-	idle = mpd_recv_idle(g_mpd, false);
-	success = mpd_response_finish(g_mpd);
+	idle = mpd_recv_idle(connection, false);
+	success = mpd_response_finish(connection);
 
 	if (!success) {
-		lmc_failure();
-		lmc_schedule_reconnect();
-		return false;
+		HandleError();
+		ScheduleConnect();
+		return;
 	}
 
 	if (subscribed && (idle & MPD_IDLE_MESSAGE) != 0 &&
-	    !lmc_read_messages()) {
-		lmc_failure();
-		lmc_schedule_reconnect();
-		return false;
+	    !ReadMessages()) {
+		HandleError();
+		ScheduleConnect();
+		return;
 	}
 
 	if (idle & MPD_IDLE_PLAYER)
 		/* there was a change: query MPD */
-		lmc_schedule_update();
+		ScheduleUpdate();
 	else
 		/* nothing interesting: re-enter idle */
-		lmc_schedule_idle();
+		ScheduleIdle();
+}
 
+gboolean
+MpdObserver::OnIdleResponse(G_GNUC_UNUSED GIOChannel *source,
+			    G_GNUC_UNUSED GIOCondition condition,
+			    gpointer data) noexcept
+{
+	auto &o = *(MpdObserver *)data;
+
+	assert(o.idle_source_id != 0);
+	o.idle_source_id = 0;
+
+	o.OnIdleResponse();
 	return false;
 }
 
-static void
-lmc_schedule_idle()
+void
+MpdObserver::ScheduleIdle() noexcept
 {
 	GIOChannel *channel;
 
 	assert(idle_source_id == 0);
-	assert(g_mpd != nullptr);
+	assert(connection != nullptr);
 
 	idle_notified = false;
 
 	constexpr enum mpd_idle mask = (enum mpd_idle)(MPD_IDLE_PLAYER|MPD_IDLE_MESSAGE);
 
-	if (!mpd_send_idle_mask(g_mpd, mask)) {
-		lmc_failure();
-		lmc_schedule_reconnect();
+	if (!mpd_send_idle_mask(connection, mask)) {
+		HandleError();
+		ScheduleConnect();
 		return;
 	}
 
 	/* add a GLib watch on the libmpdclient socket */
 
-	channel = g_io_channel_unix_new(mpd_connection_get_fd(g_mpd));
-	idle_source_id = g_io_add_watch(channel, G_IO_IN, lmc_idle, nullptr);
+	channel = g_io_channel_unix_new(mpd_connection_get_fd(connection));
+	idle_source_id = g_io_add_watch(channel, G_IO_IN,
+					OnIdleResponse, this);
 	g_io_channel_unref(channel);
 }

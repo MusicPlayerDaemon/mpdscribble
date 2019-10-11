@@ -214,7 +214,8 @@ int main(int argc, char **argv)
 
 	main_loop = g_main_loop_new(nullptr, false);
 
-	lmc_connect(file_config.host, file_config.port);
+	MpdObserver mpd_observer(file_config.host, file_config.port);
+
 	http_client_init();
 	as_init(file_config.scrobblers);
 
@@ -245,7 +246,6 @@ int main(int argc, char **argv)
 	as_save_cache();
 	as_cleanup();
 	http_client_finish();
-	lmc_disconnect();
 	file_cleanup();
 	log_deinit();
 
