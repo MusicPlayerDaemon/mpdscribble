@@ -25,6 +25,8 @@
 
 #include <boost/intrusive/list.hpp>
 
+#include <forward_list>
+
 #include <assert.h>
 
 enum {
@@ -67,7 +69,7 @@ static struct {
 	guint source_id;
 
 	/** a linked list of all registered GPollFD objects */
-	GSList *fds;
+	std::forward_list<GPollFD> fds;
 
 	/** a linked list of all active HTTP requests */
 	boost::intrusive::list<HttpRequest,
@@ -161,17 +163,13 @@ http_client_update_fds()
 		return;
 	}
 
-	GSList *fds = http_client.fds;
-	http_client.fds = nullptr;
-
-	while (fds != nullptr) {
-		GPollFD *poll_fd = (GPollFD *)fds->data;
+	for (auto prev = http_client.fds.before_begin(), i = std::next(prev);
+	     i != http_client.fds.end();) {
+		GPollFD *poll_fd = &*i;
 		gushort events = http_client_fd_events(poll_fd->fd, &rfds,
 						       &wfds, &efds);
 
 		assert(poll_fd->events != 0);
-
-		fds = g_slist_remove(fds, poll_fd);
 
 		if (events != poll_fd->events)
 			g_source_remove_poll(http_client.source, poll_fd);
@@ -182,10 +180,9 @@ http_client_update_fds()
 				g_source_add_poll(http_client.source, poll_fd);
 			}
 
-			http_client.fds = g_slist_prepend(http_client.fds,
-							  poll_fd);
+			prev = i++;
 		} else {
-			g_free(poll_fd);
+			i = http_client.fds.erase_after(prev);
 		}
 	}
 
@@ -193,12 +190,11 @@ http_client_update_fds()
 		gushort events = http_client_fd_events(fd, &rfds,
 						       &wfds, &efds);
 		if (events != 0) {
-			GPollFD *poll_fd = g_new(GPollFD, 1);
+			http_client.fds.emplace_front();
+			GPollFD *poll_fd = &http_client.fds.front();
 			poll_fd->fd = fd;
 			poll_fd->events = events;
 			g_source_add_poll(http_client.source, poll_fd);
-			http_client.fds = g_slist_prepend(http_client.fds,
-							  poll_fd);
 		}
 	}
 }
@@ -377,11 +373,9 @@ curl_source_check(G_GNUC_UNUSED GSource *source)
 	}
 #endif
 
-	for (GSList *i = http_client.fds; i != nullptr; i = i->next) {
-		GPollFD *poll_fd = (GPollFD *)i->data;
-		if (poll_fd->revents != 0)
+	for (const auto &i : http_client.fds)
+		if (i.revents != 0)
 			return true;
-	}
 
 	return false;
 }
