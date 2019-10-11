@@ -135,6 +135,16 @@ struct Scrobbler {
 	void Push(const Record &song);
 
 	void WriteJournal() const noexcept;
+
+	static gboolean OnHandshakeTimer(gpointer data) noexcept;
+	static gboolean OnSubmitTimer(gpointer data) noexcept;
+
+	static void OnHandshakeResponse(std::string &&body,
+					void *data) noexcept;
+	static void OnHandshakeError(GError *error, void *data) noexcept;
+	static void OnSubmitResponse(std::string &&body,
+					void *data) noexcept;
+	static void OnSubmitError(GError *error, void *data) noexcept;
 };
 
 static std::forward_list<Scrobbler> scrobblers;
@@ -244,8 +254,8 @@ next_line(const char **input_r, const char *end)
 	return line;
 }
 
-static void
-scrobbler_handshake_response(std::string &&body, void *data)
+void
+Scrobbler::OnHandshakeResponse(std::string &&body, void *data) noexcept
 {
 	auto *scrobbler = (Scrobbler *)data;
 	const char *response = body.data();
@@ -297,8 +307,8 @@ scrobbler_handshake_response(std::string &&body, void *data)
 	scrobbler->Submit();
 }
 
-static void
-scrobbler_handshake_error(GError *error, void *data)
+void
+Scrobbler::OnHandshakeError(GError *error, void *data) noexcept
 {
 	auto *scrobbler = (Scrobbler *)data;
 
@@ -317,8 +327,8 @@ scrobbler_handshake_error(GError *error, void *data)
 }
 
 static constexpr HttpClientHandler scrobbler_handshake_handler = {
-	.response = scrobbler_handshake_response,
-	.error = scrobbler_handshake_error,
+	.response = Scrobbler::OnHandshakeResponse,
+	.error = Scrobbler::OnHandshakeError,
 };
 
 static void
@@ -330,8 +340,8 @@ scrobbler_queue_remove_oldest(std::list<Record> &queue, unsigned count)
 		queue.pop_front();
 }
 
-static void
-scrobbler_submit_response(std::string &&body, void *data)
+void
+Scrobbler::OnSubmitResponse(std::string &&body, void *data) noexcept
 {
 	auto *scrobbler = (Scrobbler *)data;
 
@@ -373,8 +383,8 @@ scrobbler_submit_response(std::string &&body, void *data)
 	}
 }
 
-static void
-scrobbler_submit_error(GError *error, void *data)
+void
+Scrobbler::OnSubmitError(GError *error, void *data) noexcept
 {
 	auto *scrobbler = (Scrobbler *)data;
 
@@ -392,8 +402,8 @@ scrobbler_submit_error(GError *error, void *data)
 }
 
 static constexpr HttpClientHandler scrobbler_submit_handler = {
-	.response = scrobbler_submit_response,
-	.error = scrobbler_submit_error,
+	.response = Scrobbler::OnSubmitResponse,
+	.error = Scrobbler::OnSubmitError,
 };
 
 static std::string
@@ -480,8 +490,8 @@ Scrobbler::Handshake()
 			    scrobbler_handshake_handler, this);
 }
 
-static gboolean
-scrobbler_handshake_timer(gpointer data)
+gboolean
+Scrobbler::OnHandshakeTimer(gpointer data) noexcept
 {
 	auto *scrobbler = (Scrobbler *)data;
 
@@ -503,7 +513,7 @@ Scrobbler::ScheduleHandshake() noexcept
 
 	handshake_source_id =
 		g_timeout_add_seconds(interval,
-				      scrobbler_handshake_timer, this);
+				      OnHandshakeTimer, this);
 }
 
 void
@@ -755,8 +765,8 @@ as_init(const std::forward_list<ScrobblerConfig> &scrobbler_configs)
 		AddScrobbler(i);
 }
 
-static gboolean
-scrobbler_submit_timer(gpointer data)
+gboolean
+Scrobbler::OnSubmitTimer(gpointer data) noexcept
 {
 	auto *scrobbler = (Scrobbler *)data;
 
@@ -775,7 +785,7 @@ Scrobbler::ScheduleSubmit() noexcept
 	assert(!queue.empty() || record_is_defined(&now_playing));
 
 	submit_source_id = g_timeout_add_seconds(interval,
-						 scrobbler_submit_timer, this);
+						 OnSubmitTimer, this);
 }
 
 void
