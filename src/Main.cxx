@@ -24,7 +24,7 @@
 #include "Config.hxx"
 #include "Log.hxx"
 #include "MpdObserver.hxx"
-#include "Scrobbler.hxx"
+#include "MultiScrobbler.hxx"
 #include "HttpClient.hxx"
 
 #include <glib.h>
@@ -43,6 +43,8 @@ static guint save_source_id;
 
 static GTimer *timer;
 
+static MultiScrobbler *global_scrobblers;
+
 #ifndef WIN32
 static gboolean exit_signal_handler(G_GNUC_UNUSED gpointer user_data) {
 	g_main_loop_quit(main_loop);
@@ -50,7 +52,7 @@ static gboolean exit_signal_handler(G_GNUC_UNUSED gpointer user_data) {
 }
 
 static gboolean submit_signal_handler(G_GNUC_UNUSED gpointer user_data) {
-  as_submit_now();
+	global_scrobblers->SubmitNow();
 	return true;
 }
 
@@ -99,12 +101,12 @@ static void song_changed(const struct mpd_song *song)
 
 	g_timer_start(timer);
 
-	as_now_playing(mpd_song_get_tag(song, MPD_TAG_ARTIST, 0),
-		       mpd_song_get_tag(song, MPD_TAG_TITLE, 0),
-		       mpd_song_get_tag(song, MPD_TAG_ALBUM, 0),
-		       mpd_song_get_tag(song, MPD_TAG_TRACK, 0),
-		       mpd_song_get_tag(song, MPD_TAG_MUSICBRAINZ_TRACKID, 0),
-		       mpd_song_get_duration(song));
+	global_scrobblers->NowPlaying(mpd_song_get_tag(song, MPD_TAG_ARTIST, 0),
+				      mpd_song_get_tag(song, MPD_TAG_TITLE, 0),
+				      mpd_song_get_tag(song, MPD_TAG_ALBUM, 0),
+				      mpd_song_get_tag(song, MPD_TAG_TRACK, 0),
+				      mpd_song_get_tag(song, MPD_TAG_MUSICBRAINZ_TRACKID, 0),
+				      mpd_song_get_duration(song));
 }
 
 /**
@@ -113,7 +115,7 @@ static void song_changed(const struct mpd_song *song)
 static gboolean
 timer_save_journal(G_GNUC_UNUSED gpointer data)
 {
-	as_save_cache();
+	global_scrobblers->WriteJournal();
 	return true;
 }
 
@@ -175,17 +177,17 @@ song_ended(const struct mpd_song *song, bool love)
 
 	/* FIXME:
 	   libmpdclient doesn't have any way to fetch the musicbrainz id. */
-	as_songchange(mpd_song_get_uri(song),
-		      mpd_song_get_tag(song, MPD_TAG_ARTIST, 0),
-		      mpd_song_get_tag(song, MPD_TAG_TITLE, 0),
-		      mpd_song_get_tag(song, MPD_TAG_ALBUM, 0),
-		      mpd_song_get_tag(song, MPD_TAG_TRACK, 0),
-		      mpd_song_get_tag(song, MPD_TAG_MUSICBRAINZ_TRACKID, 0),
-		      mpd_song_get_duration(song) > 0
-		      ? mpd_song_get_duration(song)
-		      : g_timer_elapsed(timer, nullptr),
-		      love,
-		      nullptr);
+	global_scrobblers->SongChange(mpd_song_get_uri(song),
+				      mpd_song_get_tag(song, MPD_TAG_ARTIST, 0),
+				      mpd_song_get_tag(song, MPD_TAG_TITLE, 0),
+				      mpd_song_get_tag(song, MPD_TAG_ALBUM, 0),
+				      mpd_song_get_tag(song, MPD_TAG_TRACK, 0),
+				      mpd_song_get_tag(song, MPD_TAG_MUSICBRAINZ_TRACKID, 0),
+				      mpd_song_get_duration(song) > 0
+				      ? mpd_song_get_duration(song)
+				      : g_timer_elapsed(timer, nullptr),
+				      love,
+				      nullptr);
 }
 
 int main(int argc, char **argv)
@@ -217,7 +219,9 @@ int main(int argc, char **argv)
 	MpdObserver mpd_observer(file_config.host, file_config.port);
 
 	http_client_init();
-	as_init(file_config.scrobblers);
+
+	MultiScrobbler scrobblers(file_config.scrobblers);
+	global_scrobblers = &scrobblers;
 
 #ifndef WIN32
 	setup_signals();
@@ -243,8 +247,8 @@ int main(int argc, char **argv)
 
 	g_timer_destroy(timer);
 
-	as_save_cache();
-	as_cleanup();
+	scrobblers.WriteJournal();
+
 	http_client_finish();
 	file_cleanup();
 	log_deinit();

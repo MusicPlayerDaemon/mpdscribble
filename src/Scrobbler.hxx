@@ -21,28 +21,102 @@
 #ifndef SCROBBLER_HXX
 #define SCROBBLER_HXX
 
-#include <forward_list>
+#include "Record.hxx"
+
+#include <glib.h>
+
+#include <list>
+#include <string>
+
+#include <stdio.h>
 
 struct ScrobblerConfig;
 
-void
-as_init(const std::forward_list<ScrobblerConfig> &scrobblers);
+class Scrobbler {
+	const ScrobblerConfig &config;
 
-void as_cleanup();
+	FILE *file = nullptr;
 
-void
-as_now_playing(const char *artist, const char *track,
-	       const char *album, const char *number,
-	       const char *mbid, const int length);
+	enum scrobbler_state {
+		/**
+		 * mpdscribble has started, and doesn't have a session yet.
+		 * Handshake to be submitted.
+		 */
+		SCROBBLER_STATE_NOTHING,
 
-void
-as_songchange(const char *file, const char *artist, const char *track,
-	      const char *album, const char *number,
-	      const char *mbid, const int length,
-	      bool love,
-	      const char *time);
+		/**
+		 * Handshake is in progress, waiting for the server's
+		 * response.
+		 */
+		SCROBBLER_STATE_HANDSHAKE,
 
-void as_save_cache();
-void as_submit_now();
+		/**
+		 * We have a session, and we're ready to submit.
+		 */
+		SCROBBLER_STATE_READY,
+
+		/**
+		 * Submission in progress, waiting for the server's response.
+		 */
+		SCROBBLER_STATE_SUBMITTING,
+	} state = SCROBBLER_STATE_NOTHING;
+
+	unsigned interval = 1;
+
+	guint handshake_source_id = 0;
+	guint submit_source_id = 0;
+
+	std::string session;
+	std::string nowplay_url;
+	std::string submit_url;
+
+	Record now_playing;
+
+	/**
+	 * A queue of #record objects.
+	 */
+	std::list<Record> queue;
+
+	/**
+	 * How many songs are we trying to submit right now?  This
+	 * many will be shifted from #queue if the submit succeeds.
+	 */
+	unsigned pending = 0;
+
+public:
+	Scrobbler(const ScrobblerConfig &_config) noexcept;
+	~Scrobbler() noexcept;
+
+	void Push(const Record &song);
+	void ScheduleNowPlaying(const Record &song) noexcept;
+	void SubmitNow() noexcept;
+
+	void WriteJournal() const noexcept;
+
+private:
+	void ScheduleHandshake() noexcept;
+	void Handshake() noexcept;
+	bool ParseHandshakeResponse(const char *line) noexcept;
+
+	void SendNowPlaying(const char *artist,
+			    const char *track, const char *album,
+			    const char *number,
+			    const char *mbid, int length) noexcept;
+
+	void ScheduleSubmit() noexcept;
+	void Submit() noexcept;
+	void IncreaseInterval() noexcept;
+
+	static gboolean OnHandshakeTimer(gpointer data) noexcept;
+	static gboolean OnSubmitTimer(gpointer data) noexcept;
+
+public:
+	static void OnHandshakeResponse(std::string &&body,
+					void *data) noexcept;
+	static void OnHandshakeError(GError *error, void *data) noexcept;
+	static void OnSubmitResponse(std::string &&body,
+					void *data) noexcept;
+	static void OnSubmitError(GError *error, void *data) noexcept;
+};
 
 #endif /* SCROBBLER_H */

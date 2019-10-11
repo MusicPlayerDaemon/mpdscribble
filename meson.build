@@ -78,6 +78,7 @@ executable(
   'src/Daemon.cxx',
   'src/Protocol.cxx',
   'src/Scrobbler.cxx',
+  'src/MultiScrobbler.cxx',
   'src/HttpClient.cxx',
   'src/Form.cxx',
   'src/CommandLine.cxx',

@@ -21,23 +21,18 @@
 #include "Scrobbler.hxx"
 #include "Protocol.hxx"
 #include "ScrobblerConfig.hxx"
-#include "Record.hxx"
 #include "Journal.hxx"
 #include "HttpClient.hxx"
 #include "Form.hxx"
 #include "Log.hxx" /* for log_date() */
 
-#include <glib.h>
-
 #include <gcrypt.h>
 
 #include <array>
-#include <list>
 
 #include <assert.h>
 #include <ctype.h>
 #include <errno.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <stdarg.h>
@@ -50,102 +45,11 @@ static const char OK[] = "OK";
 static const char BADSESSION[] = "BADSESSION";
 static const char FAILED[] = "FAILED";
 
-enum scrobbler_state {
-	/**
-	 * mpdscribble has started, and doesn't have a session yet.
-	 * Handshake to be submitted.
-	 */
-	SCROBBLER_STATE_NOTHING,
-
-	/**
-	 * Handshake is in progress, waiting for the server's
-	 * response.
-	 */
-	SCROBBLER_STATE_HANDSHAKE,
-
-	/**
-	 * We have a session, and we're ready to submit.
-	 */
-	SCROBBLER_STATE_READY,
-
-	/**
-	 * Submission in progress, waiting for the server's response.
-	 */
-	SCROBBLER_STATE_SUBMITTING,
-};
-
 typedef enum {
 	AS_SUBMIT_OK,
 	AS_SUBMIT_FAILED,
 	AS_SUBMIT_HANDSHAKE,
 } as_submitting;
-
-class Scrobbler {
-	const ScrobblerConfig &config;
-
-	FILE *file = nullptr;
-
-	enum scrobbler_state state = SCROBBLER_STATE_NOTHING;
-
-	unsigned interval = 1;
-
-	guint handshake_source_id = 0;
-	guint submit_source_id = 0;
-
-	std::string session;
-	std::string nowplay_url;
-	std::string submit_url;
-
-	Record now_playing;
-
-	/**
-	 * A queue of #record objects.
-	 */
-	std::list<Record> queue;
-
-	/**
-	 * How many songs are we trying to submit right now?  This
-	 * many will be shifted from #queue if the submit succeeds.
-	 */
-	unsigned pending = 0;
-
-public:
-	Scrobbler(const ScrobblerConfig &_config) noexcept;
-	~Scrobbler() noexcept;
-
-	void Push(const Record &song);
-	void ScheduleNowPlaying(const Record &song) noexcept;
-	void SubmitNow() noexcept;
-
-	void WriteJournal() const noexcept;
-
-private:
-	void ScheduleHandshake() noexcept;
-	void Handshake() noexcept;
-	bool ParseHandshakeResponse(const char *line) noexcept;
-
-	void SendNowPlaying(const char *artist,
-			    const char *track, const char *album,
-			    const char *number,
-			    const char *mbid, int length) noexcept;
-
-	void ScheduleSubmit() noexcept;
-	void Submit() noexcept;
-	void IncreaseInterval() noexcept;
-
-	static gboolean OnHandshakeTimer(gpointer data) noexcept;
-	static gboolean OnSubmitTimer(gpointer data) noexcept;
-
-public:
-	static void OnHandshakeResponse(std::string &&body,
-					void *data) noexcept;
-	static void OnHandshakeError(GError *error, void *data) noexcept;
-	static void OnSubmitResponse(std::string &&body,
-					void *data) noexcept;
-	static void OnSubmitError(GError *error, void *data) noexcept;
-};
-
-static std::forward_list<Scrobbler> scrobblers;
 
 Scrobbler::Scrobbler(const ScrobblerConfig &_config) noexcept
 	:config(_config)
@@ -572,34 +476,6 @@ Scrobbler::ScheduleNowPlaying(const Record &song) noexcept
 }
 
 void
-as_now_playing(const char *artist, const char *track,
-	       const char *album, const char *number,
-	       const char *mbid, const int length)
-{
-	Record record;
-
-	if (artist != nullptr)
-		record.artist = artist;
-
-	if (track != nullptr)
-		record.track = track;
-
-	if (album != nullptr)
-		record.album = album;
-
-	if (number != nullptr)
-		record.number = number;
-
-	if (mbid != nullptr)
-		record.mbid = mbid;
-
-	record.length = length;
-
-	for (auto &i : scrobblers)
-		i.ScheduleNowPlaying(record);
-}
-
-void
 Scrobbler::Submit() noexcept
 {
 	//MAX_SUBMIT_COUNT
@@ -685,74 +561,6 @@ Scrobbler::Push(const Record &song) noexcept
 		ScheduleSubmit();
 }
 
-void
-as_songchange(const char *file, const char *artist, const char *track,
-	      const char *album, const char *number,
-	      const char *mbid, const int length,
-	      bool love,
-	      const char *time2)
-{
-	Record record;
-
-	/* from the 1.2 protocol draft:
-
-	   You may still submit if there is no album title (variable b)
-	   You may still submit if there is no musicbrainz id available (variable m)
-
-	   everything else is mandatory.
-	 */
-	if (!(artist && strlen(artist))) {
-		g_warning("empty artist, not submitting; "
-			  "please check the tags on %s\n", file);
-		return;
-	}
-
-	if (!(track && strlen(track))) {
-		g_warning("empty title, not submitting; "
-			  "please check the tags on %s", file);
-		return;
-	}
-
-	record.artist = artist;
-	record.track = track;
-
-	if (album != nullptr)
-		record.album = album;
-
-	if (number != nullptr)
-		record.number = number;
-
-	if (mbid != nullptr)
-		record.mbid = mbid;
-
-	record.length = length;
-	record.time = time2 ? time2 : as_timestamp();
-	record.love = love;
-	record.source = strstr(file, "://") == nullptr ? "P" : "R";
-
-	g_message("%s, songchange: %s - %s (%i)\n",
-		  record.time.c_str(), record.artist.c_str(),
-		  record.track.c_str(), record.length);
-
-	for (auto &i : scrobblers)
-		i.Push(record);
-}
-
-static void
-AddScrobbler(const ScrobblerConfig &config)
-{
-	scrobblers.emplace_front(config);
-}
-
-void
-as_init(const std::forward_list<ScrobblerConfig> &scrobbler_configs)
-{
-	g_message("starting mpdscribble (" AS_CLIENT_ID " " AS_CLIENT_VERSION ")\n");
-
-	for (const auto &i : scrobbler_configs)
-		AddScrobbler(i);
-}
-
 gboolean
 Scrobbler::OnSubmitTimer(gpointer data) noexcept
 {
@@ -791,12 +599,6 @@ Scrobbler::WriteJournal() const noexcept
 	}
 }
 
-void as_save_cache()
-{
-	for (auto &i : scrobblers)
-		i.WriteJournal();
-}
-
 void
 Scrobbler::SubmitNow() noexcept
 {
@@ -813,15 +615,4 @@ Scrobbler::SubmitNow() noexcept
 		submit_source_id = 0;
 		ScheduleSubmit();
 	}
-}
-
-void as_submit_now()
-{
-	for (auto &i : scrobblers)
-		i.SubmitNow();
-}
-
-void as_cleanup()
-{
-	scrobblers.clear();
 }
