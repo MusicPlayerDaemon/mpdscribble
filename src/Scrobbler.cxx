@@ -19,12 +19,12 @@
 */
 
 #include "Scrobbler.hxx"
+#include "Protocol.hxx"
 #include "ScrobblerConfig.hxx"
 #include "Record.hxx"
 #include "Journal.hxx"
 #include "HttpClient.hxx"
 #include "Form.hxx"
-#include "config.h"
 #include "Log.hxx" /* for log_date() */
 
 #include <glib.h>
@@ -42,9 +42,6 @@
 #include <unistd.h>
 #include <stdarg.h>
 #include <string.h>
-
-#define AS_CLIENT_ID "mdc"
-#define AS_CLIENT_VERSION VERSION
 
 /* don't submit more than this amount of songs in a batch. */
 #define MAX_SUBMIT_COUNT 10
@@ -430,19 +427,6 @@ static constexpr HttpClientHandler scrobbler_submit_handler = {
 	.response = Scrobbler::OnSubmitResponse,
 	.error = Scrobbler::OnSubmitError,
 };
-
-static std::string
-as_timestamp()
-{
-	/* create timestamp for 1.2 protocol. */
-	GTimeVal time_val;
-
-	g_get_current_time(&time_val);
-
-	char buffer[64];
-	snprintf(buffer, sizeof(buffer), "%ld", time_val.tv_sec);
-	return buffer;
-}
 
 static constexpr size_t MD5_SIZE = 16;
 static constexpr size_t MD5_HEX_SIZE = MD5_SIZE * 2;
