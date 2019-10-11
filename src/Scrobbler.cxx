@@ -83,7 +83,7 @@ typedef enum {
 	AS_SUBMIT_HANDSHAKE,
 } as_submitting;
 
-struct Scrobbler {
+class Scrobbler {
 	const ScrobblerConfig &config;
 
 	FILE *file = nullptr;
@@ -112,9 +112,17 @@ struct Scrobbler {
 	 */
 	unsigned pending = 0;
 
+public:
 	Scrobbler(const ScrobblerConfig &_config) noexcept;
 	~Scrobbler() noexcept;
 
+	void Push(const Record &song);
+	void ScheduleNowPlaying(const Record &song) noexcept;
+	void SubmitNow() noexcept;
+
+	void WriteJournal() const noexcept;
+
+private:
 	void ScheduleHandshake() noexcept;
 	void Handshake() noexcept;
 	bool ParseHandshakeResponse(const char *line) noexcept;
@@ -123,20 +131,15 @@ struct Scrobbler {
 			    const char *track, const char *album,
 			    const char *number,
 			    const char *mbid, int length) noexcept;
-	void ScheduleNowPlaying(const Record &song) noexcept;
 
-	void SubmitNow() noexcept;
 	void ScheduleSubmit() noexcept;
 	void Submit() noexcept;
 	void IncreaseInterval() noexcept;
 
-	void Push(const Record &song);
-
-	void WriteJournal() const noexcept;
-
 	static gboolean OnHandshakeTimer(gpointer data) noexcept;
 	static gboolean OnSubmitTimer(gpointer data) noexcept;
 
+public:
 	static void OnHandshakeResponse(std::string &&body,
 					void *data) noexcept;
 	static void OnHandshakeError(GError *error, void *data) noexcept;
