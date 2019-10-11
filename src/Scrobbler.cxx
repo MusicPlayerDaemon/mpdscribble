@@ -112,9 +112,7 @@ struct Scrobbler {
 	 */
 	unsigned pending = 0;
 
-	Scrobbler(const ScrobblerConfig &_config) noexcept
-		:config(_config) {}
-
+	Scrobbler(const ScrobblerConfig &_config) noexcept;
 	~Scrobbler() noexcept;
 
 	void ScheduleHandshake() noexcept;
@@ -148,6 +146,30 @@ struct Scrobbler {
 };
 
 static std::forward_list<Scrobbler> scrobblers;
+
+Scrobbler::Scrobbler(const ScrobblerConfig &_config) noexcept
+	:config(_config)
+{
+	if (!config.journal.empty()) {
+		guint queue_length;
+
+		queue = journal_read(config.journal.c_str());
+
+		queue_length = queue.size();
+		g_message("loaded %i song%s from %s",
+			  queue_length, queue_length == 1 ? "" : "s",
+			  config.journal.c_str());
+	}
+
+	if (!config.file.empty()) {
+		file = fopen(config.file.c_str(), "a");
+		if (file == nullptr)
+			g_error("Failed to open file '%s' of scrobbler '%s': %s\n",
+				config.file.c_str(), config.name.c_str(),
+				g_strerror(errno));
+	} else
+		ScheduleHandshake();
+}
 
 Scrobbler::~Scrobbler() noexcept
 {
@@ -733,27 +755,6 @@ static void
 AddScrobbler(const ScrobblerConfig &config)
 {
 	scrobblers.emplace_front(config);
-	Scrobbler *scrobbler = &scrobblers.front();
-
-	if (!config.journal.empty()) {
-		guint queue_length;
-
-		scrobbler->queue = journal_read(config.journal.c_str());
-
-		queue_length = scrobbler->queue.size();
-		g_message("loaded %i song%s from %s",
-			  queue_length, queue_length == 1 ? "" : "s",
-			  config.journal.c_str());
-	}
-
-	if (!config.file.empty()) {
-		scrobbler->file = fopen(config.file.c_str(), "a");
-		if (scrobbler->file == nullptr)
-			g_error("Failed to open file '%s' of scrobbler '%s': %s\n",
-				config.file.c_str(), config.name.c_str(),
-				g_strerror(errno));
-	} else
-		scrobbler->ScheduleHandshake();
 }
 
 void
