@@ -75,12 +75,6 @@ static struct {
 	boost::intrusive::list<HttpRequest,
 			       boost::intrusive::constant_time_size<false>> requests;
 
-	/**
-	 * Set when inside http_multi_info_read(), to prevent
-	 * recursive invocation.
-	 */
-	bool locked;
-
 #if LIBCURL_VERSION_NUM >= 0x070f04
 	/**
 	 * Did CURL give us a timeout?  If yes, then we need to call
@@ -276,9 +270,6 @@ http_request_done(HttpRequest *request, CURLcode result, long status)
 static void
 http_multi_info_read()
 {
-	assert(!http_client.locked);
-	http_client.locked = true;
-
 	CURLMsg *msg;
 	int msgs_in_queue;
 
@@ -296,8 +287,6 @@ http_multi_info_read()
 			http_request_done(request, msg->data.result, status);
 		}
 	}
-
-	http_client.locked = false;
 }
 
 /**
@@ -540,18 +529,4 @@ http_client_request(const char *url, std::string &&post_data,
 	}
 
 	http_client.requests.push_front(*request);
-
-	/* initiate the transfer */
-
-	if (!http_multi_perform()) {
-		delete request;
-
-		GError *error = g_error_new_literal(curl_quark(), code,
-						    "http_multi_perform() failed");
-		handler.error(error, ctx);
-		return;
-	}
-
-	if (!http_client.locked)
-		http_multi_info_read();
 }
