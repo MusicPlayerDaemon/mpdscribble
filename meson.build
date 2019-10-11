@@ -75,6 +75,7 @@ executable(
   'mpdscribble',
 
   'src/Main.cxx',
+  'src/Instance.cxx',
   'src/Daemon.cxx',
   'src/Protocol.cxx',
   'src/Scrobbler.cxx',
