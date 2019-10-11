@@ -37,31 +37,35 @@
 #include <unistd.h>
 #include <string.h>
 
-static Instance *global_instance;
-
 static guint save_source_id;
 
 #ifndef WIN32
-static gboolean exit_signal_handler(G_GNUC_UNUSED gpointer user_data) {
-	g_main_loop_quit(global_instance->main_loop);
+static gboolean
+exit_signal_handler(gpointer user_data) noexcept
+{
+	auto &instance = *(Instance *)user_data;
+	g_main_loop_quit(instance.main_loop);
 	return true;
 }
 
-static gboolean submit_signal_handler(G_GNUC_UNUSED gpointer user_data) {
-	auto &scrobblers = global_instance->scrobblers;
-	scrobblers.SubmitNow();
+static gboolean
+submit_signal_handler(gpointer user_data) noexcept
+{
+	auto &instance = *(Instance *)user_data;
+	instance.scrobblers.SubmitNow();
 	return true;
 }
 
-static void setup_signals()
+static void
+setup_signals(Instance &instance) noexcept
 {
 	signal(SIGPIPE, SIG_IGN);
 
-	g_unix_signal_add(SIGINT, exit_signal_handler, nullptr);
-	g_unix_signal_add(SIGTERM, exit_signal_handler, nullptr);
-	g_unix_signal_add(SIGHUP, exit_signal_handler, nullptr);
+	g_unix_signal_add(SIGINT, exit_signal_handler, &instance);
+	g_unix_signal_add(SIGTERM, exit_signal_handler, &instance);
+	g_unix_signal_add(SIGHUP, exit_signal_handler, &instance);
 
-	g_unix_signal_add(SIGUSR1, submit_signal_handler, nullptr);
+	g_unix_signal_add(SIGUSR1, submit_signal_handler, &instance);
 }
 #endif
 
@@ -111,10 +115,10 @@ Instance::OnMpdSongChanged(const struct mpd_song *song) noexcept
  * Regularly save the cache.
  */
 static gboolean
-timer_save_journal(G_GNUC_UNUSED gpointer data)
+timer_save_journal(gpointer data)
 {
-	auto &scrobblers = global_instance->scrobblers;
-	scrobblers.WriteJournal();
+	auto &instance = *(Instance *)data;
+	instance.scrobblers.WriteJournal();
 	return true;
 }
 
@@ -151,7 +155,7 @@ Instance::OnMpdStarted(const struct mpd_song *song) noexcept
 void
 Instance::OnMpdPlaying(const struct mpd_song *song, int elapsed) noexcept
 {
-	int prev_elapsed = g_timer_elapsed(global_instance->timer, nullptr);
+	int prev_elapsed = g_timer_elapsed(timer, nullptr);
 
 	if (song_repeated(song, elapsed, prev_elapsed)) {
 		/* the song is playing repeatedly: make it virtually
@@ -184,7 +188,7 @@ Instance::OnMpdEnded(const struct mpd_song *song, bool love) noexcept
 			      mpd_song_get_tag(song, MPD_TAG_MUSICBRAINZ_TRACKID, 0),
 			      mpd_song_get_duration(song) > 0
 			      ? mpd_song_get_duration(song)
-			      : g_timer_elapsed(global_instance->timer, nullptr),
+			      : g_timer_elapsed(timer, nullptr),
 			      love,
 			      nullptr);
 }
@@ -216,16 +220,15 @@ int main(int argc, char **argv)
 	http_client_init();
 
 	Instance instance(file_config);
-	global_instance = &instance;
 
 #ifndef WIN32
-	setup_signals();
+	setup_signals(instance);
 #endif
 
 	/* set up timeouts */
 
 	save_source_id = g_timeout_add_seconds(file_config.journal_interval,
-					       timer_save_journal, nullptr);
+					       timer_save_journal, &instance);
 
 	/* run the main loop */
 
