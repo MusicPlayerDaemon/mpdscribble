@@ -19,6 +19,7 @@
 */
 
 #include "Scrobbler.hxx"
+#include "ScrobblerConfig.hxx"
 #include "Record.hxx"
 #include "Journal.hxx"
 #include "HttpClient.hxx"

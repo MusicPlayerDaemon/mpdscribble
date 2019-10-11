@@ -18,43 +18,34 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 
-#ifndef CONFIG_HXX
-#define CONFIG_HXX
+#ifndef SCROBBLER_CONFIG_HXX
+#define SCROBBLER_CONFIG_HXX
 
-#include "ScrobblerConfig.hxx"
+#include <string>
 
-#include <forward_list>
+struct ScrobblerConfig {
+	/**
+	 * The name of the mpdscribble.conf section.  It is used in
+	 * log messages.
+	 */
+	std::string name;
 
-#include <glib.h>
-
-enum file_location { file_etc, file_home, file_unknown, };
-
-struct config {
-	/** don't daemonize the mpdscribble process */
-	gboolean no_daemon;
-
-	char *pidfile;
-
-	char *daemon_user;
-
-	char *log;
-	char *conf;
-	char *host;
-	char *proxy;
-	unsigned port = 0;
+	std::string url;
+	std::string username;
+	std::string password;
 
 	/**
-	 * The interval in seconds after which the journal is saved to
-	 * the file system.
+	 * The path of the journal file.  It contains records which
+	 * have not been submitted yet.
 	 */
-	unsigned journal_interval = 600;
+	std::string journal;
 
-	int verbose = -1;
-	enum file_location loc = file_unknown;
-
-	std::forward_list<ScrobblerConfig> scrobblers;
+	/**
+	 * The path of the log file.  This is set when logging to a
+	 * file is configured instead of submission to an
+	 * AudioScrobbler server.
+	 */
+	std::string file;
 };
-
-extern struct config file_config;
 
 #endif
