@@ -87,7 +87,7 @@ public:
 	Scrobbler(const ScrobblerConfig &_config) noexcept;
 	~Scrobbler() noexcept;
 
-	void Push(const Record &song);
+	void Push(const Record &song) noexcept;
 	void ScheduleNowPlaying(const Record &song) noexcept;
 	void SubmitNow() noexcept;
 

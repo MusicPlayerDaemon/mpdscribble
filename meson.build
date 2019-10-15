@@ -43,7 +43,6 @@ test_cflags = [
   '-Wno-missing-field-initializers',
   '-Wno-non-virtual-dtor',
 
-  '-fno-rtti', '-fno-exceptions',
   '-fvisibility=hidden',
 ]
 
@@ -89,6 +88,8 @@ executable(
   'src/Journal.cxx',
   'src/MpdObserver.cxx',
   'src/Log.cxx',
+
+  'src/util/PrintException.cxx',
 
   include_directories: inc,
   dependencies: [

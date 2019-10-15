@@ -132,7 +132,7 @@ scrobbler_parse_submit_response(const char *scrobbler_name,
 }
 
 bool
-Scrobbler::ParseHandshakeResponse(const char *line)
+Scrobbler::ParseHandshakeResponse(const char *line) noexcept
 {
 	static const char *BANNED = "BANNED";
 	static const char *BADAUTH = "BADAUTH";
@@ -378,7 +378,7 @@ as_md5(const std::string &password, const std::string &timestamp)
 }
 
 void
-Scrobbler::Handshake()
+Scrobbler::Handshake() noexcept
 {
 	assert(config.file.empty());
 

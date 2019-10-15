@@ -69,7 +69,7 @@ connection_settings_name(const struct mpd_connection *connection)
 }
 
 bool
-MpdObserver::Connect()
+MpdObserver::Connect() noexcept
 {
 	assert(connection == nullptr);
 

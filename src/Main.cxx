@@ -25,6 +25,7 @@
 #include "Config.hxx"
 #include "Log.hxx"
 #include "HttpClient.hxx"
+#include "util/PrintException.hxx"
 
 #include <glib.h>
 #ifndef WIN32
@@ -135,7 +136,7 @@ Instance::OnMpdPaused() noexcept
  * The current song continues to play (after pause).
  */
 void
-Instance::OnMpdResumed()
+Instance::OnMpdResumed() noexcept
 {
 	g_timer_continue(timer);
 }
@@ -194,7 +195,7 @@ Instance::OnMpdEnded(const struct mpd_song *song, bool love) noexcept
 }
 
 int main(int argc, char **argv)
-{
+try {
 	daemonize_close_stdin();
 
 	parse_cmdline(argc, argv);
@@ -249,4 +250,7 @@ int main(int argc, char **argv)
 	daemonize_finish();
 
 	return 0;
+} catch (...) {
+	PrintException(std::current_exception());
+	return EXIT_FAILURE;
 }
