@@ -28,32 +28,33 @@ add_var_internal(std::string &dest, char sep, const char *key,
 		 signed char idx, const char *val) noexcept;
 
 inline void
-first_var(std::string &s, const char *key, const char *val)
+first_var(std::string &s, const char *key, const char *val) noexcept
 {
 	add_var_internal(s, '?', key, -1, val);
 }
 
 inline void
-add_var(std::string &s, const char *key, const char *val)
+add_var(std::string &s, const char *key, const char *val) noexcept
 {
 	add_var_internal(s, '&', key, -1, val);
 }
 
 inline void
-add_var(std::string &s, const char *key, const std::string &val)
+add_var(std::string &s, const char *key, const std::string &val) noexcept
 {
 	add_var(s, key, val.c_str());
 }
 
 inline void
-add_var_i(std::string &s, const char *key, signed char idx, const char *val)
+add_var_i(std::string &s, const char *key, signed char idx,
+	  const char *val) noexcept
 {
 	add_var_internal(s, '&', key, idx, val);
 }
 
 inline void
 add_var_i(std::string &s, const char *key, signed char idx,
-	  const std::string &val)
+	  const std::string &val) noexcept
 {
 	add_var_i(s, key, idx, val.c_str());
 }
