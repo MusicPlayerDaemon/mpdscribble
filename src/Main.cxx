@@ -70,7 +70,8 @@ setup_signals(Instance &instance) noexcept
 }
 #endif
 
-static bool played_long_enough(int elapsed, int length)
+static constexpr bool
+played_long_enough(int elapsed, int length) noexcept
 {
 	/* http://www.lastfm.de/api/submissions "The track must have been
 	   played for a duration of at least 240 seconds or half the track's
@@ -87,7 +88,8 @@ static bool played_long_enough(int elapsed, int length)
  * the "elapsed" value with the previous one.
  */
 static bool
-song_repeated(const struct mpd_song *song, int elapsed, int prev_elapsed)
+song_repeated(const struct mpd_song *song,
+	      int elapsed, int prev_elapsed) noexcept
 {
 	return elapsed < 60 && prev_elapsed > elapsed &&
 		played_long_enough(prev_elapsed - elapsed,
@@ -116,7 +118,7 @@ Instance::OnMpdSongChanged(const struct mpd_song *song) noexcept
  * Regularly save the cache.
  */
 static gboolean
-timer_save_journal(gpointer data)
+timer_save_journal(gpointer data) noexcept
 {
 	auto &instance = *(Instance *)data;
 	instance.scrobblers.WriteJournal();
@@ -194,7 +196,8 @@ Instance::OnMpdEnded(const struct mpd_song *song, bool love) noexcept
 			      nullptr);
 }
 
-int main(int argc, char **argv)
+int
+main(int argc, char **argv) noexcept
 try {
 	daemonize_close_stdin();
 
