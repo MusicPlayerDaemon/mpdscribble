@@ -54,7 +54,7 @@ static char *pidfile;
 #endif
 
 void
-daemonize_close_stdin()
+daemonize_close_stdin() noexcept
 {
 #ifndef G_OS_WIN32
 	int fd = open("/dev/null", O_RDONLY);
@@ -69,7 +69,7 @@ daemonize_close_stdin()
 }
 
 void
-daemonize_close_stdout_stderr()
+daemonize_close_stdout_stderr() noexcept
 {
 #ifndef G_OS_WIN32
 	int fd = open("/dev/null", O_WRONLY);
@@ -89,7 +89,7 @@ daemonize_close_stdout_stderr()
 }
 
 void
-daemonize_set_user()
+daemonize_set_user() noexcept
 {
 #ifndef G_OS_WIN32
 	if (user_name == nullptr)
@@ -118,7 +118,7 @@ daemonize_set_user()
 }
 
 void
-daemonize_detach()
+daemonize_detach() noexcept
 {
 #ifndef G_OS_WIN32
 	int ret;
@@ -146,7 +146,7 @@ daemonize_detach()
 }
 
 void
-daemonize_write_pidfile()
+daemonize_write_pidfile() noexcept
 {
 #ifndef G_OS_WIN32
 	FILE *file;
@@ -167,7 +167,7 @@ daemonize_write_pidfile()
 }
 
 void
-daemonize_init(const char *user, const char *_pidfile)
+daemonize_init(const char *user, const char *_pidfile) noexcept
 {
 #ifndef G_OS_WIN32
 	if (user != nullptr && strcmp(user, g_get_user_name()) != 0) {
@@ -191,7 +191,7 @@ daemonize_init(const char *user, const char *_pidfile)
 }
 
 void
-daemonize_finish()
+daemonize_finish() noexcept
 {
 #ifndef G_OS_WIN32
 	if (pidfile != nullptr)
