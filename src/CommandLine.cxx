@@ -65,7 +65,7 @@ static const GOptionEntry entries[] = {
 };
 
 static void
-version()
+version() noexcept
 {
 	fputs(blurb, stdout);
 
@@ -81,7 +81,7 @@ version()
 }
 
 void
-parse_cmdline(int argc, char **argv)
+parse_cmdline(int argc, char **argv) noexcept
 {
 	GError *error = nullptr;
 	GOptionContext *context;

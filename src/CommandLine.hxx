@@ -22,6 +22,6 @@
 #define CMDLINE_HXX
 
 void
-parse_cmdline(int argc, char **argv);
+parse_cmdline(int argc, char **argv) noexcept;
 
 #endif
