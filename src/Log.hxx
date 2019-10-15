@@ -22,12 +22,12 @@
 #define LOG_HXX
 
 void
-log_init(const char *path, int verbose);
+log_init(const char *path, int verbose) noexcept;
 
 void
-log_deinit();
+log_deinit() noexcept;
 
 const char *
-log_date();
+log_date() noexcept;
 
 #endif

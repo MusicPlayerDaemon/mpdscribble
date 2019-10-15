@@ -40,7 +40,7 @@ static GLogLevelFlags log_threshold = G_LOG_LEVEL_MESSAGE;
  * characters.
  */
 static int
-chomp_length(const char *p)
+chomp_length(const char *p) noexcept
 {
 	size_t length = strlen(p);
 
@@ -51,7 +51,7 @@ chomp_length(const char *p)
 }
 
 const char *
-log_date()
+log_date() noexcept
 {
 	static char buf[32];
 	time_t t;
@@ -73,7 +73,7 @@ log_date()
 
 static void
 file_log_func(const gchar *log_domain, GLogLevelFlags log_level,
-	      const gchar *message, gpointer)
+	      const gchar *message, gpointer) noexcept
 {
 	if (log_level > log_threshold)
 		return;
@@ -88,7 +88,7 @@ file_log_func(const gchar *log_domain, GLogLevelFlags log_level,
 }
 
 static void
-log_init_file(const char *path)
+log_init_file(const char *path) noexcept
 {
 	assert(path != nullptr);
 	assert(log_file == nullptr);
@@ -109,8 +109,8 @@ log_init_file(const char *path)
 
 #ifdef HAVE_SYSLOG
 
-static int
-glib_to_syslog_level(GLogLevelFlags log_level)
+static constexpr int
+glib_to_syslog_level(GLogLevelFlags log_level) noexcept
 {
 	switch (log_level & G_LOG_LEVEL_MASK) {
 	case G_LOG_LEVEL_ERROR:
@@ -137,7 +137,7 @@ glib_to_syslog_level(GLogLevelFlags log_level)
 static void
 syslog_log_func(const gchar *,
 		GLogLevelFlags log_level, const gchar *message,
-		gpointer)
+		gpointer) noexcept
 {
 	if (log_level > log_threshold)
 		return;
@@ -147,7 +147,7 @@ syslog_log_func(const gchar *,
 }
 
 static void
-log_init_syslog()
+log_init_syslog() noexcept
 {
 	assert(log_file == nullptr);
 
@@ -158,7 +158,7 @@ log_init_syslog()
 #endif
 
 void
-log_init(const char *path, int verbose)
+log_init(const char *path, int verbose) noexcept
 {
 	assert(path != nullptr);
 	assert(verbose >= 0);
@@ -182,7 +182,7 @@ log_init(const char *path, int verbose)
 }
 
 void
-log_deinit()
+log_deinit() noexcept
 {
 #ifndef HAVE_SYSLOG
 	assert(log_file != nullptr);
