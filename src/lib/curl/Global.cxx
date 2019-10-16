@@ -32,7 +32,7 @@ enum {
 };
 
 void
-HttpClient::Add(CURL *easy)
+CurlGlobal::Add(CURL *easy)
 {
 	CURLMcode mcode = curl_multi_add_handle(multi.Get(), easy);
 	if (mcode != CURLM_OK)
@@ -68,7 +68,7 @@ http_client_fd_events(int fd, fd_set *rfds,
 }
 
 void
-HttpClient::UpdateFDs() noexcept
+CurlGlobal::UpdateFDs() noexcept
 {
 	fd_set rfds, wfds, efds;
 
@@ -136,7 +136,7 @@ http_client_find_request(CURL *curl) noexcept
 }
 
 void
-HttpClient::ReadInfo() noexcept
+CurlGlobal::ReadInfo() noexcept
 {
 	CURLMsg *msg;
 	int msgs_in_queue;
@@ -158,7 +158,7 @@ HttpClient::ReadInfo() noexcept
 }
 
 bool
-HttpClient::Perform() noexcept
+CurlGlobal::Perform() noexcept
 {
 	CURLMcode mcode;
 
@@ -180,15 +180,15 @@ HttpClient::Perform() noexcept
  * The GSource prepare() method implementation.
  */
 gboolean
-HttpClient::SourcePrepare(GSource *source, gint *timeout_) noexcept
+CurlGlobal::SourcePrepare(GSource *source, gint *timeout_) noexcept
 {
-	auto &http_client = *((Source *)source)->client;
+	auto &global = *((Source *)source)->global;
 
-	http_client.UpdateFDs();
-	http_client.timeout = false;
+	global.UpdateFDs();
+	global.timeout = false;
 
 	long timeout2;
-	CURLMcode mcode = curl_multi_timeout(http_client.multi.Get(),
+	CURLMcode mcode = curl_multi_timeout(global.multi.Get(),
 					     &timeout2);
 	if (mcode == CURLM_OK) {
 		if (timeout2 >= 0 && timeout2 < 10)
@@ -200,7 +200,7 @@ HttpClient::SourcePrepare(GSource *source, gint *timeout_) noexcept
 
 		*timeout_ = timeout2;
 
-		http_client.timeout = timeout2 >= 0;
+		global.timeout = timeout2 >= 0;
 	} else
 		g_warning("curl_multi_timeout() failed: %s\n",
 			  curl_multi_strerror(mcode));
@@ -212,19 +212,19 @@ HttpClient::SourcePrepare(GSource *source, gint *timeout_) noexcept
  * The GSource check() method implementation.
  */
 gboolean
-HttpClient::SourceCheck(GSource *source) noexcept
+CurlGlobal::SourceCheck(GSource *source) noexcept
 {
-	auto &http_client = *((Source *)source)->client;
+	auto &global = *((Source *)source)->global;
 
-	if (http_client.timeout) {
+	if (global.timeout) {
 		/* when a timeout has expired, we need to call
 		   curl_multi_perform(), even if there was no file
 		   descriptor event */
-		http_client.timeout = false;
+		global.timeout = false;
 		return true;
 	}
 
-	for (const auto &i : http_client.fds)
+	for (const auto &i : global.fds)
 		if (i.revents != 0)
 			return true;
 
@@ -236,12 +236,12 @@ HttpClient::SourceCheck(GSource *source) noexcept
  * used, because we're handling all events directly.
  */
 gboolean
-HttpClient::SourceDispatch(GSource *source, GSourceFunc, gpointer) noexcept
+CurlGlobal::SourceDispatch(GSource *source, GSourceFunc, gpointer) noexcept
 {
-	auto &http_client = *((Source *)source)->client;
+	auto &global = *((Source *)source)->global;
 
-	if (http_client.Perform())
-		http_client.ReadInfo();
+	if (global.Perform())
+		global.ReadInfo();
 
 	return true;
 }
@@ -252,21 +252,21 @@ HttpClient::SourceDispatch(GSource *source, GSourceFunc, gpointer) noexcept
  * pointer, for whatever reason.
  */
 static GSourceFuncs curl_source_funcs = {
-	.prepare = HttpClient::SourcePrepare,
-	.check = HttpClient::SourceCheck,
-	.dispatch = HttpClient::SourceDispatch,
+	.prepare = CurlGlobal::SourcePrepare,
+	.check = CurlGlobal::SourceCheck,
+	.dispatch = CurlGlobal::SourceDispatch,
 };
 
-HttpClient::HttpClient()
+CurlGlobal::CurlGlobal()
 {
 	source = g_source_new(&curl_source_funcs,
 			      sizeof(Source));
-	((Source *)source)->client = this;
+	((Source *)source)->global = this;
 
 	source_id = g_source_attach(source, g_main_context_default());
 }
 
-HttpClient::~HttpClient() noexcept
+CurlGlobal::~CurlGlobal() noexcept
 {
 	/* unregister all GPollFD instances */
 

@@ -53,8 +53,8 @@ typedef enum {
 } as_submitting;
 
 Scrobbler::Scrobbler(const ScrobblerConfig &_config,
-		     HttpClient &_http_client) noexcept
-	:config(_config), http_client(_http_client)
+		     CurlGlobal &_curl_global) noexcept
+	:config(_config), curl_global(_curl_global)
 {
 	if (!config.journal.empty()) {
 		guint queue_length;
@@ -406,7 +406,7 @@ Scrobbler::Handshake() noexcept
 
 	//  notice ("handshake url:\n%s", url);
 
-	http_request = std::make_unique<HttpRequest>(http_client,
+	http_request = std::make_unique<HttpRequest>(curl_global,
 						     url.c_str(), std::string(),
 						     scrobbler_handshake_handler,
 						     this);
@@ -466,7 +466,7 @@ Scrobbler::SendNowPlaying(const char *artist,
 	g_message("[%s] sending 'now playing' notification",
 		  config.name.c_str());
 
-	http_request = std::make_unique<HttpRequest>(http_client,
+	http_request = std::make_unique<HttpRequest>(curl_global,
 						     nowplay_url.c_str(),
 						     std::move(post_data),
 						     scrobbler_submit_handler,
@@ -551,7 +551,7 @@ Scrobbler::Submit() noexcept
 
 	pending = count;
 
-	http_request = std::make_unique<HttpRequest>(http_client,
+	http_request = std::make_unique<HttpRequest>(curl_global,
 						     submit_url.c_str(),
 						     std::move(post_data),
 						     scrobbler_submit_handler, this);

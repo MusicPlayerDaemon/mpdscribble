@@ -44,10 +44,10 @@ main(int argc, char **argv)
 
 	main_loop = g_main_loop_new(nullptr, false);
 
-	HttpClient http_client;
+	CurlGlobal curl_global;
 
 	const char *url = argv[1];
-	HttpRequest request(http_client, url, {}, my_handler, nullptr);
+	HttpRequest request(curl_global, url, {}, my_handler, nullptr);
 	if (!quit)
 		g_main_loop_run(main_loop);
 	assert(quit);

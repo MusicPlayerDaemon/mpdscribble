@@ -36,11 +36,11 @@ enum {
 	MAX_RESPONSE_BODY = 8192,
 };
 
-HttpRequest::HttpRequest(HttpClient &_client,
+HttpRequest::HttpRequest(CurlGlobal &_global,
 			 const char *url, std::string &&_request_body,
 			 const HttpClientHandler &_handler,
 			 void *_ctx)
-	:client(_client),
+	:global(_global),
 	 handler(_handler), handler_ctx(_ctx),
 	 curl(url),
 	 request_body(std::move(_request_body))
@@ -61,13 +61,13 @@ HttpRequest::HttpRequest(HttpClient &_client,
 				    request_body.size());
 	}
 
-	client.Add(curl.Get());
+	global.Add(curl.Get());
 }
 
 HttpRequest::~HttpRequest() noexcept
 {
 	if (curl)
-		client.Remove(curl.Get());
+		global.Remove(curl.Get());
 }
 
 inline void

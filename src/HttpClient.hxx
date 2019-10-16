@@ -26,7 +26,7 @@
 #include <exception>
 #include <string>
 
-class HttpClient;
+class CurlGlobal;
 
 struct HttpClientHandler {
 	void (*response)(std::string body, void *ctx);
@@ -35,7 +35,7 @@ struct HttpClientHandler {
 
 class HttpRequest final
 {
-	HttpClient &client;
+	CurlGlobal &global;
 
 	const HttpClientHandler &handler;
 	void *handler_ctx;
@@ -53,7 +53,7 @@ class HttpRequest final
 	char error[CURL_ERROR_SIZE];
 
 public:
-	HttpRequest(HttpClient &client,
+	HttpRequest(CurlGlobal &global,
 		    const char *url, std::string &&_request_body,
 		    const HttpClientHandler &_handler, void *_ctx);
 	~HttpRequest() noexcept;

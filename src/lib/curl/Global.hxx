@@ -28,11 +28,11 @@
 
 #include <forward_list>
 
-class HttpClient final {
+class CurlGlobal final {
 	struct Source {
 		GSource base;
 
-		HttpClient *client;
+		CurlGlobal *global;
 	};
 
 	const ScopeCurlInit init;
@@ -58,11 +58,11 @@ class HttpClient final {
 	bool timeout;
 
 public:
-	HttpClient();
-	~HttpClient() noexcept;
+	CurlGlobal();
+	~CurlGlobal() noexcept;
 
-	HttpClient(const HttpClient &) = delete;
-	HttpClient &operator=(const HttpClient &) = delete;
+	CurlGlobal(const CurlGlobal &) = delete;
+	CurlGlobal &operator=(const CurlGlobal &) = delete;
 
 	void Add(CURL *easy);
 

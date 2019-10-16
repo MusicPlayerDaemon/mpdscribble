@@ -24,7 +24,7 @@
 #include <forward_list>
 
 struct ScrobblerConfig;
-class HttpClient;
+class CurlGlobal;
 class Scrobbler;
 
 class MultiScrobbler {
@@ -32,7 +32,7 @@ class MultiScrobbler {
 
 public:
 	explicit MultiScrobbler(const std::forward_list<ScrobblerConfig> &configs,
-				HttpClient &http_client) noexcept;
+				CurlGlobal &curl_global) noexcept;
 	~MultiScrobbler() noexcept;
 
 	void WriteJournal() noexcept;

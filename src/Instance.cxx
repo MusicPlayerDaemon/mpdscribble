@@ -25,7 +25,7 @@ Instance::Instance(const struct config &config) noexcept
 	:main_loop(g_main_loop_new(nullptr, false)),
 	 timer(g_timer_new()),
 	 mpd_observer(*this, config.host, config.port),
-	 scrobblers(config.scrobblers, http_client)
+	 scrobblers(config.scrobblers, curl_global)
 {
 }
 

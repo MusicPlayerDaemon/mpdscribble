@@ -29,12 +29,12 @@
 #include <string.h>
 
 MultiScrobbler::MultiScrobbler(const std::forward_list<ScrobblerConfig> &configs,
-			       HttpClient &http_client) noexcept
+			       CurlGlobal &curl_global) noexcept
 {
 	g_message("starting mpdscribble (" AS_CLIENT_ID " " AS_CLIENT_VERSION ")\n");
 
 	for (const auto &i : configs)
-		scrobblers.emplace_front(i, http_client);
+		scrobblers.emplace_front(i, curl_global);
 }
 
 MultiScrobbler::~MultiScrobbler() noexcept = default;

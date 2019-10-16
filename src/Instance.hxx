@@ -33,7 +33,7 @@ struct Instance final : MpdObserverListener {
 	GMainLoop *main_loop;
 	GTimer *timer;
 
-	HttpClient http_client;
+	CurlGlobal curl_global;
 
 	MpdObserver mpd_observer;
 

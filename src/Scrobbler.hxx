@@ -32,7 +32,7 @@
 #include <stdio.h>
 
 struct ScrobblerConfig;
-class HttpClient;
+class CurlGlobal;
 class HttpRequest;
 
 class Scrobbler {
@@ -66,7 +66,7 @@ class Scrobbler {
 
 	unsigned interval = 1;
 
-	HttpClient &http_client;
+	CurlGlobal &curl_global;
 
 	std::unique_ptr<HttpRequest> http_request;
 
@@ -92,7 +92,7 @@ class Scrobbler {
 
 public:
 	Scrobbler(const ScrobblerConfig &_config,
-		  HttpClient &_http_client) noexcept;
+		  CurlGlobal &_curl_global) noexcept;
 	~Scrobbler() noexcept;
 
 	void Push(const Record &song) noexcept;
