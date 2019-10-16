@@ -58,6 +58,19 @@ struct HttpRequest
 	HttpRequest(const char *url, std::string &&_request_body,
 		    const HttpClientHandler &_handler, void *_ctx);
 	~HttpRequest() noexcept;
+
+	/**
+	 * A HTTP request is finished: invoke its callback and free it.
+	 */
+	void Done(CURLcode result, long status) noexcept;
+
+private:
+	/**
+	 * Called by curl when new data is available.
+	 */
+	static size_t WriteFunction(char *ptr, size_t size, size_t nmemb,
+				    void *stream) noexcept;
+
 };
 
 static struct {
@@ -92,10 +105,6 @@ curl_quark() noexcept
     return g_quark_from_static_string("curl");
 }
 
-static size_t
-http_request_writefunction(char *ptr, size_t size, size_t nmemb,
-			   void *stream) noexcept;
-
 HttpRequest::HttpRequest(const char *url, std::string &&_request_body,
 			 const HttpClientHandler &_handler,
 			 void *_ctx)
@@ -105,7 +114,7 @@ HttpRequest::HttpRequest(const char *url, std::string &&_request_body,
 {
 	curl.SetPrivate(this);
 	curl.SetUserAgent(PACKAGE "/" VERSION);
-	curl.SetWriteFunction(http_request_writefunction, this);
+	curl.SetWriteFunction(WriteFunction, this);
 	curl.SetOption(CURLOPT_FAILONERROR, true);
 	curl.SetOption(CURLOPT_ERRORBUFFER, error);
 	curl.SetOption(CURLOPT_BUFFERSIZE, (long)2048);
@@ -230,37 +239,33 @@ http_client_find_request(CURL *curl) noexcept
 	return (HttpRequest *)p;
 }
 
-/**
- * A HTTP request is finished: invoke its callback and free it.
- */
-static void
-http_request_done(HttpRequest *request, CURLcode result, long status) noexcept
+void
+HttpRequest::Done(CURLcode result, long status) noexcept
 {
 	/* invoke the handler method */
 
 	if (result == CURLE_WRITE_ERROR &&
 	    /* handle the postponed error that was caught in
-	       http_request_writefunction() */
-	    request->response_body.length() > MAX_RESPONSE_BODY) {
-		GError *error =
+	       WriteFunction() */
+	    response_body.length() > MAX_RESPONSE_BODY) {
+		GError *e =
 			g_error_new_literal(curl_quark(), 0,
 					    "response body is too large");
-		request->handler.error(error, request->handler_ctx);
+		handler.error(e, handler_ctx);
 	} else if (result != CURLE_OK) {
-		GError *error = g_error_new(curl_quark(), result,
-					    "curl failed: %s",
-					    request->error);
-		request->handler.error(error, request->handler_ctx);
+		GError *e = g_error_new(curl_quark(), result,
+					"curl failed: %s",
+					error);
+		handler.error(e, handler_ctx);
 	} else if (status < 200 || status >= 300) {
-		GError *error = g_error_new(curl_quark(), 0,
-					    "got HTTP status %ld",
-					    status);
-		request->handler.error(error, request->handler_ctx);
+		GError *e = g_error_new(curl_quark(), 0,
+					"got HTTP status %ld",
+					status);
+		handler.error(e, handler_ctx);
 	} else
-		request->handler.response(std::move(request->response_body),
-					   request->handler_ctx);
+		handler.response(std::move(response_body), handler_ctx);
 
-	delete request;
+	delete this;
 }
 
 /**
@@ -283,7 +288,7 @@ http_multi_info_read() noexcept
 			curl_easy_getinfo(msg->easy_handle,
 					  CURLINFO_RESPONSE_CODE, &status);
 
-			http_request_done(request, msg->data.result, status);
+			request->Done(msg->data.result, status);
 		}
 	}
 }
@@ -443,8 +448,8 @@ http_client_uri_escape(const char *src) noexcept
 /**
  * Called by curl when new data is available.
  */
-static size_t
-http_request_writefunction(char *ptr, size_t size, size_t nmemb,
+size_t
+HttpRequest::WriteFunction(char *ptr, size_t size, size_t nmemb,
 			   void *stream) noexcept
 {
 	auto *request = (HttpRequest *)stream;
