@@ -90,6 +90,7 @@ executable(
   'src/Log.cxx',
 
   'src/lib/curl/Init.cxx',
+  'src/lib/curl/Global.cxx',
   'src/util/Exception.cxx',
   'src/util/PrintException.cxx',
 

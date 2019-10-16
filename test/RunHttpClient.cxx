@@ -1,4 +1,5 @@
 #include "HttpClient.hxx"
+#include "lib/curl/Global.hxx"
 #include "util/PrintException.hxx"
 
 #include <glib.h>

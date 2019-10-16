@@ -21,7 +21,7 @@
 #ifndef INSTANCE_HXX
 #define INSTANCE_HXX
 
-#include "HttpClient.hxx"
+#include "lib/curl/Global.hxx"
 #include "MpdObserver.hxx"
 #include "MultiScrobbler.hxx"
 
