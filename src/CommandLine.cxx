@@ -77,7 +77,7 @@ version() noexcept
 	     "For more information about these matters, see the file named COPYING.\n"
 	     "\n");
 
-	exit(0);
+	exit(EXIT_SUCCESS);
 }
 
 void

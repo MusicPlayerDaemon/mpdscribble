@@ -252,7 +252,7 @@ try {
 
 	daemonize_finish();
 
-	return 0;
+	return EXIT_SUCCESS;
 } catch (...) {
 	PrintException(std::current_exception());
 	return EXIT_FAILURE;
