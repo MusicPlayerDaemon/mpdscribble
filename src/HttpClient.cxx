@@ -75,14 +75,12 @@ static struct {
 	boost::intrusive::list<HttpRequest,
 			       boost::intrusive::constant_time_size<false>> requests;
 
-#if LIBCURL_VERSION_NUM >= 0x070f04
 	/**
 	 * Did CURL give us a timeout?  If yes, then we need to call
 	 * curl_multi_perform(), even if there was no event on any
 	 * file descriptor.
 	 */
 	bool timeout;
-#endif
 } http_client;
 
 static inline GQuark
@@ -318,11 +316,10 @@ http_multi_perform()
  * The GSource prepare() method implementation.
  */
 static gboolean
-curl_source_prepare(G_GNUC_UNUSED GSource *source, G_GNUC_UNUSED gint *timeout_)
+curl_source_prepare(GSource *, gint *timeout_)
 {
 	http_client_update_fds();
 
-#if LIBCURL_VERSION_NUM >= 0x070f04
 	http_client.timeout = false;
 
 	long timeout2;
@@ -341,7 +338,6 @@ curl_source_prepare(G_GNUC_UNUSED GSource *source, G_GNUC_UNUSED gint *timeout_)
 	} else
 		g_warning("curl_multi_timeout() failed: %s\n",
 			  curl_multi_strerror(mcode));
-#endif
 
 	return false;
 }
@@ -352,7 +348,6 @@ curl_source_prepare(G_GNUC_UNUSED GSource *source, G_GNUC_UNUSED gint *timeout_)
 static gboolean
 curl_source_check(G_GNUC_UNUSED GSource *source)
 {
-#if LIBCURL_VERSION_NUM >= 0x070f04
 	if (http_client.timeout) {
 		/* when a timeout has expired, we need to call
 		   curl_multi_perform(), even if there was no file
@@ -360,7 +355,6 @@ curl_source_check(G_GNUC_UNUSED GSource *source)
 		http_client.timeout = false;
 		return true;
 	}
-#endif
 
 	for (const auto &i : http_client.fds)
 		if (i.revents != 0)
