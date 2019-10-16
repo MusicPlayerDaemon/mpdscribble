@@ -43,6 +43,20 @@ http_client_init();
 void
 http_client_finish() noexcept;
 
+class HttpClientInit final {
+public:
+	HttpClientInit() {
+		http_client_init();
+	}
+
+	~HttpClientInit() noexcept {
+		http_client_finish();
+	}
+
+	HttpClientInit(const HttpClientInit &) = delete;
+	HttpClientInit &operator=(const HttpClientInit &) = delete;
+};
+
 /**
  * Escapes URI parameters with '%'.  Free the return value with
  * g_free().

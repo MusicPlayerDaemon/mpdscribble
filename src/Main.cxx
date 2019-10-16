@@ -221,7 +221,7 @@ try {
 #endif
 		daemonize_close_stdout_stderr();
 
-	http_client_init();
+	HttpClientInit http_client_init;
 
 	Instance instance(file_config);
 
@@ -246,7 +246,6 @@ try {
 
 	instance.scrobblers.WriteJournal();
 
-	http_client_finish();
 	file_cleanup();
 	log_deinit();
 
