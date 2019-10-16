@@ -18,6 +18,7 @@
  */
 
 #include "HttpClient.hxx"
+#include "util/Exception.hxx"
 #include "Config.hxx"
 #include "config.h"
 
@@ -484,7 +485,7 @@ http_request_writefunction(void *ptr, size_t size, size_t nmemb,
 void
 http_client_request(const char *url, std::string &&post_data,
 		    const HttpClientHandler &handler, void *ctx) noexcept
-{
+try {
 	HttpRequest *request = new HttpRequest(std::move(post_data),
 					       handler, ctx);
 
@@ -492,6 +493,7 @@ http_client_request(const char *url, std::string &&post_data,
 
 	request->curl = curl_easy_init();
 	if (request->curl == nullptr) {
+		curl_easy_cleanup(request->curl);
 		delete request;
 
 		GError *error = g_error_new_literal(curl_quark(), 0,
@@ -526,4 +528,8 @@ http_client_request(const char *url, std::string &&post_data,
 	}
 
 	http_client.requests.push_front(*request);
+} catch (...) {
+	GError *error = g_error_new(curl_quark(), 0, "%s",
+				    GetFullMessage(std::current_exception()).c_str());
+	handler.error(error, ctx);
 }
