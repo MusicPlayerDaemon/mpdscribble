@@ -21,6 +21,7 @@
 #ifndef HTTP_CLIENT_HXX
 #define HTTP_CLIENT_HXX
 
+#include "lib/curl/Init.hxx"
 #include "lib/curl/Easy.hxx"
 
 #include <glib.h>
@@ -85,6 +86,8 @@ class HttpClient final {
 
 		HttpClient *client;
 	};
+
+	const ScopeCurlInit init;
 
 	/** the CURL multi handle */
 	CURLM *multi;

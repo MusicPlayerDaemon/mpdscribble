@@ -89,6 +89,7 @@ executable(
   'src/MpdObserver.cxx',
   'src/Log.cxx',
 
+  'src/lib/curl/Init.cxx',
   'src/util/Exception.cxx',
   'src/util/PrintException.cxx',
 

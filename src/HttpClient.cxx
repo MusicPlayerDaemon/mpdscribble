@@ -325,11 +325,6 @@ static GSourceFuncs curl_source_funcs = {
 
 HttpClient::HttpClient()
 {
-	CURLcode code = curl_global_init(CURL_GLOBAL_ALL);
-	if (code != CURLE_OK)
-		g_error("curl_global_init() failed: %s",
-			curl_easy_strerror(code));
-
 	multi = curl_multi_init();
 	if (multi == nullptr)
 		g_error("curl_multi_init() failed");
@@ -355,7 +350,6 @@ HttpClient::~HttpClient() noexcept
 	/* clean up CURL */
 
 	curl_multi_cleanup(multi);
-	curl_global_cleanup();
 }
 
 std::string
