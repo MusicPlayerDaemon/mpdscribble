@@ -37,8 +37,8 @@ enum {
 	MAX_RESPONSE_BODY = 8192,
 };
 
-struct HttpRequest
-	: boost::intrusive::list_base_hook<boost::intrusive::link_mode<boost::intrusive::auto_unlink>>
+class HttpRequest
+	: public boost::intrusive::list_base_hook<boost::intrusive::link_mode<boost::intrusive::auto_unlink>>
 {
 	const HttpClientHandler &handler;
 	void *handler_ctx;
@@ -55,6 +55,7 @@ struct HttpRequest
 	/** error message provided by libcurl */
 	char error[CURL_ERROR_SIZE];
 
+public:
 	HttpRequest(const char *url, std::string &&_request_body,
 		    const HttpClientHandler &_handler, void *_ctx);
 	~HttpRequest() noexcept;
