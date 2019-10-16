@@ -84,7 +84,7 @@ static struct {
 } http_client;
 
 static inline GQuark
-curl_quark()
+curl_quark() noexcept
 {
     return g_quark_from_static_string("curl");
 }
@@ -111,7 +111,7 @@ HttpRequest::~HttpRequest() noexcept
  */
 static gushort
 http_client_fd_events(int fd, fd_set *rfds,
-		      fd_set *wfds, fd_set *efds)
+		      fd_set *wfds, fd_set *efds) noexcept
 {
 	gushort events = 0;
 
@@ -138,7 +138,7 @@ http_client_fd_events(int fd, fd_set *rfds,
  * registers new ones.
  */
 static void
-http_client_update_fds()
+http_client_update_fds() noexcept
 {
 	fd_set rfds, wfds, efds;
 
@@ -196,7 +196,7 @@ http_client_update_fds()
  * handler.
  */
 static void
-http_request_abort(HttpRequest *request, GError *error)
+http_request_abort(HttpRequest *request, GError *error) noexcept
 {
 	request->handler.error(error, request->handler_ctx);
 	delete request;
@@ -207,7 +207,7 @@ http_request_abort(HttpRequest *request, GError *error)
  * methods.
  */
 static void
-http_client_abort_all_requests(GError *error)
+http_client_abort_all_requests(GError *error) noexcept
 {
 	http_client.requests.clear_and_dispose([error](auto *request){
 		http_request_abort(request, g_error_copy(error));
@@ -220,7 +220,7 @@ http_client_abort_all_requests(GError *error)
  * Find a request by its CURL "easy" handle.
  */
 static HttpRequest *
-http_client_find_request(CURL *curl)
+http_client_find_request(CURL *curl) noexcept
 {
 	for (auto &i : http_client.requests)
 		if (i.curl == curl)
@@ -233,7 +233,7 @@ http_client_find_request(CURL *curl)
  * A HTTP request is finished: invoke its callback and free it.
  */
 static void
-http_request_done(HttpRequest *request, CURLcode result, long status)
+http_request_done(HttpRequest *request, CURLcode result, long status) noexcept
 {
 	/* invoke the handler method */
 
@@ -266,7 +266,7 @@ http_request_done(HttpRequest *request, CURLcode result, long status)
  * Check for finished HTTP responses.
  */
 static void
-http_multi_info_read()
+http_multi_info_read() noexcept
 {
 	CURLMsg *msg;
 	int msgs_in_queue;
@@ -291,7 +291,7 @@ http_multi_info_read()
  * Give control to CURL.
  */
 static bool
-http_multi_perform()
+http_multi_perform() noexcept
 {
 	CURLMcode mcode;
 
@@ -316,7 +316,7 @@ http_multi_perform()
  * The GSource prepare() method implementation.
  */
 static gboolean
-curl_source_prepare(GSource *, gint *timeout_)
+curl_source_prepare(GSource *, gint *timeout_) noexcept
 {
 	http_client_update_fds();
 
@@ -346,7 +346,7 @@ curl_source_prepare(GSource *, gint *timeout_)
  * The GSource check() method implementation.
  */
 static gboolean
-curl_source_check(GSource *)
+curl_source_check(GSource *) noexcept
 {
 	if (http_client.timeout) {
 		/* when a timeout has expired, we need to call
@@ -368,7 +368,7 @@ curl_source_check(GSource *)
  * used, because we're handling all events directly.
  */
 static gboolean
-curl_source_dispatch(GSource *, GSourceFunc, gpointer)
+curl_source_dispatch(GSource *, GSourceFunc, gpointer) noexcept
 {
 	if (http_multi_perform())
 		http_multi_info_read();
@@ -406,7 +406,7 @@ http_client_init()
 }
 
 void
-http_client_finish()
+http_client_finish() noexcept
 {
 	/* free all requests */
 
@@ -428,7 +428,7 @@ http_client_finish()
 }
 
 std::string
-http_client_uri_escape(const char *src)
+http_client_uri_escape(const char *src) noexcept
 {
 	/* curl_escape() is deprecated, but for some reason,
 	   curl_easy_escape() wants to have a CURL object, which we
@@ -445,7 +445,8 @@ http_client_uri_escape(const char *src)
  * Called by curl when new data is available.
  */
 static size_t
-http_request_writefunction(void *ptr, size_t size, size_t nmemb, void *stream)
+http_request_writefunction(void *ptr, size_t size, size_t nmemb,
+			   void *stream) noexcept
 {
 	auto *request = (HttpRequest *)stream;
 
@@ -460,7 +461,7 @@ http_request_writefunction(void *ptr, size_t size, size_t nmemb, void *stream)
 
 void
 http_client_request(const char *url, std::string &&post_data,
-		    const HttpClientHandler &handler, void *ctx)
+		    const HttpClientHandler &handler, void *ctx) noexcept
 {
 	HttpRequest *request = new HttpRequest(std::move(post_data),
 					       handler, ctx);

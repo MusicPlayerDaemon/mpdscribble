@@ -42,17 +42,17 @@ http_client_init();
  * Global deinitializaton.
  */
 void
-http_client_finish();
+http_client_finish() noexcept;
 
 /**
  * Escapes URI parameters with '%'.  Free the return value with
  * g_free().
  */
 std::string
-http_client_uri_escape(const char *src);
+http_client_uri_escape(const char *src) noexcept;
 
 void
 http_client_request(const char *url, std::string &&post_data,
-		    const HttpClientHandler &handler, void *ctx);
+		    const HttpClientHandler &handler, void *ctx) noexcept;
 
 #endif /* CONN_H */
