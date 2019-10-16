@@ -217,31 +217,6 @@ http_client_update_fds() noexcept
 }
 
 /**
- * Aborts and frees a running HTTP request and report an error to its
- * handler.
- */
-static void
-http_request_abort(HttpRequest *request, GError *error) noexcept
-{
-	request->handler.error(error, request->handler_ctx);
-	delete request;
-}
-
-/**
- * Abort and free all HTTP requests, but don't invoke their handler
- * methods.
- */
-static void
-http_client_abort_all_requests(GError *error) noexcept
-{
-	http_client.requests.clear_and_dispose([error](auto *request){
-		http_request_abort(request, g_error_copy(error));
-	});
-
-	g_error_free(error);
-}
-
-/**
  * Find a request by its CURL "easy" handle.
  */
 static HttpRequest *
@@ -328,10 +303,8 @@ http_multi_perform() noexcept
 	} while (mcode == CURLM_CALL_MULTI_PERFORM);
 
 	if (mcode != CURLM_OK && mcode != CURLM_CALL_MULTI_PERFORM) {
-		GError *error = g_error_new(curl_quark(), mcode,
-					    "curl_multi_perform() failed: %s",
-					    curl_multi_strerror(mcode));
-		http_client_abort_all_requests(error);
+		g_warning("curl_multi_perform() failed: %s",
+			  curl_multi_strerror(mcode));
 		return false;
 	}
 
