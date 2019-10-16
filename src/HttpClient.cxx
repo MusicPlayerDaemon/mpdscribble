@@ -89,12 +89,32 @@ curl_quark() noexcept
     return g_quark_from_static_string("curl");
 }
 
+static size_t
+http_request_writefunction(void *ptr, size_t size, size_t nmemb,
+			   void *stream) noexcept;
+
 HttpRequest::HttpRequest(std::string &&_request_body,
 			 const HttpClientHandler &_handler,
 			 void *_ctx) noexcept
 	:handler(_handler), handler_ctx(_ctx),
 	 request_body(std::move(_request_body))
 {
+	curl_easy_setopt(curl, CURLOPT_USERAGENT, PACKAGE "/" VERSION);
+	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION,
+			 http_request_writefunction);
+	curl_easy_setopt(curl, CURLOPT_WRITEDATA, this);
+	curl_easy_setopt(curl, CURLOPT_FAILONERROR, true);
+	curl_easy_setopt(curl, CURLOPT_ERRORBUFFER, error);
+	curl_easy_setopt(curl, CURLOPT_BUFFERSIZE, 2048);
+
+	if (file_config.proxy != nullptr)
+		curl_easy_setopt(curl, CURLOPT_PROXY, file_config.proxy);
+
+	if (!request_body.empty()) {
+		curl_easy_setopt(curl, CURLOPT_POST, true);
+		curl_easy_setopt(curl, CURLOPT_POSTFIELDS,
+				 request_body.c_str());
+	}
 }
 
 HttpRequest::~HttpRequest() noexcept
@@ -490,24 +510,6 @@ http_client_request(const char *url, std::string &&post_data,
 	}
 
 	/* .. and set it up */
-
-	curl_easy_setopt(request->curl, CURLOPT_USERAGENT,
-			 "mpdscribble/" VERSION);
-	curl_easy_setopt(request->curl, CURLOPT_WRITEFUNCTION,
-			 http_request_writefunction);
-	curl_easy_setopt(request->curl, CURLOPT_WRITEDATA, request);
-	curl_easy_setopt(request->curl, CURLOPT_FAILONERROR, true);
-	curl_easy_setopt(request->curl, CURLOPT_ERRORBUFFER, request->error);
-	curl_easy_setopt(request->curl, CURLOPT_BUFFERSIZE, 2048);
-
-	if (file_config.proxy != nullptr)
-		curl_easy_setopt(request->curl, CURLOPT_PROXY, file_config.proxy);
-
-	if (!request->request_body.empty()) {
-		curl_easy_setopt(request->curl, CURLOPT_POST, true);
-		curl_easy_setopt(request->curl, CURLOPT_POSTFIELDS,
-				 request->request_body.c_str());
-	}
 
 	CURLcode code = curl_easy_setopt(request->curl, CURLOPT_URL, url);
 	if (code != CURLE_OK) {
