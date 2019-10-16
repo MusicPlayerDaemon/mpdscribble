@@ -113,7 +113,9 @@ HttpRequest::HttpRequest(std::string &&_request_body,
 	if (!request_body.empty()) {
 		curl_easy_setopt(curl, CURLOPT_POST, true);
 		curl_easy_setopt(curl, CURLOPT_POSTFIELDS,
-				 request_body.c_str());
+				 request_body.data());
+		curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE,
+				 (long)request_body.size());
 	}
 }
 
