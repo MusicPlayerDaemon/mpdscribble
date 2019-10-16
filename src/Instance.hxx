@@ -21,6 +21,7 @@
 #ifndef INSTANCE_HXX
 #define INSTANCE_HXX
 
+#include "HttpClient.hxx"
 #include "MpdObserver.hxx"
 #include "MultiScrobbler.hxx"
 
@@ -31,6 +32,8 @@ struct config;
 struct Instance final : MpdObserverListener {
 	GMainLoop *main_loop;
 	GTimer *timer;
+
+	HttpClient http_client;
 
 	MpdObserver mpd_observer;
 

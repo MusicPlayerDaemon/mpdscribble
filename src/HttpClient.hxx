@@ -23,10 +23,15 @@
 
 #include "lib/curl/Easy.hxx"
 
+#include <glib.h>
+
 #include <exception>
+#include <forward_list>
 #include <string>
 
 #include <stddef.h>
+
+class HttpClient;
 
 struct HttpClientHandler {
 	void (*response)(std::string body, void *ctx);
@@ -35,6 +40,8 @@ struct HttpClientHandler {
 
 class HttpRequest final
 {
+	HttpClient &client;
+
 	const HttpClientHandler &handler;
 	void *handler_ctx;
 
@@ -51,7 +58,8 @@ class HttpRequest final
 	char error[CURL_ERROR_SIZE];
 
 public:
-	HttpRequest(const char *url, std::string &&_request_body,
+	HttpRequest(HttpClient &client,
+		    const char *url, std::string &&_request_body,
 		    const HttpClientHandler &_handler, void *_ctx);
 	~HttpRequest() noexcept;
 
@@ -71,30 +79,67 @@ private:
 
 };
 
-/**
- * Perform global initialization on the HTTP client library.
- */
-void
-http_client_init();
+class HttpClient final {
+	struct Source {
+		GSource base;
 
-/**
- * Global deinitializaton.
- */
-void
-http_client_finish() noexcept;
+		HttpClient *client;
+	};
 
-class HttpClientInit final {
+	/** the CURL multi handle */
+	CURLM *multi;
+
+	/** the GMainLoop source used to poll all CURL file
+	    descriptors */
+	GSource *source;
+
+	/** the source id of #source */
+	guint source_id;
+
+	/** a linked list of all registered GPollFD objects */
+	std::forward_list<GPollFD> fds;
+
+	/**
+	 * Did CURL give us a timeout?  If yes, then we need to call
+	 * curl_multi_perform(), even if there was no event on any
+	 * file descriptor.
+	 */
+	bool timeout;
+
 public:
-	HttpClientInit() {
-		http_client_init();
+	HttpClient();
+	~HttpClient() noexcept;
+
+	HttpClient(const HttpClient &) = delete;
+	HttpClient &operator=(const HttpClient &) = delete;
+
+	void Add(CURL *easy);
+
+	void Remove(CURL *easy) noexcept {
+		curl_multi_remove_handle(multi, easy);
 	}
 
-	~HttpClientInit() noexcept {
-		http_client_finish();
-	}
+	static gboolean SourcePrepare(GSource *source, gint *timeout) noexcept;
+	static gboolean SourceCheck(GSource *source) noexcept;
+	static gboolean SourceDispatch(GSource *source,
+				       GSourceFunc, gpointer) noexcept;
 
-	HttpClientInit(const HttpClientInit &) = delete;
-	HttpClientInit &operator=(const HttpClientInit &) = delete;
+private:
+	/**
+	 * Updates all registered GPollFD objects, unregisters old
+	 * ones, registers new ones.
+	 */
+	void UpdateFDs() noexcept;
+
+	/**
+	 * Check for finished HTTP responses.
+	 */
+	void ReadInfo() noexcept;
+
+	/**
+	 * Give control to CURL.
+	 */
+	bool Perform() noexcept;
 };
 
 /**

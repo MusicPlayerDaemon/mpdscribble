@@ -24,13 +24,15 @@
 #include <forward_list>
 
 struct ScrobblerConfig;
+class HttpClient;
 class Scrobbler;
 
 class MultiScrobbler {
 	std::forward_list<Scrobbler> scrobblers;
 
 public:
-	explicit MultiScrobbler(const std::forward_list<ScrobblerConfig> &configs) noexcept;
+	explicit MultiScrobbler(const std::forward_list<ScrobblerConfig> &configs,
+				HttpClient &http_client) noexcept;
 	~MultiScrobbler() noexcept;
 
 	void WriteJournal() noexcept;

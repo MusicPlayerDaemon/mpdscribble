@@ -24,7 +24,6 @@
 #include "ReadConfig.hxx"
 #include "Config.hxx"
 #include "Log.hxx"
-#include "HttpClient.hxx"
 #include "util/PrintException.hxx"
 
 #include <glib.h>
@@ -220,8 +219,6 @@ try {
 	if (!file_config.no_daemon)
 #endif
 		daemonize_close_stdout_stderr();
-
-	HttpClientInit http_client_init;
 
 	Instance instance(file_config);
 

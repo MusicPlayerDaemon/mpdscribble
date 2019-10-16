@@ -35,38 +35,20 @@ enum {
 	MAX_RESPONSE_BODY = 8192,
 };
 
-static struct {
-	/** the CURL multi handle */
-	CURLM *multi;
-
-	/** the GMainLoop source used to poll all CURL file
-	    descriptors */
-	GSource *source;
-
-	/** the source id of #source */
-	guint source_id;
-
-	/** a linked list of all registered GPollFD objects */
-	std::forward_list<GPollFD> fds;
-
-	/**
-	 * Did CURL give us a timeout?  If yes, then we need to call
-	 * curl_multi_perform(), even if there was no event on any
-	 * file descriptor.
-	 */
-	bool timeout;
-} http_client;
-
-static inline GQuark
-curl_quark() noexcept
+void
+HttpClient::Add(CURL *easy)
 {
-    return g_quark_from_static_string("curl");
+	CURLMcode mcode = curl_multi_add_handle(multi, easy);
+	if (mcode != CURLM_OK)
+		throw std::runtime_error(curl_multi_strerror(mcode));
 }
 
-HttpRequest::HttpRequest(const char *url, std::string &&_request_body,
+HttpRequest::HttpRequest(HttpClient &_client,
+			 const char *url, std::string &&_request_body,
 			 const HttpClientHandler &_handler,
 			 void *_ctx)
-	:handler(_handler), handler_ctx(_ctx),
+	:client(_client),
+	 handler(_handler), handler_ctx(_ctx),
 	 curl(url),
 	 request_body(std::move(_request_body))
 {
@@ -86,15 +68,13 @@ HttpRequest::HttpRequest(const char *url, std::string &&_request_body,
 				    request_body.size());
 	}
 
-	CURLMcode mcode = curl_multi_add_handle(http_client.multi, curl.Get());
-	if (mcode != CURLM_OK)
-		throw std::runtime_error(curl_multi_strerror(mcode));
+	client.Add(curl.Get());
 }
 
 HttpRequest::~HttpRequest() noexcept
 {
 	if (curl)
-		curl_multi_remove_handle(http_client.multi, curl.Get());
+		client.Remove(curl.Get());
 }
 
 /**
@@ -125,12 +105,8 @@ http_client_fd_events(int fd, fd_set *rfds,
 	return events;
 }
 
-/**
- * Updates all registered GPollFD objects, unregisters old ones,
- * registers new ones.
- */
-static void
-http_client_update_fds() noexcept
+void
+HttpClient::UpdateFDs() noexcept
 {
 	fd_set rfds, wfds, efds;
 
@@ -139,7 +115,7 @@ http_client_update_fds() noexcept
 	FD_ZERO(&efds);
 
 	int max_fd;
-	CURLMcode mcode = curl_multi_fdset(http_client.multi, &rfds, &wfds,
+	CURLMcode mcode = curl_multi_fdset(multi, &rfds, &wfds,
 					   &efds, &max_fd);
 	if (mcode != CURLM_OK) {
 		g_warning("curl_multi_fdset() failed: %s\n",
@@ -147,8 +123,8 @@ http_client_update_fds() noexcept
 		return;
 	}
 
-	for (auto prev = http_client.fds.before_begin(), i = std::next(prev);
-	     i != http_client.fds.end();) {
+	for (auto prev = fds.before_begin(), i = std::next(prev);
+	     i != fds.end();) {
 		GPollFD *poll_fd = &*i;
 		gushort events = http_client_fd_events(poll_fd->fd, &rfds,
 						       &wfds, &efds);
@@ -156,17 +132,17 @@ http_client_update_fds() noexcept
 		assert(poll_fd->events != 0);
 
 		if (events != poll_fd->events)
-			g_source_remove_poll(http_client.source, poll_fd);
+			g_source_remove_poll(source, poll_fd);
 
 		if (events != 0) {
 			if (events != poll_fd->events) {
 				poll_fd->events = events;
-				g_source_add_poll(http_client.source, poll_fd);
+				g_source_add_poll(source, poll_fd);
 			}
 
 			prev = i++;
 		} else {
-			i = http_client.fds.erase_after(prev);
+			i = fds.erase_after(prev);
 		}
 	}
 
@@ -174,11 +150,11 @@ http_client_update_fds() noexcept
 		gushort events = http_client_fd_events(fd, &rfds,
 						       &wfds, &efds);
 		if (events != 0) {
-			http_client.fds.emplace_front();
-			GPollFD *poll_fd = &http_client.fds.front();
+			fds.emplace_front();
+			GPollFD *poll_fd = &fds.front();
 			poll_fd->fd = fd;
 			poll_fd->events = events;
-			g_source_add_poll(http_client.source, poll_fd);
+			g_source_add_poll(source, poll_fd);
 		}
 	}
 }
@@ -226,16 +202,13 @@ HttpRequest::Done(CURLcode result, long status) noexcept
 	}
 }
 
-/**
- * Check for finished HTTP responses.
- */
-static void
-http_multi_info_read() noexcept
+void
+HttpClient::ReadInfo() noexcept
 {
 	CURLMsg *msg;
 	int msgs_in_queue;
 
-	while ((msg = curl_multi_info_read(http_client.multi,
+	while ((msg = curl_multi_info_read(multi,
 					   &msgs_in_queue)) != nullptr) {
 		if (msg->msg == CURLMSG_DONE) {
 			HttpRequest *request =
@@ -251,18 +224,14 @@ http_multi_info_read() noexcept
 	}
 }
 
-/**
- * Give control to CURL.
- */
-static bool
-http_multi_perform() noexcept
+bool
+HttpClient::Perform() noexcept
 {
 	CURLMcode mcode;
 
 	do {
 		int running_handles;
-		mcode = curl_multi_perform(http_client.multi,
-					   &running_handles);
+		mcode = curl_multi_perform(multi, &running_handles);
 	} while (mcode == CURLM_CALL_MULTI_PERFORM);
 
 	if (mcode != CURLM_OK && mcode != CURLM_CALL_MULTI_PERFORM) {
@@ -277,11 +246,12 @@ http_multi_perform() noexcept
 /**
  * The GSource prepare() method implementation.
  */
-static gboolean
-curl_source_prepare(GSource *, gint *timeout_) noexcept
+gboolean
+HttpClient::SourcePrepare(GSource *source, gint *timeout_) noexcept
 {
-	http_client_update_fds();
+	auto &http_client = *((Source *)source)->client;
 
+	http_client.UpdateFDs();
 	http_client.timeout = false;
 
 	long timeout2;
@@ -307,9 +277,11 @@ curl_source_prepare(GSource *, gint *timeout_) noexcept
 /**
  * The GSource check() method implementation.
  */
-static gboolean
-curl_source_check(GSource *) noexcept
+gboolean
+HttpClient::SourceCheck(GSource *source) noexcept
 {
+	auto &http_client = *((Source *)source)->client;
+
 	if (http_client.timeout) {
 		/* when a timeout has expired, we need to call
 		   curl_multi_perform(), even if there was no file
@@ -329,11 +301,13 @@ curl_source_check(GSource *) noexcept
  * The GSource dispatch() method implementation.  The callback isn't
  * used, because we're handling all events directly.
  */
-static gboolean
-curl_source_dispatch(GSource *, GSourceFunc, gpointer) noexcept
+gboolean
+HttpClient::SourceDispatch(GSource *source, GSourceFunc, gpointer) noexcept
 {
-	if (http_multi_perform())
-		http_multi_info_read();
+	auto &http_client = *((Source *)source)->client;
+
+	if (http_client.Perform())
+		http_client.ReadInfo();
 
 	return true;
 }
@@ -344,44 +318,43 @@ curl_source_dispatch(GSource *, GSourceFunc, gpointer) noexcept
  * pointer, for whatever reason.
  */
 static GSourceFuncs curl_source_funcs = {
-	.prepare = curl_source_prepare,
-	.check = curl_source_check,
-	.dispatch = curl_source_dispatch,
+	.prepare = HttpClient::SourcePrepare,
+	.check = HttpClient::SourceCheck,
+	.dispatch = HttpClient::SourceDispatch,
 };
 
-void
-http_client_init()
+HttpClient::HttpClient()
 {
 	CURLcode code = curl_global_init(CURL_GLOBAL_ALL);
 	if (code != CURLE_OK)
 		g_error("curl_global_init() failed: %s",
 			curl_easy_strerror(code));
 
-	http_client.multi = curl_multi_init();
-	if (http_client.multi == nullptr)
+	multi = curl_multi_init();
+	if (multi == nullptr)
 		g_error("curl_multi_init() failed");
 
-	http_client.source = g_source_new(&curl_source_funcs,
-					  sizeof(*http_client.source));
-	http_client.source_id = g_source_attach(http_client.source,
-						g_main_context_default());
+	source = g_source_new(&curl_source_funcs,
+			      sizeof(Source));
+	((Source *)source)->client = this;
+
+	source_id = g_source_attach(source, g_main_context_default());
 }
 
-void
-http_client_finish() noexcept
+HttpClient::~HttpClient() noexcept
 {
 	/* unregister all GPollFD instances */
 
-	http_client_update_fds();
+	UpdateFDs();
 
 	/* free the GSource object */
 
-	g_source_unref(http_client.source);
-	g_source_remove(http_client.source_id);
+	g_source_unref(source);
+	g_source_remove(source_id);
 
 	/* clean up CURL */
 
-	curl_multi_cleanup(http_client.multi);
+	curl_multi_cleanup(multi);
 	curl_global_cleanup();
 }
 

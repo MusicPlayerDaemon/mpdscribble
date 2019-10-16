@@ -32,6 +32,7 @@
 #include <stdio.h>
 
 struct ScrobblerConfig;
+class HttpClient;
 class HttpRequest;
 
 class Scrobbler {
@@ -65,6 +66,8 @@ class Scrobbler {
 
 	unsigned interval = 1;
 
+	HttpClient &http_client;
+
 	std::unique_ptr<HttpRequest> http_request;
 
 	guint handshake_source_id = 0;
@@ -88,7 +91,8 @@ class Scrobbler {
 	unsigned pending = 0;
 
 public:
-	Scrobbler(const ScrobblerConfig &_config) noexcept;
+	Scrobbler(const ScrobblerConfig &_config,
+		  HttpClient &_http_client) noexcept;
 	~Scrobbler() noexcept;
 
 	void Push(const Record &song) noexcept;
