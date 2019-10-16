@@ -13,7 +13,7 @@ static std::exception_ptr error;
 static bool quit;
 
 static void
-my_response(std::string &&body, void *)
+my_response(std::string body, void *)
 {
 	write(STDOUT_FILENO, body.data(), body.size());
 	g_main_loop_quit(main_loop);

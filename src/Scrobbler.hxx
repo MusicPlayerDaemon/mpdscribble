@@ -115,11 +115,11 @@ private:
 	static gboolean OnSubmitTimer(gpointer data) noexcept;
 
 public:
-	static void OnHandshakeResponse(std::string &&body,
+	static void OnHandshakeResponse(std::string body,
 					void *data) noexcept;
 	static void OnHandshakeError(std::exception_ptr e,
 				     void *data) noexcept;
-	static void OnSubmitResponse(std::string &&body,
+	static void OnSubmitResponse(std::string body,
 					void *data) noexcept;
 	static void OnSubmitError(std::exception_ptr e,
 				  void *data) noexcept;

@@ -29,7 +29,7 @@
 #include <stddef.h>
 
 struct HttpClientHandler {
-	void (*response)(std::string &&body, void *ctx);
+	void (*response)(std::string body, void *ctx);
 	void (*error)(std::exception_ptr e, void *ctx);
 };
 

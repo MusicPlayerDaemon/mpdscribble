@@ -182,7 +182,7 @@ next_line(const char **input_r, const char *end)
 }
 
 void
-Scrobbler::OnHandshakeResponse(std::string &&body, void *data) noexcept
+Scrobbler::OnHandshakeResponse(std::string body, void *data) noexcept
 {
 	auto *scrobbler = (Scrobbler *)data;
 	const char *response = body.data();
@@ -270,7 +270,7 @@ scrobbler_queue_remove_oldest(std::list<Record> &queue, unsigned count)
 }
 
 void
-Scrobbler::OnSubmitResponse(std::string &&body, void *data) noexcept
+Scrobbler::OnSubmitResponse(std::string body, void *data) noexcept
 {
 	auto *scrobbler = (Scrobbler *)data;
 
