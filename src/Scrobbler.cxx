@@ -193,6 +193,7 @@ Scrobbler::OnHandshakeResponse(std::string &&body, void *data) noexcept
 	assert(scrobbler->config.file.empty());
 	assert(scrobbler->state == SCROBBLER_STATE_HANDSHAKE);
 
+	scrobbler->http_request.reset();
 	scrobbler->state = SCROBBLER_STATE_NOTHING;
 
 	auto line = next_line(&response, end);
@@ -243,6 +244,7 @@ Scrobbler::OnHandshakeError(std::exception_ptr e, void *data) noexcept
 	assert(scrobbler->config.file.empty());
 	assert(scrobbler->state == SCROBBLER_STATE_HANDSHAKE);
 
+	scrobbler->http_request.reset();
 	scrobbler->state = SCROBBLER_STATE_NOTHING;
 
 	g_warning("[%s] handshake error: %s",
@@ -274,6 +276,8 @@ Scrobbler::OnSubmitResponse(std::string &&body, void *data) noexcept
 
 	assert(scrobbler->config.file.empty());
 	assert(scrobbler->state == SCROBBLER_STATE_SUBMITTING);
+
+	scrobbler->http_request.reset();
 	scrobbler->state = SCROBBLER_STATE_READY;
 
 	auto newline = body.find('\n');
@@ -318,6 +322,7 @@ Scrobbler::OnSubmitError(std::exception_ptr e, void *data) noexcept
 	assert(scrobbler->config.file.empty());
 	assert(scrobbler->state == SCROBBLER_STATE_SUBMITTING);
 
+	scrobbler->http_request.reset();
 	scrobbler->state = SCROBBLER_STATE_READY;
 
 	g_warning("[%s] submit error: %s",
@@ -400,8 +405,9 @@ Scrobbler::Handshake() noexcept
 
 	//  notice ("handshake url:\n%s", url);
 
-	http_client_request(url.c_str(), {},
-			    scrobbler_handshake_handler, this);
+	http_request = std::make_unique<HttpRequest>(url.c_str(), std::string(),
+						     scrobbler_handshake_handler,
+						     this);
 }
 
 gboolean
@@ -458,9 +464,10 @@ Scrobbler::SendNowPlaying(const char *artist,
 	g_message("[%s] sending 'now playing' notification",
 		  config.name.c_str());
 
-	http_client_request(nowplay_url.c_str(),
-			    std::move(post_data),
-			    scrobbler_submit_handler, this);
+	http_request = std::make_unique<HttpRequest>(nowplay_url.c_str(),
+						     std::move(post_data),
+						     scrobbler_submit_handler,
+						     this);
 }
 
 void
@@ -540,9 +547,10 @@ Scrobbler::Submit() noexcept
 		submit_url.c_str());
 
 	pending = count;
-	http_client_request(submit_url.c_str(),
-			    std::move(post_data),
-			    scrobbler_submit_handler, this);
+
+	http_request = std::make_unique<HttpRequest>(submit_url.c_str(),
+						     std::move(post_data),
+						     scrobbler_submit_handler, this);
 }
 
 void

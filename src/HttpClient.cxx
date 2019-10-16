@@ -18,7 +18,6 @@
  */
 
 #include "HttpClient.hxx"
-#include "lib/curl/Easy.hxx"
 #include "util/Exception.hxx"
 #include "util/RuntimeError.hxx"
 #include "Config.hxx"
@@ -36,45 +35,6 @@
 enum {
 	/** maximum length of a response body */
 	MAX_RESPONSE_BODY = 8192,
-};
-
-class HttpRequest
-	: public boost::intrusive::list_base_hook<boost::intrusive::link_mode<boost::intrusive::auto_unlink>>
-{
-	const HttpClientHandler &handler;
-	void *handler_ctx;
-
-	/** the CURL easy handle */
-	CurlEasy curl;
-
-	/** the POST request body */
-	std::string request_body;
-
-	/** the response body */
-	std::string response_body;
-
-	/** error message provided by libcurl */
-	char error[CURL_ERROR_SIZE];
-
-public:
-	HttpRequest(const char *url, std::string &&_request_body,
-		    const HttpClientHandler &_handler, void *_ctx);
-	~HttpRequest() noexcept;
-
-	/**
-	 * A HTTP request is finished: invoke its callback and free it.
-	 */
-	void Done(CURLcode result, long status) noexcept;
-
-private:
-	void CheckResponse(CURLcode result, long status);
-
-	/**
-	 * Called by curl when new data is available.
-	 */
-	static size_t WriteFunction(char *ptr, size_t size, size_t nmemb,
-				    void *stream) noexcept;
-
 };
 
 static struct {
@@ -272,8 +232,6 @@ HttpRequest::Done(CURLcode result, long status) noexcept
 	} catch (...) {
 		handler.error(std::current_exception(), handler_ctx);
 	}
-
-	delete this;
 }
 
 /**
@@ -420,10 +378,6 @@ http_client_init()
 void
 http_client_finish() noexcept
 {
-	/* free all requests */
-
-	http_client.requests.clear_and_dispose([](auto *request){ delete request; });
-
 	/* unregister all GPollFD instances */
 
 	http_client_update_fds();
@@ -469,13 +423,4 @@ HttpRequest::WriteFunction(char *ptr, size_t size, size_t nmemb,
 		return 0;
 
 	return size * nmemb;
-}
-
-void
-http_client_request(const char *url, std::string &&post_data,
-		    const HttpClientHandler &handler, void *ctx) noexcept
-try {
-	new HttpRequest(url, std::move(post_data), handler, ctx);
-} catch (...) {
-	handler.error(std::current_exception(), ctx);
 }

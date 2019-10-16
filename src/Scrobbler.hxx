@@ -26,11 +26,13 @@
 #include <glib.h>
 
 #include <list>
+#include <memory>
 #include <string>
 
 #include <stdio.h>
 
 struct ScrobblerConfig;
+class HttpRequest;
 
 class Scrobbler {
 	const ScrobblerConfig &config;
@@ -62,6 +64,8 @@ class Scrobbler {
 	} state = SCROBBLER_STATE_NOTHING;
 
 	unsigned interval = 1;
+
+	std::unique_ptr<HttpRequest> http_request;
 
 	guint handshake_source_id = 0;
 	guint submit_source_id = 0;
