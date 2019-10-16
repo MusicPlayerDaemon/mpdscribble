@@ -29,6 +29,8 @@
 
 #include <gcrypt.h>
 
+#include <glib.h>
+
 #include <array>
 
 #include <assert.h>
@@ -53,8 +55,11 @@ typedef enum {
 } as_submitting;
 
 Scrobbler::Scrobbler(const ScrobblerConfig &_config,
+		     boost::asio::io_service &io_service,
 		     CurlGlobal &_curl_global) noexcept
-	:config(_config), curl_global(_curl_global)
+	:config(_config), curl_global(_curl_global),
+	 handshake_timer(io_service),
+	 submit_timer(io_service)
 {
 	if (!config.journal.empty()) {
 		guint queue_length;
@@ -79,11 +84,6 @@ Scrobbler::Scrobbler(const ScrobblerConfig &_config,
 
 Scrobbler::~Scrobbler() noexcept
 {
-	if (handshake_source_id != 0)
-		g_source_remove(handshake_source_id);
-	if (submit_source_id != 0)
-		g_source_remove(submit_source_id);
-
 	if (file != nullptr)
 		fclose(file);
 }
@@ -412,18 +412,19 @@ Scrobbler::Handshake() noexcept
 						     this);
 }
 
-gboolean
-Scrobbler::OnHandshakeTimer(gpointer data) noexcept
+void
+Scrobbler::OnHandshakeTimer(const boost::system::error_code &error) noexcept
 {
-	auto *scrobbler = (Scrobbler *)data;
+	if (error)
+		return;
 
-	assert(scrobbler->config.file.empty());
-	assert(scrobbler->state == SCROBBLER_STATE_NOTHING);
+	assert(config.file.empty());
+	assert(state == SCROBBLER_STATE_NOTHING);
 
-	scrobbler->handshake_source_id = 0;
+	assert(handshake_timer_scheduled);
+	handshake_timer_scheduled = false;
 
-	scrobbler->Handshake();
-	return false;
+	Handshake();
 }
 
 void
@@ -431,11 +432,13 @@ Scrobbler::ScheduleHandshake() noexcept
 {
 	assert(config.file.empty());
 	assert(state == SCROBBLER_STATE_NOTHING);
-	assert(handshake_source_id == 0);
+	assert(!handshake_timer_scheduled);
 
-	handshake_source_id =
-		g_timeout_add_seconds(interval,
-				      OnHandshakeTimer, this);
+	handshake_timer_scheduled = true;
+
+	handshake_timer.expires_from_now(std::chrono::seconds(interval));
+	handshake_timer.async_wait(std::bind(&Scrobbler::OnHandshakeTimer,
+					     this, std::placeholders::_1));
 }
 
 void
@@ -448,7 +451,6 @@ Scrobbler::SendNowPlaying(const char *artist,
 
 	assert(config.file.empty());
 	assert(state == SCROBBLER_STATE_READY);
-	assert(submit_source_id == 0);
 
 	state = SCROBBLER_STATE_SUBMITTING;
 
@@ -482,7 +484,7 @@ Scrobbler::ScheduleNowPlaying(const Record &song) noexcept
 
 	now_playing = song;
 
-	if (state == SCROBBLER_STATE_READY && submit_source_id == 0)
+	if (state == SCROBBLER_STATE_READY && !submit_timer_scheduled)
 		ScheduleSubmit();
 }
 
@@ -494,7 +496,7 @@ Scrobbler::Submit() noexcept
 
 	assert(config.file.empty());
 	assert(state == SCROBBLER_STATE_READY);
-	assert(submit_source_id == 0);
+	assert(!submit_timer_scheduled);
 
 	if (queue.empty()) {
 		/* the submission queue is empty.  See if a "now playing" song is
@@ -570,31 +572,34 @@ Scrobbler::Push(const Record &song) noexcept
 
 	queue.emplace_back(song);
 
-	if (state == SCROBBLER_STATE_READY && submit_source_id == 0)
+	if (state == SCROBBLER_STATE_READY && !submit_timer_scheduled)
 		ScheduleSubmit();
 }
 
-gboolean
-Scrobbler::OnSubmitTimer(gpointer data) noexcept
+void
+Scrobbler::OnSubmitTimer(const boost::system::error_code &error) noexcept
 {
-	auto *scrobbler = (Scrobbler *)data;
+	if (error)
+		return;
 
-	assert(scrobbler->state == SCROBBLER_STATE_READY);
+	assert(state == SCROBBLER_STATE_READY);
 
-	scrobbler->submit_source_id = 0;
+	assert(submit_timer_scheduled);
+	submit_timer_scheduled = false;
 
-	scrobbler->Submit();
-	return false;
+	Submit();
 }
 
 void
 Scrobbler::ScheduleSubmit() noexcept
 {
-	assert(submit_source_id == 0);
+	assert(!submit_timer_scheduled);
 	assert(!queue.empty() || record_is_defined(&now_playing));
 
-	submit_source_id = g_timeout_add_seconds(interval,
-						 OnSubmitTimer, this);
+	submit_timer_scheduled = true;
+	submit_timer.expires_from_now(std::chrono::seconds(interval));
+	submit_timer.async_wait(std::bind(&Scrobbler::OnSubmitTimer,
+					  this, std::placeholders::_1));
 }
 
 void
@@ -617,15 +622,15 @@ Scrobbler::SubmitNow() noexcept
 {
 	interval = 1;
 
-	if (handshake_source_id != 0) {
-		g_source_remove(handshake_source_id);
-		handshake_source_id = 0;
+	if (handshake_timer_scheduled) {
+		handshake_timer.cancel();
+		handshake_timer_scheduled = false;
 		ScheduleHandshake();
 	}
 
-	if (submit_source_id != 0) {
-		g_source_remove(submit_source_id);
-		submit_source_id = 0;
+	if (submit_timer_scheduled) {
+		submit_timer.cancel();
+		submit_timer_scheduled = false;
 		ScheduleSubmit();
 	}
 }

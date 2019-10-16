@@ -37,38 +37,6 @@
 #include <unistd.h>
 #include <string.h>
 
-static guint save_source_id;
-
-#ifndef WIN32
-static gboolean
-exit_signal_handler(gpointer user_data) noexcept
-{
-	auto &instance = *(Instance *)user_data;
-	g_main_loop_quit(instance.main_loop);
-	return true;
-}
-
-static gboolean
-submit_signal_handler(gpointer user_data) noexcept
-{
-	auto &instance = *(Instance *)user_data;
-	instance.scrobblers.SubmitNow();
-	return true;
-}
-
-static void
-setup_signals(Instance &instance) noexcept
-{
-	signal(SIGPIPE, SIG_IGN);
-
-	g_unix_signal_add(SIGINT, exit_signal_handler, &instance);
-	g_unix_signal_add(SIGTERM, exit_signal_handler, &instance);
-	g_unix_signal_add(SIGHUP, exit_signal_handler, &instance);
-
-	g_unix_signal_add(SIGUSR1, submit_signal_handler, &instance);
-}
-#endif
-
 static constexpr bool
 played_long_enough(int elapsed, int length) noexcept
 {
@@ -111,17 +79,6 @@ Instance::OnMpdSongChanged(const struct mpd_song *song) noexcept
 			      mpd_song_get_tag(song, MPD_TAG_TRACK, 0),
 			      mpd_song_get_tag(song, MPD_TAG_MUSICBRAINZ_TRACKID, 0),
 			      mpd_song_get_duration(song));
-}
-
-/**
- * Regularly save the cache.
- */
-static gboolean
-timer_save_journal(gpointer data) noexcept
-{
-	auto &instance = *(Instance *)data;
-	instance.scrobblers.WriteJournal();
-	return true;
 }
 
 /**
@@ -222,15 +179,6 @@ try {
 
 	Instance instance(file_config);
 
-#ifndef WIN32
-	setup_signals(instance);
-#endif
-
-	/* set up timeouts */
-
-	save_source_id = g_timeout_add_seconds(file_config.journal_interval,
-					       timer_save_journal, &instance);
-
 	/* run the main loop */
 
 	instance.Run();
@@ -238,8 +186,6 @@ try {
 	/* cleanup */
 
 	g_message("shutting down\n");
-
-	g_source_remove(save_source_id);
 
 	instance.scrobblers.WriteJournal();
 

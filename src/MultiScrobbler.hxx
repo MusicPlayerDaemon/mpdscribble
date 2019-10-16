@@ -21,6 +21,8 @@
 #ifndef MULTI_SCROBBLER_HXX
 #define MULTI_SCROBBLER_HXX
 
+#include "AsioServiceFwd.hxx"
+
 #include <forward_list>
 
 struct ScrobblerConfig;
@@ -32,6 +34,7 @@ class MultiScrobbler {
 
 public:
 	explicit MultiScrobbler(const std::forward_list<ScrobblerConfig> &configs,
+				boost::asio::io_service &io_service,
 				CurlGlobal &curl_global) noexcept;
 	~MultiScrobbler() noexcept;
 

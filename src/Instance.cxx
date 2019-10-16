@@ -22,15 +22,59 @@
 #include "Config.hxx"
 
 Instance::Instance(const struct config &config) noexcept
-	:main_loop(g_main_loop_new(nullptr, false)),
+	:io_service(),
+#ifndef _WIN32
+	 quit_signal(io_service, SIGTERM, SIGINT),
+	 submit_signal(io_service, SIGUSR1),
+#endif
 	 timer(g_timer_new()),
-	 mpd_observer(*this, config.host, config.port),
-	 scrobblers(config.scrobblers, curl_global)
+	 curl_global(io_service),
+	 mpd_observer(io_service, *this, config.host, config.port),
+	 scrobblers(config.scrobblers, io_service, curl_global),
+	 save_journal_interval(config.journal_interval),
+	 save_journal_timer(io_service)
 {
+#ifndef _WIN32
+	quit_signal.async_wait([this](const auto &, int){
+		this->io_service.stop();
+	});
+
+	AsyncWaitSubmitSignal();
+#endif
+
+	ScheduleSaveJournalTimer();
 }
 
 Instance::~Instance() noexcept
 {
 	g_timer_destroy(timer);
-	g_main_loop_unref(main_loop);
+}
+
+#ifndef _WIN32
+
+void
+Instance::AsyncWaitSubmitSignal() noexcept
+{
+	submit_signal.async_wait([this](const auto &error, int){
+			if (error)
+				return;
+
+			scrobblers.SubmitNow();
+			this->AsyncWaitSubmitSignal();
+		});
+}
+
+#endif
+
+void
+Instance::ScheduleSaveJournalTimer() noexcept
+{
+	save_journal_timer.expires_from_now(save_journal_interval);
+	save_journal_timer.async_wait([this](const boost::system::error_code &error){
+		if (error)
+			return;
+
+		scrobblers.WriteJournal();
+		ScheduleSaveJournalTimer();
+	});
 }

@@ -25,12 +25,24 @@
 #include "MpdObserver.hxx"
 #include "MultiScrobbler.hxx"
 
+#include <boost/asio/io_service.hpp>
+#include <boost/asio/steady_timer.hpp>
+#ifndef _WIN32
+#include <boost/asio/signal_set.hpp>
+#endif
+
 #include <glib.h>
 
 struct config;
 
 struct Instance final : MpdObserverListener {
-	GMainLoop *main_loop;
+	boost::asio::io_service io_service;
+
+#ifndef _WIN32
+	boost::asio::signal_set quit_signal;
+	boost::asio::signal_set submit_signal;
+#endif
+
 	GTimer *timer;
 
 	CurlGlobal curl_global;
@@ -39,11 +51,14 @@ struct Instance final : MpdObserverListener {
 
 	MultiScrobbler scrobblers;
 
+	const std::chrono::seconds save_journal_interval;
+	boost::asio::steady_timer save_journal_timer;
+
 	Instance(const struct config &config) noexcept;
 	~Instance() noexcept;
 
 	void Run() noexcept {
-		g_main_loop_run(main_loop);
+		io_service.run();
 	}
 
 	void OnMpdSongChanged(const struct mpd_song *song) noexcept;
@@ -56,6 +71,13 @@ struct Instance final : MpdObserverListener {
 			bool love) noexcept override;
 	void OnMpdPaused() noexcept override;
 	void OnMpdResumed() noexcept override;
+
+private:
+#ifndef _WIN32
+	void AsyncWaitSubmitSignal() noexcept;
+#endif
+
+	void ScheduleSaveJournalTimer() noexcept;
 };
 
 #endif

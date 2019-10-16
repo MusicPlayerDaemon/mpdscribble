@@ -23,8 +23,10 @@
 
 #include "lib/curl/Init.hxx"
 #include "lib/curl/Multi.hxx"
+#include "AsioServiceFwd.hxx"
+#include "AsioGetIoService.hxx"
 
-#include <glib.h>
+#include <boost/asio/steady_timer.hpp>
 
 class CurlGlobal final {
 	class Socket;
@@ -34,14 +36,18 @@ class CurlGlobal final {
 	/** the CURL multi handle */
 	CurlMulti multi;
 
-	guint timeout_source_id = 0, read_info_source_id = 0;
+	boost::asio::steady_timer timeout_timer, read_info_timer;
 
 public:
-	CurlGlobal();
+	explicit CurlGlobal(boost::asio::io_service &io_service);
 	~CurlGlobal() noexcept;
 
 	CurlGlobal(const CurlGlobal &) = delete;
 	CurlGlobal &operator=(const CurlGlobal &) = delete;
+
+	auto &get_io_service() noexcept {
+		return ::get_io_service(timeout_timer);
+	}
 
 	void Add(CURL *easy);
 
@@ -61,16 +67,14 @@ private:
 	 */
 	void ReadInfo() noexcept;
 
-	static gboolean DeferredReadInfo(gpointer user_data) noexcept;
-
 	void ScheduleReadInfo() noexcept {
-		if (read_info_source_id == 0)
-			read_info_source_id = g_idle_add(DeferredReadInfo,
-							 this);
+		read_info_timer.cancel();
+		read_info_timer.expires_from_now(std::chrono::seconds(0));
+		read_info_timer.async_wait([this](const boost::system::error_code &error){
+			if (!error)
+				ReadInfo();
+		});
 	}
-
-	void OnTimeout() noexcept;
-	static gboolean TimeoutCallback(gpointer user_data) noexcept;
 
 	void UpdateTimeout(long timeout_ms) noexcept;
 	static int TimerFunction(CURLM *multi, long timeout_ms,

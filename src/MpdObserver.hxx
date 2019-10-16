@@ -21,9 +21,12 @@
 #ifndef MPD_OBSERVER_HXX
 #define MPD_OBSERVER_HXX
 
+#include "AsioServiceFwd.hxx"
+
 #include <mpd/client.h>
 
-#include <glib.h>
+#include <boost/asio/steady_timer.hpp>
+#include <boost/asio/posix/stream_descriptor.hpp>
 
 class MpdObserverListener {
 public:
@@ -57,11 +60,12 @@ class MpdObserver {
 
 	bool subscribed = false;
 
-	guint reconnect_source_id = 0, update_source_id = 0,
-		idle_source_id = 0;
+	boost::asio::steady_timer connect_timer, update_timer;
+	boost::asio::posix::stream_descriptor socket;
 
 public:
-	MpdObserver(MpdObserverListener &_listener,
+	MpdObserver(boost::asio::io_service &io_service,
+		    MpdObserverListener &_listener,
 		    const char *_host, int _port) noexcept;
 	~MpdObserver() noexcept;
 
@@ -69,11 +73,11 @@ private:
 	void HandleError() noexcept;
 
 	void ScheduleConnect() noexcept;
-	static gboolean OnConnectTimer(gpointer data) noexcept;
+	void OnConnectTimer(const boost::system::error_code &error) noexcept;
 	bool Connect() noexcept;
 
 	void ScheduleUpdate() noexcept;
-	static gboolean OnUpdateTimer(gpointer data) noexcept;
+	void OnUpdateTimer(const boost::system::error_code &error) noexcept;
 	enum mpd_state QueryState(struct mpd_song **song_r,
 				  unsigned *elapsed_r) noexcept;
 	/**
@@ -85,9 +89,6 @@ private:
 
 	void ScheduleIdle() noexcept;
 	void OnIdleResponse() noexcept;
-	static gboolean OnIdleResponse(GIOChannel *source,
-				       GIOCondition condition,
-				       gpointer data) noexcept;
 };
 
 #endif

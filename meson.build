@@ -22,11 +22,23 @@ if not get_option('syslog').disabled()
   endif
 endif
 
+thread_dep = dependency('threads')
 boost_dep = dependency('boost', version: '>= 1.62')
 glib_dep = dependency('glib-2.0', version: '>= 2.16')
 libmpdclient_dep = dependency('libmpdclient', version: '>= 2.5')
 libgcrypt_dep = dependency('libgcrypt')
 libcurl_dep = dependency('libcurl', version: '>= 7.18')
+
+common_cflags = [
+  # no header bloat for the iostream library we don't use
+  '-DBOOST_NO_IOSTREAM',
+
+  # avoid the runtime dependency on libboost_system
+  '-DBOOST_ERROR_CODE_HEADER_ONLY',
+
+  # disable deprecated boost::system features
+  '-DBOOST_SYSTEM_NO_DEPRECATED',
+]
 
 test_cflags = [
   '-Wall',
@@ -59,6 +71,7 @@ if get_option('buildtype') != 'debug'
   ]
 endif
 
+add_global_arguments(common_cflags, language: 'cpp')
 add_global_arguments(cc.get_supported_arguments(test_cflags), language: 'cpp')
 add_global_link_arguments(cc.get_supported_link_arguments(test_ldflags), language: 'cpp')
 
@@ -96,6 +109,7 @@ executable(
 
   include_directories: inc,
   dependencies: [
+    thread_dep,
     boost_dep,
     glib_dep,
     libmpdclient_dep,

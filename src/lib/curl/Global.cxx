@@ -20,74 +20,37 @@
 #include "Global.hxx"
 #include "HttpClient.hxx"
 
+#include <glib.h>
+
+#include <boost/asio/posix/stream_descriptor.hpp>
+
 #include <stdexcept>
 
 #include <assert.h>
 
-static guint
-MakeGlibFdSource(int fd, GIOCondition condition,
-		 GIOFunc func, gpointer user_data) noexcept
-{
-	auto *channel = g_io_channel_unix_new(fd);
-	guint source_id = g_io_add_watch(channel, condition, func, user_data);
-	g_io_channel_unref(channel);
-	return source_id;
-}
-
-static constexpr GIOCondition
-CurlPollToGIOCondition(int action) noexcept
-{
-	switch (action) {
-	case CURL_POLL_NONE:
-		break;
-
-	case CURL_POLL_IN:
-		return G_IO_IN;
-
-	case CURL_POLL_OUT:
-		return G_IO_OUT;
-
-	case CURL_POLL_INOUT:
-		return GIOCondition(G_IO_IN|G_IO_OUT);
-	}
-
-	return GIOCondition(0);
-}
-
-static constexpr int
-GIOConditionToCurlCSelect(GIOCondition condition) noexcept
-{
-	int result = 0;
-
-	if (condition & (G_IO_IN|G_IO_HUP))
-		result |= CURL_CSELECT_IN;
-
-	if (condition & G_IO_OUT)
-		result |= CURL_CSELECT_OUT;
-
-	if (condition & G_IO_ERR)
-		result |= CURL_CSELECT_ERR;
-
-	return result;
-}
-
 class CurlGlobal::Socket {
 	CurlGlobal &global;
 
-	const int fd;
+	boost::asio::posix::stream_descriptor fd;
 
-	const guint source_id;
+	const int action;
+
+	bool *destroyed_p = nullptr;
 
 public:
-	Socket(CurlGlobal &_global, int _fd, int action) noexcept
-		:global(_global), fd(_fd),
-		 source_id(MakeGlibFdSource(fd, CurlPollToGIOCondition(action),
-					    Callback, this))
+	Socket(CurlGlobal &_global, boost::asio::io_service &io_service,
+	       int _fd, int _action) noexcept
+		:global(_global), fd(io_service, _fd), action(_action)
 	{
+		AsyncWait();
 	}
 
 	~Socket() noexcept {
-		g_source_remove(source_id);
+		/* CURL closes the socket */
+		fd.release();
+
+		if (destroyed_p != nullptr)
+			*destroyed_p = true;
 	}
 
 	/**
@@ -98,9 +61,45 @@ public:
 				  void *userp, void *socketp) noexcept;
 
 private:
-	static gboolean Callback(GIOChannel *channel, GIOCondition condition,
-				 gpointer user_data) noexcept;
+	void Callback(const boost::system::error_code &error,
+		      int ev_bitmask) noexcept;
+
+	void AsyncRead() noexcept {
+		fd.async_read_some(boost::asio::null_buffers(),
+				   std::bind(&Socket::Callback, this, std::placeholders::_1,
+					     CURL_CSELECT_IN));
+	}
+
+	void AsyncWrite() noexcept {
+		fd.async_write_some(boost::asio::null_buffers(),
+				    std::bind(&Socket::Callback, this, std::placeholders::_1,
+					      CURL_CSELECT_OUT));
+	}
+
+	void AsyncWait() noexcept;
 };
+
+void
+CurlGlobal::Socket::AsyncWait() noexcept
+{
+	switch (action) {
+	case CURL_POLL_NONE:
+		break;
+
+	case CURL_POLL_IN:
+		AsyncRead();
+		break;
+
+	case CURL_POLL_OUT:
+		AsyncWrite();
+		break;
+
+	case CURL_POLL_INOUT:
+		AsyncRead();
+		AsyncWrite();
+		break;
+	}
+}
 
 int
 CurlGlobal::Socket::SocketFunction(CURL *, curl_socket_t s, int action,
@@ -114,20 +113,28 @@ CurlGlobal::Socket::SocketFunction(CURL *, curl_socket_t s, int action,
 	if (action == CURL_POLL_REMOVE)
 		return 0;
 
-	socket = new Socket(global, s, action);
+	socket = new Socket(global, global.get_io_service(), s, action);
 	global.Assign(s, *socket);
 	return 0;
 }
 
-gboolean
-CurlGlobal::Socket::Callback(GIOChannel *, GIOCondition condition,
-			     gpointer user_data) noexcept
+inline void
+CurlGlobal::Socket::Callback(const boost::system::error_code &error,
+			     int ev_bitmask) noexcept
 {
-	auto &socket = *(Socket *)user_data;
+	if (error)
+		return;
 
-	socket.global.SocketAction(socket.fd,
-				   GIOConditionToCurlCSelect(condition));
-	return true;
+	assert(destroyed_p == nullptr);
+	bool destroyed = false;
+	destroyed_p = &destroyed;
+
+	global.SocketAction(fd.native_handle(), ev_bitmask);
+
+	if (!destroyed) {
+		destroyed_p = nullptr;
+		AsyncWait();
+	}
 }
 
 void
@@ -174,39 +181,13 @@ CurlGlobal::ReadInfo() noexcept
 	}
 }
 
-gboolean
-CurlGlobal::DeferredReadInfo(gpointer user_data) noexcept
-{
-	auto &global = *(CurlGlobal *)user_data;
-
-	global.read_info_source_id = 0;
-	global.ReadInfo();
-	return false;
-}
-
-inline void
-CurlGlobal::OnTimeout() noexcept
-{
-	SocketAction(CURL_SOCKET_TIMEOUT, 0);
-}
-
-gboolean
-CurlGlobal::TimeoutCallback(gpointer user_data) noexcept
-{
-	auto &global = *(CurlGlobal *)user_data;
-	global.OnTimeout();
-	return false;
-}
-
 void
 CurlGlobal::UpdateTimeout(long timeout_ms) noexcept
 {
-	if (timeout_ms < 0) {
-		if (timeout_source_id != 0)
-			g_source_remove(std::exchange(timeout_source_id, 0));
+	timeout_timer.cancel();
 
+	if (timeout_ms < 0)
 		return;
-	}
 
 	if (timeout_ms < 10)
 		/* CURL 7.21.1 likes to report "timeout=0", which
@@ -215,10 +196,11 @@ CurlGlobal::UpdateTimeout(long timeout_ms) noexcept
 		   of 10ms. */
 		timeout_ms = 10;
 
-	if (timeout_source_id != 0)
-		g_source_remove(timeout_source_id);
-
-	timeout_source_id = g_timeout_add(timeout_ms, TimeoutCallback, this);
+	timeout_timer.expires_from_now(std::chrono::milliseconds(timeout_ms));
+	timeout_timer.async_wait([this](const boost::system::error_code &error){
+		if (!error)
+			SocketAction(CURL_SOCKET_TIMEOUT, 0);
+	});
 }
 
 int
@@ -245,7 +227,8 @@ CurlGlobal::SocketAction(curl_socket_t fd, int ev_bitmask) noexcept
 	ScheduleReadInfo();
 }
 
-CurlGlobal::CurlGlobal()
+CurlGlobal::CurlGlobal(boost::asio::io_service &io_service)
+	:timeout_timer(io_service), read_info_timer(io_service)
 {
 	multi.SetOption(CURLMOPT_SOCKETFUNCTION, Socket::SocketFunction);
 	multi.SetOption(CURLMOPT_SOCKETDATA, this);
@@ -254,10 +237,4 @@ CurlGlobal::CurlGlobal()
 	multi.SetOption(CURLMOPT_TIMERDATA, this);
 }
 
-CurlGlobal::~CurlGlobal() noexcept
-{
-	if (timeout_source_id != 0)
-		g_source_remove(timeout_source_id);
-	if (read_info_source_id != 0)
-		g_source_remove(read_info_source_id);
-}
+CurlGlobal::~CurlGlobal() noexcept = default;

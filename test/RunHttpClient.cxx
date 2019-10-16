@@ -4,12 +4,14 @@
 
 #include <glib.h>
 
+#include <boost/asio/io_service.hpp>
+
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 
-static GMainLoop *main_loop;
+static boost::asio::io_service io_service;
 static std::exception_ptr error;
 static bool quit;
 
@@ -17,7 +19,7 @@ static void
 my_response(std::string body, void *)
 {
 	write(STDOUT_FILENO, body.data(), body.size());
-	g_main_loop_quit(main_loop);
+	io_service.stop();
 	quit = true;
 }
 
@@ -25,7 +27,7 @@ static void
 my_error(std::exception_ptr _error, void *)
 {
 	error = _error;
-	g_main_loop_quit(main_loop);
+	io_service.stop();
 	quit = true;
 }
 
@@ -42,16 +44,13 @@ main(int argc, char **argv)
 		return EXIT_FAILURE;
 	}
 
-	main_loop = g_main_loop_new(nullptr, false);
-
-	CurlGlobal curl_global;
+	CurlGlobal curl_global(io_service);
 
 	const char *url = argv[1];
 	HttpRequest request(curl_global, url, {}, my_handler, nullptr);
 	if (!quit)
-		g_main_loop_run(main_loop);
+		io_service.run();
 	assert(quit);
-	g_main_loop_unref(main_loop);
 
 	if (error) {
 		PrintException(error);
