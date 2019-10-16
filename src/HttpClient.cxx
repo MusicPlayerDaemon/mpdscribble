@@ -38,7 +38,7 @@ enum {
 void
 HttpClient::Add(CURL *easy)
 {
-	CURLMcode mcode = curl_multi_add_handle(multi, easy);
+	CURLMcode mcode = curl_multi_add_handle(multi.Get(), easy);
 	if (mcode != CURLM_OK)
 		throw std::runtime_error(curl_multi_strerror(mcode));
 }
@@ -115,7 +115,7 @@ HttpClient::UpdateFDs() noexcept
 	FD_ZERO(&efds);
 
 	int max_fd;
-	CURLMcode mcode = curl_multi_fdset(multi, &rfds, &wfds,
+	CURLMcode mcode = curl_multi_fdset(multi.Get(), &rfds, &wfds,
 					   &efds, &max_fd);
 	if (mcode != CURLM_OK) {
 		g_warning("curl_multi_fdset() failed: %s\n",
@@ -208,7 +208,7 @@ HttpClient::ReadInfo() noexcept
 	CURLMsg *msg;
 	int msgs_in_queue;
 
-	while ((msg = curl_multi_info_read(multi,
+	while ((msg = curl_multi_info_read(multi.Get(),
 					   &msgs_in_queue)) != nullptr) {
 		if (msg->msg == CURLMSG_DONE) {
 			HttpRequest *request =
@@ -231,7 +231,7 @@ HttpClient::Perform() noexcept
 
 	do {
 		int running_handles;
-		mcode = curl_multi_perform(multi, &running_handles);
+		mcode = curl_multi_perform(multi.Get(), &running_handles);
 	} while (mcode == CURLM_CALL_MULTI_PERFORM);
 
 	if (mcode != CURLM_OK && mcode != CURLM_CALL_MULTI_PERFORM) {
@@ -255,7 +255,8 @@ HttpClient::SourcePrepare(GSource *source, gint *timeout_) noexcept
 	http_client.timeout = false;
 
 	long timeout2;
-	CURLMcode mcode = curl_multi_timeout(http_client.multi, &timeout2);
+	CURLMcode mcode = curl_multi_timeout(http_client.multi.Get(),
+					     &timeout2);
 	if (mcode == CURLM_OK) {
 		if (timeout2 >= 0 && timeout2 < 10)
 			/* CURL 7.21.1 likes to report "timeout=0",
@@ -325,10 +326,6 @@ static GSourceFuncs curl_source_funcs = {
 
 HttpClient::HttpClient()
 {
-	multi = curl_multi_init();
-	if (multi == nullptr)
-		g_error("curl_multi_init() failed");
-
 	source = g_source_new(&curl_source_funcs,
 			      sizeof(Source));
 	((Source *)source)->client = this;
@@ -346,10 +343,6 @@ HttpClient::~HttpClient() noexcept
 
 	g_source_unref(source);
 	g_source_remove(source_id);
-
-	/* clean up CURL */
-
-	curl_multi_cleanup(multi);
 }
 
 std::string

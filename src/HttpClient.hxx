@@ -23,6 +23,7 @@
 
 #include "lib/curl/Init.hxx"
 #include "lib/curl/Easy.hxx"
+#include "lib/curl/Multi.hxx"
 
 #include <glib.h>
 
@@ -90,7 +91,7 @@ class HttpClient final {
 	const ScopeCurlInit init;
 
 	/** the CURL multi handle */
-	CURLM *multi;
+	CurlMulti multi;
 
 	/** the GMainLoop source used to poll all CURL file
 	    descriptors */
@@ -119,7 +120,7 @@ public:
 	void Add(CURL *easy);
 
 	void Remove(CURL *easy) noexcept {
-		curl_multi_remove_handle(multi, easy);
+		curl_multi_remove_handle(multi.Get(), easy);
 	}
 
 	static gboolean SourcePrepare(GSource *source, gint *timeout) noexcept;
