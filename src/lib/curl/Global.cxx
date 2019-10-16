@@ -18,18 +18,117 @@
  */
 
 #include "Global.hxx"
-#include "util/Exception.hxx"
-#include "util/RuntimeError.hxx"
 #include "HttpClient.hxx"
 
 #include <stdexcept>
 
 #include <assert.h>
 
-enum {
-	/** maximum length of a response body */
-	MAX_RESPONSE_BODY = 8192,
+static guint
+MakeGlibFdSource(int fd, GIOCondition condition,
+		 GIOFunc func, gpointer user_data) noexcept
+{
+	auto *channel = g_io_channel_unix_new(fd);
+	guint source_id = g_io_add_watch(channel, condition, func, user_data);
+	g_io_channel_unref(channel);
+	return source_id;
+}
+
+static constexpr GIOCondition
+CurlPollToGIOCondition(int action) noexcept
+{
+	switch (action) {
+	case CURL_POLL_NONE:
+		break;
+
+	case CURL_POLL_IN:
+		return G_IO_IN;
+
+	case CURL_POLL_OUT:
+		return G_IO_OUT;
+
+	case CURL_POLL_INOUT:
+		return GIOCondition(G_IO_IN|G_IO_OUT);
+	}
+
+	return GIOCondition(0);
+}
+
+static constexpr int
+GIOConditionToCurlCSelect(GIOCondition condition) noexcept
+{
+	int result = 0;
+
+	if (condition & (G_IO_IN|G_IO_HUP))
+		result |= CURL_CSELECT_IN;
+
+	if (condition & G_IO_OUT)
+		result |= CURL_CSELECT_OUT;
+
+	if (condition & G_IO_ERR)
+		result |= CURL_CSELECT_ERR;
+
+	return result;
+}
+
+class CurlGlobal::Socket {
+	CurlGlobal &global;
+
+	const int fd;
+
+	const guint source_id;
+
+public:
+	Socket(CurlGlobal &_global, int _fd, int action) noexcept
+		:global(_global), fd(_fd),
+		 source_id(MakeGlibFdSource(fd, CurlPollToGIOCondition(action),
+					    Callback, this))
+	{
+	}
+
+	~Socket() noexcept {
+		g_source_remove(source_id);
+	}
+
+	/**
+	 * Callback function for CURLMOPT_SOCKETFUNCTION.
+	 */
+	static int SocketFunction(CURL *easy,
+				  curl_socket_t s, int action,
+				  void *userp, void *socketp) noexcept;
+
+private:
+	static gboolean Callback(GIOChannel *channel, GIOCondition condition,
+				 gpointer user_data) noexcept;
 };
+
+int
+CurlGlobal::Socket::SocketFunction(CURL *, curl_socket_t s, int action,
+				   void *userp, void *socketp) noexcept
+{
+	auto &global = *(CurlGlobal *)userp;
+
+	auto *socket = (Socket *)socketp;
+	delete socket;
+
+	if (action == CURL_POLL_REMOVE)
+		return 0;
+
+	socket = new Socket(global, s, action);
+	global.Assign(s, *socket);
+	return 0;
+}
+
+gboolean
+CurlGlobal::Socket::Callback(GIOChannel *, GIOCondition condition,
+			     gpointer user_data) noexcept
+{
+	auto &socket = *(Socket *)user_data;
+
+	socket.global.SocketAction(socket.fd,
+				   GIOConditionToCurlCSelect(condition));
+	return true;
+}
 
 void
 CurlGlobal::Add(CURL *easy)
@@ -37,88 +136,6 @@ CurlGlobal::Add(CURL *easy)
 	CURLMcode mcode = curl_multi_add_handle(multi.Get(), easy);
 	if (mcode != CURLM_OK)
 		throw std::runtime_error(curl_multi_strerror(mcode));
-}
-
-/**
- * Calculates the GLib event bit mask for one file descriptor,
- * obtained from three #fd_set objects filled by curl_multi_fdset().
- */
-static gushort
-http_client_fd_events(int fd, fd_set *rfds,
-		      fd_set *wfds, fd_set *efds) noexcept
-{
-	gushort events = 0;
-
-	if (FD_ISSET(fd, rfds)) {
-		events |= G_IO_IN | G_IO_HUP | G_IO_ERR;
-		FD_CLR(fd, rfds);
-	}
-
-	if (FD_ISSET(fd, wfds)) {
-		events |= G_IO_OUT | G_IO_ERR;
-		FD_CLR(fd, wfds);
-	}
-
-	if (FD_ISSET(fd, efds)) {
-		events |= G_IO_HUP | G_IO_ERR;
-		FD_CLR(fd, efds);
-	}
-
-	return events;
-}
-
-void
-CurlGlobal::UpdateFDs() noexcept
-{
-	fd_set rfds, wfds, efds;
-
-	FD_ZERO(&rfds);
-	FD_ZERO(&wfds);
-	FD_ZERO(&efds);
-
-	int max_fd;
-	CURLMcode mcode = curl_multi_fdset(multi.Get(), &rfds, &wfds,
-					   &efds, &max_fd);
-	if (mcode != CURLM_OK) {
-		g_warning("curl_multi_fdset() failed: %s\n",
-			  curl_multi_strerror(mcode));
-		return;
-	}
-
-	for (auto prev = fds.before_begin(), i = std::next(prev);
-	     i != fds.end();) {
-		GPollFD *poll_fd = &*i;
-		gushort events = http_client_fd_events(poll_fd->fd, &rfds,
-						       &wfds, &efds);
-
-		assert(poll_fd->events != 0);
-
-		if (events != poll_fd->events)
-			g_source_remove_poll(source, poll_fd);
-
-		if (events != 0) {
-			if (events != poll_fd->events) {
-				poll_fd->events = events;
-				g_source_add_poll(source, poll_fd);
-			}
-
-			prev = i++;
-		} else {
-			i = fds.erase_after(prev);
-		}
-	}
-
-	for (int fd = 0; fd <= max_fd; ++fd) {
-		gushort events = http_client_fd_events(fd, &rfds,
-						       &wfds, &efds);
-		if (events != 0) {
-			fds.emplace_front();
-			GPollFD *poll_fd = &fds.front();
-			poll_fd->fd = fd;
-			poll_fd->events = events;
-			g_source_add_poll(source, poll_fd);
-		}
-	}
 }
 
 /**
@@ -157,123 +174,90 @@ CurlGlobal::ReadInfo() noexcept
 	}
 }
 
-bool
-CurlGlobal::Perform() noexcept
-{
-	CURLMcode mcode;
-
-	do {
-		int running_handles;
-		mcode = curl_multi_perform(multi.Get(), &running_handles);
-	} while (mcode == CURLM_CALL_MULTI_PERFORM);
-
-	if (mcode != CURLM_OK && mcode != CURLM_CALL_MULTI_PERFORM) {
-		g_warning("curl_multi_perform() failed: %s",
-			  curl_multi_strerror(mcode));
-		return false;
-	}
-
-	return true;
-}
-
-/**
- * The GSource prepare() method implementation.
- */
 gboolean
-CurlGlobal::SourcePrepare(GSource *source, gint *timeout_) noexcept
+CurlGlobal::DeferredReadInfo(gpointer user_data) noexcept
 {
-	auto &global = *((Source *)source)->global;
+	auto &global = *(CurlGlobal *)user_data;
 
-	global.UpdateFDs();
-	global.timeout = false;
-
-	long timeout2;
-	CURLMcode mcode = curl_multi_timeout(global.multi.Get(),
-					     &timeout2);
-	if (mcode == CURLM_OK) {
-		if (timeout2 >= 0 && timeout2 < 10)
-			/* CURL 7.21.1 likes to report "timeout=0",
-			   which means we're running in a busy loop.
-			   Quite a bad idea to waste so much CPU.
-			   Let's use a lower limit of 10ms. */
-			timeout2 = 10;
-
-		*timeout_ = timeout2;
-
-		global.timeout = timeout2 >= 0;
-	} else
-		g_warning("curl_multi_timeout() failed: %s\n",
-			  curl_multi_strerror(mcode));
-
+	global.read_info_source_id = 0;
+	global.ReadInfo();
 	return false;
 }
 
-/**
- * The GSource check() method implementation.
- */
-gboolean
-CurlGlobal::SourceCheck(GSource *source) noexcept
+inline void
+CurlGlobal::OnTimeout() noexcept
 {
-	auto &global = *((Source *)source)->global;
+	SocketAction(CURL_SOCKET_TIMEOUT, 0);
+}
 
-	if (global.timeout) {
-		/* when a timeout has expired, we need to call
-		   curl_multi_perform(), even if there was no file
-		   descriptor event */
-		global.timeout = false;
-		return true;
-	}
-
-	for (const auto &i : global.fds)
-		if (i.revents != 0)
-			return true;
-
+gboolean
+CurlGlobal::TimeoutCallback(gpointer user_data) noexcept
+{
+	auto &global = *(CurlGlobal *)user_data;
+	global.OnTimeout();
 	return false;
 }
 
-/**
- * The GSource dispatch() method implementation.  The callback isn't
- * used, because we're handling all events directly.
- */
-gboolean
-CurlGlobal::SourceDispatch(GSource *source, GSourceFunc, gpointer) noexcept
+void
+CurlGlobal::UpdateTimeout(long timeout_ms) noexcept
 {
-	auto &global = *((Source *)source)->global;
+	if (timeout_ms < 0) {
+		if (timeout_source_id != 0)
+			g_source_remove(std::exchange(timeout_source_id, 0));
 
-	if (global.Perform())
-		global.ReadInfo();
+		return;
+	}
 
-	return true;
+	if (timeout_ms < 10)
+		/* CURL 7.21.1 likes to report "timeout=0", which
+		   means we're running in a busy loop.  Quite a bad
+		   idea to waste so much CPU.  Let's use a lower limit
+		   of 10ms. */
+		timeout_ms = 10;
+
+	if (timeout_source_id != 0)
+		g_source_remove(timeout_source_id);
+
+	timeout_source_id = g_timeout_add(timeout_ms, TimeoutCallback, this);
 }
 
-/**
- * The vtable for our GSource implementation.  Unfortunately, we
- * cannot declare it "const", because g_source_new() takes a non-const
- * pointer, for whatever reason.
- */
-static GSourceFuncs curl_source_funcs = {
-	.prepare = CurlGlobal::SourcePrepare,
-	.check = CurlGlobal::SourceCheck,
-	.dispatch = CurlGlobal::SourceDispatch,
-};
+int
+CurlGlobal::TimerFunction(CURLM *_multi, long timeout_ms, void *userp) noexcept
+{
+	auto &global = *(CurlGlobal *)userp;
+	assert(_multi == global.multi.Get());
+	(void)_multi;
+
+	global.UpdateTimeout(timeout_ms);
+	return 0;
+}
+
+void
+CurlGlobal::SocketAction(curl_socket_t fd, int ev_bitmask) noexcept
+{
+	int running_handles;
+	CURLMcode mcode = curl_multi_socket_action(multi.Get(), fd, ev_bitmask,
+						   &running_handles);
+	if (mcode != CURLM_OK)
+		g_warning("curl_multi_socket_action() failed: %s",
+			  curl_multi_strerror(mcode));
+
+	ScheduleReadInfo();
+}
 
 CurlGlobal::CurlGlobal()
 {
-	source = g_source_new(&curl_source_funcs,
-			      sizeof(Source));
-	((Source *)source)->global = this;
+	multi.SetOption(CURLMOPT_SOCKETFUNCTION, Socket::SocketFunction);
+	multi.SetOption(CURLMOPT_SOCKETDATA, this);
 
-	source_id = g_source_attach(source, g_main_context_default());
+	multi.SetOption(CURLMOPT_TIMERFUNCTION, TimerFunction);
+	multi.SetOption(CURLMOPT_TIMERDATA, this);
 }
 
 CurlGlobal::~CurlGlobal() noexcept
 {
-	/* unregister all GPollFD instances */
-
-	UpdateFDs();
-
-	/* free the GSource object */
-
-	g_source_unref(source);
-	g_source_remove(source_id);
+	if (timeout_source_id != 0)
+		g_source_remove(timeout_source_id);
+	if (read_info_source_id != 0)
+		g_source_remove(read_info_source_id);
 }

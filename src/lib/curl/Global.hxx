@@ -26,36 +26,15 @@
 
 #include <glib.h>
 
-#include <forward_list>
-
 class CurlGlobal final {
-	struct Source {
-		GSource base;
-
-		CurlGlobal *global;
-	};
+	class Socket;
 
 	const ScopeCurlInit init;
 
 	/** the CURL multi handle */
 	CurlMulti multi;
 
-	/** the GMainLoop source used to poll all CURL file
-	    descriptors */
-	GSource *source;
-
-	/** the source id of #source */
-	guint source_id;
-
-	/** a linked list of all registered GPollFD objects */
-	std::forward_list<GPollFD> fds;
-
-	/**
-	 * Did CURL give us a timeout?  If yes, then we need to call
-	 * curl_multi_perform(), even if there was no event on any
-	 * file descriptor.
-	 */
-	bool timeout;
+	guint timeout_source_id = 0, read_info_source_id = 0;
 
 public:
 	CurlGlobal();
@@ -70,27 +49,32 @@ public:
 		curl_multi_remove_handle(multi.Get(), easy);
 	}
 
-	static gboolean SourcePrepare(GSource *source, gint *timeout) noexcept;
-	static gboolean SourceCheck(GSource *source) noexcept;
-	static gboolean SourceDispatch(GSource *source,
-				       GSourceFunc, gpointer) noexcept;
+	void Assign(curl_socket_t fd, Socket &s) noexcept {
+		curl_multi_assign(multi.Get(), fd, &s);
+	}
+
+	void SocketAction(curl_socket_t fd, int ev_bitmask) noexcept;
 
 private:
-	/**
-	 * Updates all registered GPollFD objects, unregisters old
-	 * ones, registers new ones.
-	 */
-	void UpdateFDs() noexcept;
-
 	/**
 	 * Check for finished HTTP responses.
 	 */
 	void ReadInfo() noexcept;
 
-	/**
-	 * Give control to CURL.
-	 */
-	bool Perform() noexcept;
+	static gboolean DeferredReadInfo(gpointer user_data) noexcept;
+
+	void ScheduleReadInfo() noexcept {
+		if (read_info_source_id == 0)
+			read_info_source_id = g_idle_add(DeferredReadInfo,
+							 this);
+	}
+
+	void OnTimeout() noexcept;
+	static gboolean TimeoutCallback(gpointer user_data) noexcept;
+
+	void UpdateTimeout(long timeout_ms) noexcept;
+	static int TimerFunction(CURLM *multi, long timeout_ms,
+				 void *userp) noexcept;
 };
 
 #endif
