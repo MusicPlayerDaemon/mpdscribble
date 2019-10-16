@@ -25,8 +25,6 @@
 
 #include <curl/curl.h>
 
-#include <boost/intrusive/list.hpp>
-
 #include <forward_list>
 #include <stdexcept>
 
@@ -50,10 +48,6 @@ static struct {
 
 	/** a linked list of all registered GPollFD objects */
 	std::forward_list<GPollFD> fds;
-
-	/** a linked list of all active HTTP requests */
-	boost::intrusive::list<HttpRequest,
-			       boost::intrusive::constant_time_size<false>> requests;
 
 	/**
 	 * Did CURL give us a timeout?  If yes, then we need to call
@@ -95,8 +89,6 @@ HttpRequest::HttpRequest(const char *url, std::string &&_request_body,
 	CURLMcode mcode = curl_multi_add_handle(http_client.multi, curl.Get());
 	if (mcode != CURLM_OK)
 		throw std::runtime_error(curl_multi_strerror(mcode));
-
-	http_client.requests.push_front(*this);
 }
 
 HttpRequest::~HttpRequest() noexcept

@@ -23,8 +23,6 @@
 
 #include "lib/curl/Easy.hxx"
 
-#include <boost/intrusive/list_hook.hpp>
-
 #include <exception>
 #include <string>
 
@@ -36,7 +34,6 @@ struct HttpClientHandler {
 };
 
 class HttpRequest final
-	: public boost::intrusive::list_base_hook<boost::intrusive::link_mode<boost::intrusive::auto_unlink>>
 {
 	const HttpClientHandler &handler;
 	void *handler_ctx;
