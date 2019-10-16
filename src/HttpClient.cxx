@@ -132,6 +132,8 @@ HttpRequest::HttpRequest(const char *url, std::string &&_request_body,
 	CURLMcode mcode = curl_multi_add_handle(http_client.multi, curl.Get());
 	if (mcode != CURLM_OK)
 		throw std::runtime_error(curl_multi_strerror(mcode));
+
+	http_client.requests.push_front(*this);
 }
 
 HttpRequest::~HttpRequest() noexcept
@@ -468,10 +470,7 @@ void
 http_client_request(const char *url, std::string &&post_data,
 		    const HttpClientHandler &handler, void *ctx) noexcept
 try {
-	HttpRequest *request = new HttpRequest(url, std::move(post_data),
-					       handler, ctx);
-
-	http_client.requests.push_front(*request);
+	new HttpRequest(url, std::move(post_data), handler, ctx);
 } catch (...) {
 	GError *error = g_error_new(curl_quark(), 0, "%s",
 				    GetFullMessage(std::current_exception()).c_str());
