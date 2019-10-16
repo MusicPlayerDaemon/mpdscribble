@@ -18,6 +18,7 @@
  */
 
 #include "HttpClient.hxx"
+#include "lib/curl/Easy.hxx"
 #include "util/Exception.hxx"
 #include "Config.hxx"
 #include "config.h"
@@ -43,7 +44,7 @@ struct HttpRequest
 	void *handler_ctx;
 
 	/** the CURL easy handle */
-	CURL *curl = nullptr;
+	CurlEasy curl;
 
 	/** the POST request body */
 	std::string request_body;
@@ -92,57 +93,40 @@ curl_quark() noexcept
 }
 
 static size_t
-http_request_writefunction(void *ptr, size_t size, size_t nmemb,
+http_request_writefunction(char *ptr, size_t size, size_t nmemb,
 			   void *stream) noexcept;
 
 HttpRequest::HttpRequest(const char *url, std::string &&_request_body,
 			 const HttpClientHandler &_handler,
 			 void *_ctx)
 	:handler(_handler), handler_ctx(_ctx),
-	 curl(curl_easy_init()),
+	 curl(url),
 	 request_body(std::move(_request_body))
 {
-	if (curl == nullptr)
-		throw std::runtime_error("curl_easy_init() failed");
-
-	CURLcode code = curl_easy_setopt(curl, CURLOPT_URL, url);
-	if (code != CURLE_OK) {
-		curl_easy_cleanup(curl);
-		throw std::runtime_error(curl_easy_strerror(code));
-	}
-
-	curl_easy_setopt(curl, CURLOPT_USERAGENT, PACKAGE "/" VERSION);
-	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION,
-			 http_request_writefunction);
-	curl_easy_setopt(curl, CURLOPT_WRITEDATA, this);
-	curl_easy_setopt(curl, CURLOPT_FAILONERROR, true);
-	curl_easy_setopt(curl, CURLOPT_ERRORBUFFER, error);
-	curl_easy_setopt(curl, CURLOPT_BUFFERSIZE, 2048);
+	curl.SetUserAgent(PACKAGE "/" VERSION);
+	curl.SetWriteFunction(http_request_writefunction, this);
+	curl.SetOption(CURLOPT_FAILONERROR, true);
+	curl.SetOption(CURLOPT_ERRORBUFFER, error);
+	curl.SetOption(CURLOPT_BUFFERSIZE, (long)2048);
 
 	if (file_config.proxy != nullptr)
-		curl_easy_setopt(curl, CURLOPT_PROXY, file_config.proxy);
+		curl.SetOption(CURLOPT_PROXY, file_config.proxy);
 
 	if (!request_body.empty()) {
-		curl_easy_setopt(curl, CURLOPT_POST, true);
-		curl_easy_setopt(curl, CURLOPT_POSTFIELDS,
-				 request_body.data());
-		curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE,
-				 (long)request_body.size());
+		curl.SetOption(CURLOPT_POST, true);
+		curl.SetRequestBody(request_body.data(),
+				    request_body.size());
 	}
 
-	CURLMcode mcode = curl_multi_add_handle(http_client.multi, curl);
-	if (mcode != CURLM_OK) {
-		curl_easy_cleanup(curl);
+	CURLMcode mcode = curl_multi_add_handle(http_client.multi, curl.Get());
+	if (mcode != CURLM_OK)
 		throw std::runtime_error(curl_multi_strerror(mcode));
-	}
 }
 
 HttpRequest::~HttpRequest() noexcept
 {
-	if (curl != nullptr) {
-		curl_multi_remove_handle(http_client.multi, curl);
-		curl_easy_cleanup(curl);
-	}
+	if (curl)
+		curl_multi_remove_handle(http_client.multi, curl.Get());
 }
 
 /**
@@ -263,7 +247,7 @@ static HttpRequest *
 http_client_find_request(CURL *curl) noexcept
 {
 	for (auto &i : http_client.requests)
-		if (i.curl == curl)
+		if (i.curl.Get() == curl)
 			return &i;
 
 	return nullptr;
@@ -485,7 +469,7 @@ http_client_uri_escape(const char *src) noexcept
  * Called by curl when new data is available.
  */
 static size_t
-http_request_writefunction(void *ptr, size_t size, size_t nmemb,
+http_request_writefunction(char *ptr, size_t size, size_t nmemb,
 			   void *stream) noexcept
 {
 	auto *request = (HttpRequest *)stream;
