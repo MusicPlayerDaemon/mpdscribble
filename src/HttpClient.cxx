@@ -103,6 +103,7 @@ HttpRequest::HttpRequest(const char *url, std::string &&_request_body,
 	 curl(url),
 	 request_body(std::move(_request_body))
 {
+	curl.SetPrivate(this);
 	curl.SetUserAgent(PACKAGE "/" VERSION);
 	curl.SetWriteFunction(http_request_writefunction, this);
 	curl.SetOption(CURLOPT_FAILONERROR, true);
@@ -246,11 +247,12 @@ http_client_abort_all_requests(GError *error) noexcept
 static HttpRequest *
 http_client_find_request(CURL *curl) noexcept
 {
-	for (auto &i : http_client.requests)
-		if (i.curl.Get() == curl)
-			return &i;
+	void *p;
+	CURLcode code = curl_easy_getinfo(curl, CURLINFO_PRIVATE, &p);
+	if (code != CURLE_OK)
+		return nullptr;
 
-	return nullptr;
+	return (HttpRequest *)p;
 }
 
 /**
