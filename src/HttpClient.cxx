@@ -346,7 +346,7 @@ curl_source_prepare(GSource *, gint *timeout_)
  * The GSource check() method implementation.
  */
 static gboolean
-curl_source_check(G_GNUC_UNUSED GSource *source)
+curl_source_check(GSource *)
 {
 	if (http_client.timeout) {
 		/* when a timeout has expired, we need to call
@@ -368,9 +368,7 @@ curl_source_check(G_GNUC_UNUSED GSource *source)
  * used, because we're handling all events directly.
  */
 static gboolean
-curl_source_dispatch(G_GNUC_UNUSED GSource *source,
-		     G_GNUC_UNUSED GSourceFunc callback,
-		     G_GNUC_UNUSED gpointer user_data)
+curl_source_dispatch(GSource *, GSourceFunc, gpointer)
 {
 	if (http_multi_perform())
 		http_multi_info_read();

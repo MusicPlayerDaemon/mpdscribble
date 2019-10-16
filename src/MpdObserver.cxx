@@ -362,9 +362,7 @@ MpdObserver::OnIdleResponse() noexcept
 }
 
 gboolean
-MpdObserver::OnIdleResponse(G_GNUC_UNUSED GIOChannel *source,
-			    G_GNUC_UNUSED GIOCondition condition,
-			    gpointer data) noexcept
+MpdObserver::OnIdleResponse(GIOChannel *, GIOCondition, gpointer data) noexcept
 {
 	auto &o = *(MpdObserver *)data;
 

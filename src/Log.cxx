@@ -73,7 +73,7 @@ log_date()
 
 static void
 file_log_func(const gchar *log_domain, GLogLevelFlags log_level,
-	      const gchar *message, G_GNUC_UNUSED gpointer user_data)
+	      const gchar *message, gpointer)
 {
 	if (log_level > log_threshold)
 		return;
@@ -135,9 +135,9 @@ glib_to_syslog_level(GLogLevelFlags log_level)
 }
 
 static void
-syslog_log_func(G_GNUC_UNUSED const gchar *log_domain,
+syslog_log_func(const gchar *,
 		GLogLevelFlags log_level, const gchar *message,
-		G_GNUC_UNUSED gpointer user_data)
+		gpointer)
 {
 	if (log_level > log_threshold)
 		return;

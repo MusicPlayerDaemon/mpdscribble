@@ -18,7 +18,7 @@ my_response(std::string &&body, void *)
 }
 
 static void
-my_error(GError *_error, G_GNUC_UNUSED void *ctx)
+my_error(GError *_error, void *)
 {
 	error = _error;
 	g_main_loop_quit(main_loop);
