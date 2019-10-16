@@ -1,4 +1,7 @@
 #include "HttpClient.hxx"
+#include "util/PrintException.hxx"
+
+#include <glib.h>
 
 #include <assert.h>
 #include <stdio.h>
@@ -6,7 +9,7 @@
 #include <unistd.h>
 
 static GMainLoop *main_loop;
-static GError *error;
+static std::exception_ptr error;
 static bool quit;
 
 static void
@@ -18,7 +21,7 @@ my_response(std::string &&body, void *)
 }
 
 static void
-my_error(GError *_error, void *)
+my_error(std::exception_ptr _error, void *)
 {
 	error = _error;
 	g_main_loop_quit(main_loop);
@@ -51,9 +54,8 @@ main(int argc, char **argv)
 
 	http_client_finish();
 
-	if (error != nullptr) {
-		fprintf(stderr, "%s\n", error->message);
-		g_error_free(error);
+	if (error) {
+		PrintException(error);
 		return EXIT_FAILURE;
 	}
 

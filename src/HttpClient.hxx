@@ -21,15 +21,14 @@
 #ifndef HTTP_CLIENT_HXX
 #define HTTP_CLIENT_HXX
 
-#include <glib.h>
-
+#include <exception>
 #include <string>
 
 #include <stddef.h>
 
 struct HttpClientHandler {
 	void (*response)(std::string &&body, void *ctx);
-	void (*error)(GError *error, void *ctx);
+	void (*error)(std::exception_ptr e, void *ctx);
 };
 
 /**

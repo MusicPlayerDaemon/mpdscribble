@@ -25,6 +25,7 @@
 #include "HttpClient.hxx"
 #include "Form.hxx"
 #include "Log.hxx" /* for log_date() */
+#include "util/Exception.hxx"
 
 #include <gcrypt.h>
 
@@ -234,7 +235,7 @@ Scrobbler::OnHandshakeResponse(std::string &&body, void *data) noexcept
 }
 
 void
-Scrobbler::OnHandshakeError(GError *error, void *data) noexcept
+Scrobbler::OnHandshakeError(std::exception_ptr e, void *data) noexcept
 {
 	auto *scrobbler = (Scrobbler *)data;
 
@@ -245,8 +246,8 @@ Scrobbler::OnHandshakeError(GError *error, void *data) noexcept
 	scrobbler->state = SCROBBLER_STATE_NOTHING;
 
 	g_warning("[%s] handshake error: %s",
-		  scrobbler->config.name.c_str(), error->message);
-	g_error_free(error);
+		  scrobbler->config.name.c_str(),
+		  GetFullMessage(e).c_str());
 
 	scrobbler->IncreaseInterval();
 	scrobbler->ScheduleHandshake();
@@ -310,7 +311,7 @@ Scrobbler::OnSubmitResponse(std::string &&body, void *data) noexcept
 }
 
 void
-Scrobbler::OnSubmitError(GError *error, void *data) noexcept
+Scrobbler::OnSubmitError(std::exception_ptr e, void *data) noexcept
 {
 	auto *scrobbler = (Scrobbler *)data;
 
@@ -320,8 +321,8 @@ Scrobbler::OnSubmitError(GError *error, void *data) noexcept
 	scrobbler->state = SCROBBLER_STATE_READY;
 
 	g_warning("[%s] submit error: %s",
-		  scrobbler->config.name.c_str(), error->message);
-	g_error_free(error);
+		  scrobbler->config.name.c_str(),
+		  GetFullMessage(e).c_str());
 
 	scrobbler->IncreaseInterval();
 	scrobbler->ScheduleSubmit();

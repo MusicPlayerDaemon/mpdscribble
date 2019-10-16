@@ -113,10 +113,12 @@ private:
 public:
 	static void OnHandshakeResponse(std::string &&body,
 					void *data) noexcept;
-	static void OnHandshakeError(GError *error, void *data) noexcept;
+	static void OnHandshakeError(std::exception_ptr e,
+				     void *data) noexcept;
 	static void OnSubmitResponse(std::string &&body,
 					void *data) noexcept;
-	static void OnSubmitError(GError *error, void *data) noexcept;
+	static void OnSubmitError(std::exception_ptr e,
+				  void *data) noexcept;
 };
 
 #endif /* SCROBBLER_H */

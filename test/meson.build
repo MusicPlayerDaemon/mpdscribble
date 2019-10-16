@@ -4,7 +4,7 @@ executable(
   'RunHttpClient.cxx',
   '../src/HttpClient.cxx',
   '../src/Config.cxx',
-  '../src/util/Exception.cxx',
+  '../src/util/PrintException.cxx',
 
   include_directories: inc,
   dependencies: [

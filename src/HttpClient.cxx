@@ -20,6 +20,7 @@
 #include "HttpClient.hxx"
 #include "lib/curl/Easy.hxx"
 #include "util/Exception.hxx"
+#include "util/RuntimeError.hxx"
 #include "Config.hxx"
 #include "config.h"
 
@@ -66,6 +67,8 @@ public:
 	void Done(CURLcode result, long status) noexcept;
 
 private:
+	void CheckResponse(CURLcode result, long status);
+
 	/**
 	 * Called by curl when new data is available.
 	 */
@@ -242,31 +245,33 @@ http_client_find_request(CURL *curl) noexcept
 	return (HttpRequest *)p;
 }
 
+inline void
+HttpRequest::CheckResponse(CURLcode result, long status)
+{
+	if (result == CURLE_WRITE_ERROR &&
+	    /* handle the postponed error that was caught in
+	       WriteFunction() */
+	    response_body.length() > MAX_RESPONSE_BODY)
+		throw std::runtime_error("response body is too large");
+	else if (result != CURLE_OK)
+		throw FormatRuntimeError("CURL failed: %s",
+					 error);
+	else if (status < 200 || status >= 300)
+		throw FormatRuntimeError("got HTTP status %ld",
+					 status);
+}
+
 void
 HttpRequest::Done(CURLcode result, long status) noexcept
 {
 	/* invoke the handler method */
 
-	if (result == CURLE_WRITE_ERROR &&
-	    /* handle the postponed error that was caught in
-	       WriteFunction() */
-	    response_body.length() > MAX_RESPONSE_BODY) {
-		GError *e =
-			g_error_new_literal(curl_quark(), 0,
-					    "response body is too large");
-		handler.error(e, handler_ctx);
-	} else if (result != CURLE_OK) {
-		GError *e = g_error_new(curl_quark(), result,
-					"curl failed: %s",
-					error);
-		handler.error(e, handler_ctx);
-	} else if (status < 200 || status >= 300) {
-		GError *e = g_error_new(curl_quark(), 0,
-					"got HTTP status %ld",
-					status);
-		handler.error(e, handler_ctx);
-	} else
+	try {
+		CheckResponse(result, status);
 		handler.response(std::move(response_body), handler_ctx);
+	} catch (...) {
+		handler.error(std::current_exception(), handler_ctx);
+	}
 
 	delete this;
 }
@@ -472,7 +477,5 @@ http_client_request(const char *url, std::string &&post_data,
 try {
 	new HttpRequest(url, std::move(post_data), handler, ctx);
 } catch (...) {
-	GError *error = g_error_new(curl_quark(), 0, "%s",
-				    GetFullMessage(std::current_exception()).c_str());
-	handler.error(error, ctx);
+	handler.error(std::current_exception(), ctx);
 }
