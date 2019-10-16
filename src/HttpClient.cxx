@@ -27,6 +27,7 @@
 #include <boost/intrusive/list.hpp>
 
 #include <forward_list>
+#include <stdexcept>
 
 #include <assert.h>
 
@@ -53,8 +54,8 @@ struct HttpRequest
 	/** error message provided by libcurl */
 	char error[CURL_ERROR_SIZE];
 
-	HttpRequest(std::string &&_request_body,
-		    const HttpClientHandler &_handler, void *_ctx) noexcept;
+	HttpRequest(const char *url, std::string &&_request_body,
+		    const HttpClientHandler &_handler, void *_ctx);
 	~HttpRequest() noexcept;
 };
 
@@ -94,12 +95,22 @@ static size_t
 http_request_writefunction(void *ptr, size_t size, size_t nmemb,
 			   void *stream) noexcept;
 
-HttpRequest::HttpRequest(std::string &&_request_body,
+HttpRequest::HttpRequest(const char *url, std::string &&_request_body,
 			 const HttpClientHandler &_handler,
-			 void *_ctx) noexcept
+			 void *_ctx)
 	:handler(_handler), handler_ctx(_ctx),
+	 curl(curl_easy_init()),
 	 request_body(std::move(_request_body))
 {
+	if (curl == nullptr)
+		throw std::runtime_error("curl_easy_init() failed");
+
+	CURLcode code = curl_easy_setopt(curl, CURLOPT_URL, url);
+	if (code != CURLE_OK) {
+		curl_easy_cleanup(curl);
+		throw std::runtime_error(curl_easy_strerror(code));
+	}
+
 	curl_easy_setopt(curl, CURLOPT_USERAGENT, PACKAGE "/" VERSION);
 	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION,
 			 http_request_writefunction);
@@ -117,6 +128,12 @@ HttpRequest::HttpRequest(std::string &&_request_body,
 				 request_body.data());
 		curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE,
 				 (long)request_body.size());
+	}
+
+	CURLMcode mcode = curl_multi_add_handle(http_client.multi, curl);
+	if (mcode != CURLM_OK) {
+		curl_easy_cleanup(curl);
+		throw std::runtime_error(curl_multi_strerror(mcode));
 	}
 }
 
@@ -486,46 +503,8 @@ void
 http_client_request(const char *url, std::string &&post_data,
 		    const HttpClientHandler &handler, void *ctx) noexcept
 try {
-	HttpRequest *request = new HttpRequest(std::move(post_data),
+	HttpRequest *request = new HttpRequest(url, std::move(post_data),
 					       handler, ctx);
-
-	/* create a CURL request */
-
-	request->curl = curl_easy_init();
-	if (request->curl == nullptr) {
-		curl_easy_cleanup(request->curl);
-		delete request;
-
-		GError *error = g_error_new_literal(curl_quark(), 0,
-						    "curl_easy_init() failed");
-		handler.error(error, ctx);
-		return;
-	}
-
-	CURLMcode mcode = curl_multi_add_handle(http_client.multi, request->curl);
-	if (mcode != CURLM_OK) {
-		curl_easy_cleanup(request->curl);
-		delete request;
-
-		GError *error = g_error_new_literal(curl_quark(), 0,
-						    "curl_multi_add_handle() failed");
-		handler.error(error, ctx);
-		return;
-	}
-
-	/* .. and set it up */
-
-	CURLcode code = curl_easy_setopt(request->curl, CURLOPT_URL, url);
-	if (code != CURLE_OK) {
-		curl_multi_remove_handle(http_client.multi, request->curl);
-		curl_easy_cleanup(request->curl);
-		delete request;
-
-		GError *error = g_error_new_literal(curl_quark(), code,
-						    "curl_easy_setopt() failed");
-		handler.error(error, ctx);
-		return;
-	}
 
 	http_client.requests.push_front(*request);
 } catch (...) {
