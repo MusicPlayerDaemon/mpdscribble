@@ -160,7 +160,8 @@ MpdObserver::~MpdObserver() noexcept
 }
 
 enum mpd_state
-MpdObserver::QueryState(struct mpd_song **song_r, unsigned *elapsed_r) noexcept
+MpdObserver::QueryState(struct mpd_song **song_r,
+			std::chrono::steady_clock::duration &elapsed_r) noexcept
 {
 	struct mpd_status *status;
 	enum mpd_state state;
@@ -180,7 +181,7 @@ MpdObserver::QueryState(struct mpd_song **song_r, unsigned *elapsed_r) noexcept
 	}
 
 	state = mpd_status_get_state(status);
-	*elapsed_r = mpd_status_get_elapsed_time(status);
+	elapsed_r = std::chrono::milliseconds(mpd_status_get_elapsed_ms(status));
 
 	mpd_status_free(status);
 
@@ -223,10 +224,10 @@ MpdObserver::Update() noexcept
 {
 	struct mpd_song *prev;
 	enum mpd_state state;
-	unsigned elapsed = 0;
+	std::chrono::steady_clock::duration elapsed{};
 
 	prev = current_song;
-	state = QueryState(&current_song, &elapsed);
+	state = QueryState(&current_song, elapsed);
 
 	if (state == MPD_STATE_PAUSE) {
 		if (!was_paused)

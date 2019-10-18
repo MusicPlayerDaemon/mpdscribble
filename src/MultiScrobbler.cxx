@@ -50,7 +50,8 @@ MultiScrobbler::WriteJournal() noexcept
 void
 MultiScrobbler::NowPlaying(const char *artist, const char *track,
 			   const char *album, const char *number,
-			   const char *mbid, const int length) noexcept
+			   const char *mbid,
+			   std::chrono::steady_clock::duration length) noexcept
 {
 	Record record;
 
@@ -78,7 +79,8 @@ MultiScrobbler::NowPlaying(const char *artist, const char *track,
 void
 MultiScrobbler::SongChange(const char *file, const char *artist, const char *track,
 			   const char *album, const char *number,
-			   const char *mbid, const int length,
+			   const char *mbid,
+			   std::chrono::steady_clock::duration length,
 			   bool love,
 			   const char *time2) noexcept
 {
@@ -122,7 +124,8 @@ MultiScrobbler::SongChange(const char *file, const char *artist, const char *tra
 
 	g_message("%s, songchange: %s - %s (%i)\n",
 		  record.time.c_str(), record.artist.c_str(),
-		  record.track.c_str(), record.length);
+		  record.track.c_str(),
+		  (int)std::chrono::duration_cast<std::chrono::seconds>(record.length).count());
 
 	for (auto &i : scrobblers)
 		i.Push(record);

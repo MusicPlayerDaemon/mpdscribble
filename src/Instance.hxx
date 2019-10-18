@@ -66,7 +66,7 @@ struct Instance final : MpdObserverListener {
 	/* virtual methods from MpdObserverListener */
 	void OnMpdStarted(const struct mpd_song *song) noexcept override;
 	void OnMpdPlaying(const struct mpd_song *song,
-			  int elapsed) noexcept override;
+			  std::chrono::steady_clock::duration elapsed) noexcept override;
 	void OnMpdEnded(const struct mpd_song *song,
 			bool love) noexcept override;
 	void OnMpdPaused() noexcept override;

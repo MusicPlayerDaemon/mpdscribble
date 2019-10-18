@@ -28,11 +28,13 @@
 #include <boost/asio/steady_timer.hpp>
 #include <boost/asio/posix/stream_descriptor.hpp>
 
+#include <chrono>
+
 class MpdObserverListener {
 public:
 	virtual void OnMpdStarted(const struct mpd_song *song) noexcept = 0;
 	virtual void OnMpdPlaying(const struct mpd_song *song,
-				  int elapsed) noexcept = 0;
+				  std::chrono::steady_clock::duration elapsed) noexcept = 0;
 	virtual void OnMpdEnded(const struct mpd_song *song,
 				bool love) noexcept = 0;
 	virtual void OnMpdPaused() noexcept = 0;
@@ -79,7 +81,7 @@ private:
 	void ScheduleUpdate() noexcept;
 	void OnUpdateTimer(const boost::system::error_code &error) noexcept;
 	enum mpd_state QueryState(struct mpd_song **song_r,
-				  unsigned *elapsed_r) noexcept;
+				  std::chrono::steady_clock::duration &elapsed_r) noexcept;
 	/**
 	 * Update: determine MPD's current song and enqueue submissions.
 	 */

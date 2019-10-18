@@ -37,8 +37,19 @@
 #include <unistd.h>
 #include <string.h>
 
+static std::chrono::steady_clock::duration
+GetSongDuration(const struct mpd_song *song) noexcept
+{
+#if LIBMPDCLIENT_CHECK_VERSION(2,10,0)
+	return std::chrono::milliseconds(mpd_song_get_duration_ms(song));
+#else
+	return std::chrono::seconds(mpd_song_get_duration(song));
+#endif
+}
+
 static constexpr bool
-played_long_enough(int elapsed, int length) noexcept
+played_long_enough(std::chrono::steady_clock::duration elapsed,
+		   std::chrono::steady_clock::duration length) noexcept
 {
 	/* http://www.lastfm.de/api/submissions "The track must have been
 	   played for a duration of at least 240 seconds or half the track's
@@ -46,7 +57,8 @@ played_long_enough(int elapsed, int length) noexcept
 	   track is irrelevant as long as the appropriate amount has been
 	   played."
 	 */
-	return elapsed > 240 || (length >= 30 && elapsed > length / 2);
+	return elapsed > std::chrono::minutes(4) ||
+		(length >= std::chrono::seconds(30) && elapsed > length / 2);
 }
 
 /**
@@ -56,11 +68,12 @@ played_long_enough(int elapsed, int length) noexcept
  */
 static bool
 song_repeated(const struct mpd_song *song,
-	      int elapsed, int prev_elapsed) noexcept
+	      std::chrono::steady_clock::duration elapsed,
+	      std::chrono::steady_clock::duration prev_elapsed) noexcept
 {
-	return elapsed < 60 && prev_elapsed > elapsed &&
+	return elapsed < std::chrono::minutes(1) && prev_elapsed > elapsed &&
 		played_long_enough(prev_elapsed - elapsed,
-				   mpd_song_get_duration(song));
+				   GetSongDuration(song));
 }
 
 void
@@ -78,7 +91,7 @@ Instance::OnMpdSongChanged(const struct mpd_song *song) noexcept
 			      mpd_song_get_tag(song, MPD_TAG_ALBUM, 0),
 			      mpd_song_get_tag(song, MPD_TAG_TRACK, 0),
 			      mpd_song_get_tag(song, MPD_TAG_MUSICBRAINZ_TRACKID, 0),
-			      mpd_song_get_duration(song));
+			      GetSongDuration(song));
 }
 
 /**
@@ -112,9 +125,10 @@ Instance::OnMpdStarted(const struct mpd_song *song) noexcept
  * MPD is still playing the song.
  */
 void
-Instance::OnMpdPlaying(const struct mpd_song *song, int elapsed) noexcept
+Instance::OnMpdPlaying(const struct mpd_song *song,
+		       std::chrono::steady_clock::duration elapsed) noexcept
 {
-	int prev_elapsed = g_timer_elapsed(timer, nullptr);
+	const auto prev_elapsed = std::chrono::duration_cast<std::chrono::steady_clock::duration>(std::chrono::duration<double>(g_timer_elapsed(timer, nullptr)));
 
 	if (song_repeated(song, elapsed, prev_elapsed)) {
 		/* the song is playing repeatedly: make it virtually
@@ -132,9 +146,10 @@ Instance::OnMpdPlaying(const struct mpd_song *song, int elapsed) noexcept
 void
 Instance::OnMpdEnded(const struct mpd_song *song, bool love) noexcept
 {
-	int elapsed = g_timer_elapsed(timer, nullptr);
+	const auto elapsed = std::chrono::duration_cast<std::chrono::steady_clock::duration>(std::chrono::duration<double>(g_timer_elapsed(timer, nullptr)));
+	const auto length = GetSongDuration(song);
 
-	if (!played_long_enough(elapsed, mpd_song_get_duration(song)))
+	if (!played_long_enough(elapsed, length))
 		return;
 
 	/* FIXME:
@@ -145,9 +160,7 @@ Instance::OnMpdEnded(const struct mpd_song *song, bool love) noexcept
 			      mpd_song_get_tag(song, MPD_TAG_ALBUM, 0),
 			      mpd_song_get_tag(song, MPD_TAG_TRACK, 0),
 			      mpd_song_get_tag(song, MPD_TAG_MUSICBRAINZ_TRACKID, 0),
-			      mpd_song_get_duration(song) > 0
-			      ? mpd_song_get_duration(song)
-			      : g_timer_elapsed(timer, nullptr),
+			      length.count() > 0 ? length : elapsed,
 			      love,
 			      nullptr);
 }

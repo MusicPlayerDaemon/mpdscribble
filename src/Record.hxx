@@ -21,6 +21,7 @@
 #ifndef RECORD_HXX
 #define RECORD_HXX
 
+#include <chrono>
 #include <string>
 
 struct Record {
@@ -30,7 +31,7 @@ struct Record {
 	std::string number;
 	std::string mbid;
 	std::string time;
-	int length = 0;
+	std::chrono::steady_clock::duration length{};
 	bool love = false;
 	const char *source = "P";
 };

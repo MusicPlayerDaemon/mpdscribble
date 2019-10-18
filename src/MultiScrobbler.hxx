@@ -23,6 +23,7 @@
 
 #include "AsioServiceFwd.hxx"
 
+#include <chrono>
 #include <forward_list>
 
 struct ScrobblerConfig;
@@ -42,11 +43,13 @@ public:
 
 	void NowPlaying(const char *artist, const char *track,
 			const char *album, const char *number,
-			const char *mbid, const int length) noexcept;
+			const char *mbid,
+			std::chrono::steady_clock::duration length) noexcept;
 
 	void SongChange(const char *file, const char *artist, const char *track,
 			const char *album, const char *number,
-			const char *mbid, const int length,
+			const char *mbid,
+			std::chrono::steady_clock::duration length,
 			bool love,
 			const char *time) noexcept;
 

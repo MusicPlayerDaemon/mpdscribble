@@ -445,7 +445,8 @@ void
 Scrobbler::SendNowPlaying(const char *artist,
 			  const char *track, const char *album,
 			  const char *number,
-			  const char *mbid, const int length) noexcept
+			  const char *mbid,
+			  std::chrono::steady_clock::duration length) noexcept
 {
 	assert(config.file.empty());
 	assert(state == SCROBBLER_STATE_READY);
@@ -457,7 +458,8 @@ Scrobbler::SendNowPlaying(const char *artist,
 	post_data.Append("a", artist);
 	post_data.Append("t", track);
 	post_data.Append("b", album);
-	post_data.Append("l", length);
+	post_data.Append("l",
+			 std::chrono::duration_cast<std::chrono::seconds>(length).count());
 	post_data.Append("n", number);
 	post_data.Append("m", mbid);
 
@@ -522,7 +524,8 @@ Scrobbler::Submit() noexcept
 
 		post_data.AppendIndexed("a", count, song->artist);
 		post_data.AppendIndexed("t", count, song->track);
-		post_data.AppendIndexed("l", count, song->length);
+		post_data.AppendIndexed("l", count,
+					std::chrono::duration_cast<std::chrono::seconds>(song->length).count());
 		post_data.AppendIndexed("i", count, song->time);
 		post_data.AppendIndexed("o", count, song->source);
 		post_data.AppendIndexed("r", count, "");

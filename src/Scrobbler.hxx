@@ -112,7 +112,8 @@ private:
 	void SendNowPlaying(const char *artist,
 			    const char *track, const char *album,
 			    const char *number,
-			    const char *mbid, int length) noexcept;
+			    const char *mbid,
+			    std::chrono::steady_clock::duration length) noexcept;
 
 	void ScheduleSubmit() noexcept;
 	void Submit() noexcept;

@@ -59,9 +59,13 @@ journal_write_record(FILE *file, const Record *record)
 		journal_write_string(file, 'r', "L");
 	journal_write_string(file, 'i', record->time);
 
+	const auto length_s =
+		std::chrono::duration_cast<std::chrono::seconds>(record->length);
+
 	fprintf(file,
 		"l = %i\no = %s\n\n",
-		record->length, record->source);
+		(int)length_s.count(),
+		record->source);
 }
 
 bool
@@ -198,7 +202,7 @@ journal_read(const char *path)
 		else if (!strcmp("i", key))
 			record.time = parse_timestamp(value);
 		else if (!strcmp("l", key))
-			record.length = atoi(value);
+			record.length = std::chrono::seconds(atoi(value));
 		else if (strcmp("o", key) == 0 && value[0] == 'R')
 			record.source = "R";
 		else if (strcmp("r", key) == 0 && value[0] == 'L')
