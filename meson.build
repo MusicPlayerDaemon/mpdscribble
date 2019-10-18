@@ -107,6 +107,7 @@ executable(
   'src/lib/curl/Escape.cxx',
   'src/util/Exception.cxx',
   'src/util/PrintException.cxx',
+  'src/util/StringStrip.cxx',
 
   include_directories: inc,
   dependencies: [

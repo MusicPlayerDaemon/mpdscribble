@@ -19,6 +19,7 @@
 */
 
 #include "Log.hxx"
+#include "util/StringStrip.hxx"
 #include "config.h"
 
 #include <glib.h>
@@ -42,12 +43,7 @@ static GLogLevelFlags log_threshold = G_LOG_LEVEL_MESSAGE;
 static int
 chomp_length(const char *p) noexcept
 {
-	size_t length = strlen(p);
-
-	while (length > 0 && g_ascii_isspace(p[length - 1]))
-		--length;
-
-	return (int)length;
+	return StripRight(p, strlen(p));
 }
 
 const char *
