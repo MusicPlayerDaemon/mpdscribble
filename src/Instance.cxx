@@ -27,7 +27,6 @@ Instance::Instance(const struct config &config) noexcept
 	 quit_signal(io_service, SIGTERM, SIGINT),
 	 submit_signal(io_service, SIGUSR1),
 #endif
-	 timer(g_timer_new()),
 	 curl_global(io_service),
 	 mpd_observer(io_service, *this, config.host, config.port),
 	 scrobblers(config.scrobblers, io_service, curl_global),
@@ -45,10 +44,7 @@ Instance::Instance(const struct config &config) noexcept
 	ScheduleSaveJournalTimer();
 }
 
-Instance::~Instance() noexcept
-{
-	g_timer_destroy(timer);
-}
+Instance::~Instance() noexcept = default;
 
 #ifndef _WIN32
 

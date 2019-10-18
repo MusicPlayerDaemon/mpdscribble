@@ -84,7 +84,7 @@ Instance::OnMpdSongChanged(const struct mpd_song *song) noexcept
 		  mpd_song_get_tag(song, MPD_TAG_TITLE, 0),
 		  mpd_song_get_id(song), mpd_song_get_pos(song));
 
-	g_timer_start(timer);
+	stopwatch.Start();
 
 	scrobblers.NowPlaying(mpd_song_get_tag(song, MPD_TAG_ARTIST, 0),
 			      mpd_song_get_tag(song, MPD_TAG_TITLE, 0),
@@ -100,7 +100,7 @@ Instance::OnMpdSongChanged(const struct mpd_song *song) noexcept
 void
 Instance::OnMpdPaused() noexcept
 {
-	g_timer_stop(timer);
+	stopwatch.Stop();
 }
 
 /**
@@ -109,7 +109,7 @@ Instance::OnMpdPaused() noexcept
 void
 Instance::OnMpdResumed() noexcept
 {
-	g_timer_continue(timer);
+	stopwatch.Resume();
 }
 
 /**
@@ -128,7 +128,7 @@ void
 Instance::OnMpdPlaying(const struct mpd_song *song,
 		       std::chrono::steady_clock::duration elapsed) noexcept
 {
-	const auto prev_elapsed = std::chrono::duration_cast<std::chrono::steady_clock::duration>(std::chrono::duration<double>(g_timer_elapsed(timer, nullptr)));
+	const auto prev_elapsed = stopwatch.GetDuration();
 
 	if (song_repeated(song, elapsed, prev_elapsed)) {
 		/* the song is playing repeatedly: make it virtually
@@ -146,7 +146,7 @@ Instance::OnMpdPlaying(const struct mpd_song *song,
 void
 Instance::OnMpdEnded(const struct mpd_song *song, bool love) noexcept
 {
-	const auto elapsed = std::chrono::duration_cast<std::chrono::steady_clock::duration>(std::chrono::duration<double>(g_timer_elapsed(timer, nullptr)));
+	const auto elapsed = stopwatch.GetDuration();
 	const auto length = GetSongDuration(song);
 
 	if (!played_long_enough(elapsed, length))

@@ -22,6 +22,7 @@
 #define INSTANCE_HXX
 
 #include "lib/curl/Global.hxx"
+#include "time/Stopwatch.hxx"
 #include "MpdObserver.hxx"
 #include "MultiScrobbler.hxx"
 
@@ -30,8 +31,6 @@
 #ifndef _WIN32
 #include <boost/asio/signal_set.hpp>
 #endif
-
-#include <glib.h>
 
 struct config;
 
@@ -43,7 +42,7 @@ struct Instance final : MpdObserverListener {
 	boost::asio::signal_set submit_signal;
 #endif
 
-	GTimer *timer;
+	Stopwatch stopwatch;
 
 	CurlGlobal curl_global;
 
