@@ -38,7 +38,7 @@ enum {
 
 HttpRequest::HttpRequest(CurlGlobal &_global,
 			 const char *url, std::string &&_request_body,
-			 const HttpClientHandler &_handler,
+			 const HttpResponseHandler &_handler,
 			 void *_ctx)
 	:global(_global),
 	 handler(_handler), handler_ctx(_ctx),

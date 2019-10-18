@@ -31,7 +31,7 @@ my_error(std::exception_ptr _error, void *)
 	quit = true;
 }
 
-static constexpr HttpClientHandler my_handler = {
+static constexpr HttpResponseHandler my_handler = {
 	.response = my_response,
 	.error = my_error,
 };

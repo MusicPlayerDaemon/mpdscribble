@@ -256,7 +256,7 @@ Scrobbler::OnHandshakeError(std::exception_ptr e, void *data) noexcept
 	scrobbler->ScheduleHandshake();
 }
 
-static constexpr HttpClientHandler scrobbler_handshake_handler = {
+static constexpr HttpResponseHandler scrobbler_handshake_handler = {
 	.response = Scrobbler::OnHandshakeResponse,
 	.error = Scrobbler::OnHandshakeError,
 };
@@ -334,7 +334,7 @@ Scrobbler::OnSubmitError(std::exception_ptr e, void *data) noexcept
 	scrobbler->ScheduleSubmit();
 }
 
-static constexpr HttpClientHandler scrobbler_submit_handler = {
+static constexpr HttpResponseHandler scrobbler_submit_handler = {
 	.response = Scrobbler::OnSubmitResponse,
 	.error = Scrobbler::OnSubmitError,
 };

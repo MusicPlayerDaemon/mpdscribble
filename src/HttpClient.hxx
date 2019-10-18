@@ -28,7 +28,7 @@
 
 class CurlGlobal;
 
-struct HttpClientHandler {
+struct HttpResponseHandler {
 	void (*response)(std::string body, void *ctx);
 	void (*error)(std::exception_ptr e, void *ctx);
 };
@@ -37,7 +37,7 @@ class HttpRequest final
 {
 	CurlGlobal &global;
 
-	const HttpClientHandler &handler;
+	const HttpResponseHandler &handler;
 	void *handler_ctx;
 
 	/** the CURL easy handle */
@@ -55,7 +55,7 @@ class HttpRequest final
 public:
 	HttpRequest(CurlGlobal &global,
 		    const char *url, std::string &&_request_body,
-		    const HttpClientHandler &_handler, void *_ctx);
+		    const HttpResponseHandler &_handler, void *_ctx);
 	~HttpRequest() noexcept;
 
 	/**
