@@ -106,8 +106,6 @@ http_client_uri_escape(const char *src) noexcept
 	   curl_easy_escape() wants to have a CURL object, which we
 	   don't have right now */
 	char *tmp = curl_escape(src, 0);
-	/* call g_strdup(), because the caller expects a pointer which
-	   can be freed with g_free() */
 	std::string dest(tmp == nullptr ? src : tmp);
 	curl_free(tmp);
 	return dest;
