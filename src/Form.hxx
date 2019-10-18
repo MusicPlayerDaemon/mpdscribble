@@ -103,6 +103,10 @@ private:
 	void AppendEscape(const std::string &value) noexcept {
 		AppendEscape(value.c_str());
 	}
+
+	void AppendEscape(unsigned value) noexcept {
+		AppendVerbatim(value);
+	}
 };
 
 #endif

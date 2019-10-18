@@ -447,21 +447,17 @@ Scrobbler::SendNowPlaying(const char *artist,
 			  const char *number,
 			  const char *mbid, const int length) noexcept
 {
-	char len[16];
-
 	assert(config.file.empty());
 	assert(state == SCROBBLER_STATE_READY);
 
 	state = SCROBBLER_STATE_SUBMITTING;
-
-	snprintf(len, sizeof(len), "%i", length);
 
 	FormDataBuilder post_data;
 	post_data.Append("s", session);
 	post_data.Append("a", artist);
 	post_data.Append("t", track);
 	post_data.Append("b", album);
-	post_data.Append("l", len);
+	post_data.Append("l", length);
 	post_data.Append("n", number);
 	post_data.Append("m", mbid);
 
@@ -523,13 +519,10 @@ Scrobbler::Submit() noexcept
 			break;
 
 		const auto *song = &i;
-		char len[16];
-
-		snprintf(len, sizeof(len), "%i", song->length);
 
 		post_data.AppendIndexed("a", count, song->artist);
 		post_data.AppendIndexed("t", count, song->track);
-		post_data.AppendIndexed("l", count, len);
+		post_data.AppendIndexed("l", count, song->length);
 		post_data.AppendIndexed("i", count, song->time);
 		post_data.AppendIndexed("o", count, song->source);
 		post_data.AppendIndexed("r", count, "");
