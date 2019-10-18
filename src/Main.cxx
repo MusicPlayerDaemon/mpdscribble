@@ -27,8 +27,6 @@
 #include "util/PrintException.hxx"
 #include "SdDaemon.hxx"
 
-#include <glib.h>
-
 #include <stdlib.h>
 #include <unistd.h>
 
@@ -74,10 +72,10 @@ song_repeated(const struct mpd_song *song,
 void
 Instance::OnMpdSongChanged(const struct mpd_song *song) noexcept
 {
-	g_message("new song detected (%s - %s), id: %u, pos: %u\n",
-		  mpd_song_get_tag(song, MPD_TAG_ARTIST, 0),
-		  mpd_song_get_tag(song, MPD_TAG_TITLE, 0),
-		  mpd_song_get_id(song), mpd_song_get_pos(song));
+	FormatInfo("new song detected (%s - %s), id: %u, pos: %u\n",
+		   mpd_song_get_tag(song, MPD_TAG_ARTIST, 0),
+		   mpd_song_get_tag(song, MPD_TAG_TITLE, 0),
+		   mpd_song_get_id(song), mpd_song_get_pos(song));
 
 	stopwatch.Start();
 
@@ -128,7 +126,7 @@ Instance::OnMpdPlaying(const struct mpd_song *song,
 	if (song_repeated(song, elapsed, prev_elapsed)) {
 		/* the song is playing repeatedly: make it virtually
 		   stop and re-start */
-		g_debug("repeated song detected");
+		LogDebug("repeated song detected");
 
 		OnMpdEnded(song, false);
 		OnMpdStarted(song);
@@ -195,7 +193,7 @@ try {
 
 	/* cleanup */
 
-	g_message("shutting down\n");
+	LogInfo("shutting down");
 
 	instance.scrobblers.WriteJournal();
 

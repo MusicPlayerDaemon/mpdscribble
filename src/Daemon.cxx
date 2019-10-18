@@ -21,6 +21,7 @@
 #include "Daemon.hxx"
 #include "system/Error.hxx"
 #include "util/RuntimeError.hxx"
+#include "Log.hxx"
 
 #include <glib.h>
 
@@ -103,9 +104,9 @@ daemonize_set_user()
 	 * (must be done before we change our uid)
 	 */
 	if (initgroups(user_name, user_gid) == -1)
-		g_warning("cannot init supplementary groups "
-			  "of user \"%s\": %s",
-			  user_name, g_strerror(errno));
+		FormatErrno("cannot init supplementary groups "
+			    "of user \"%s\": %s",
+			    user_name, strerror(errno));
 #endif
 
 	/* set uid */

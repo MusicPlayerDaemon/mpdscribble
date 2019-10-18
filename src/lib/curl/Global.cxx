@@ -20,13 +20,12 @@
 #include "Global.hxx"
 #include "Request.hxx"
 
-#include <glib.h>
-
 #include <boost/asio/posix/stream_descriptor.hpp>
 
 #include <stdexcept>
 
 #include <assert.h>
+#include <stdio.h>
 
 class CurlGlobal::Socket {
 	CurlGlobal &global;
@@ -221,8 +220,8 @@ CurlGlobal::SocketAction(curl_socket_t fd, int ev_bitmask) noexcept
 	CURLMcode mcode = curl_multi_socket_action(multi.Get(), fd, ev_bitmask,
 						   &running_handles);
 	if (mcode != CURLM_OK)
-		g_warning("curl_multi_socket_action() failed: %s",
-			  curl_multi_strerror(mcode));
+		fprintf(stderr, "curl_multi_socket_action() failed: %s",
+			curl_multi_strerror(mcode));
 
 	ScheduleReadInfo();
 }

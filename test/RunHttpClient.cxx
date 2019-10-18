@@ -2,8 +2,6 @@
 #include "lib/curl/Request.hxx"
 #include "util/PrintException.hxx"
 
-#include <glib.h>
-
 #include <boost/asio/io_service.hpp>
 
 #include <assert.h>

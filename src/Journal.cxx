@@ -21,8 +21,7 @@
 #include "Journal.hxx"
 #include "Record.hxx"
 #include "util/StringStrip.hxx"
-
-#include <glib.h>
+#include "Log.hxx"
 
 #include <assert.h>
 #include <stdlib.h>
@@ -79,7 +78,7 @@ journal_write(const char *path, const std::list<Record> &queue)
 
 	handle = fopen(path, "wb");
 	if (!handle) {
-		g_warning("Failed to save %s: %s\n", path, g_strerror(errno));
+		FormatError("Failed to save %s: %s", path, strerror(errno));
 		return false;
 	}
 
@@ -118,8 +117,8 @@ journal_read(const char *path)
 			/* ENOENT is ignored silently, because the
 			   user might be starting mpdscribble for the
 			   first time */
-			g_warning("Failed to load %s: %s",
-				  path, g_strerror(errno));
+			FormatWarning("Failed to load %s: %s",
+				      path, strerror(errno));
 		return {};
 	}
 

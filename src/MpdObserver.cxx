@@ -19,6 +19,7 @@
 */
 
 #include "MpdObserver.hxx"
+#include "Log.hxx"
 
 #include <glib.h>
 
@@ -30,8 +31,8 @@ MpdObserver::HandleError() noexcept
 {
 	char *msg = g_strescape(mpd_connection_get_error_message(connection),
 				nullptr);
-	g_warning("mpd error (%u): %s\n",
-		  mpd_connection_get_error(connection), msg);
+	FormatWarning("mpd error (%u): %s",
+		      mpd_connection_get_error(connection), msg);
 	g_free(msg);
 
 	socket.release();
@@ -81,18 +82,18 @@ MpdObserver::Connect() noexcept
 	const unsigned *version = mpd_connection_get_server_version(connection);
 
 	if (mpd_connection_cmp_server_version(connection, 0, 16, 0) < 0) {
-		g_warning("Error: MPD version %d.%d.%d is too old (%s needed)",
-			  version[0], version[1], version[2],
-			  "0.16.0");
+		FormatWarning("Error: MPD version %d.%d.%d is too old (%s needed)",
+			      version[0], version[1], version[2],
+			      "0.16.0");
 		mpd_connection_free(connection);
 		connection = nullptr;
 		return false;
 	}
 
 	char *name = connection_settings_name(connection);
-	g_message("connected to mpd %i.%i.%i at %s\n",
-		  version[0], version[1], version[2],
-		  name);
+	FormatInfo("connected to mpd %i.%i.%i at %s",
+		   version[0], version[1], version[2],
+		   name);
 	g_free(name);
 
 	socket.assign(mpd_connection_get_fd(connection));
@@ -125,7 +126,7 @@ MpdObserver::ScheduleConnect() noexcept
 {
 	assert(connection == nullptr);
 
-	g_message("waiting 15 seconds before reconnecting\n");
+	FormatInfo("waiting 15 seconds before reconnecting");
 
 	connect_timer.expires_from_now(std::chrono::seconds(15));
 	connect_timer.async_wait(std::bind(&MpdObserver::OnConnectTimer,
@@ -241,8 +242,8 @@ MpdObserver::Update() noexcept
 	} else if (mpd_song_get_tag(current_song, MPD_TAG_ARTIST, 0) == nullptr ||
 		   mpd_song_get_tag(current_song, MPD_TAG_TITLE, 0) == nullptr) {
 		if (mpd_song_get_id(current_song) != last_id) {
-			g_message("new song detected with tags missing (%s)\n",
-				  mpd_song_get_uri(current_song));
+			FormatInfo("new song detected with tags missing (%s)",
+				   mpd_song_get_uri(current_song));
 			last_id = mpd_song_get_id(current_song);
 		}
 
@@ -323,8 +324,8 @@ MpdObserver::ReadMessages() noexcept
 		if (strcmp(text, "love") == 0)
 			love = true;
 		else
-			g_message("Unrecognized client-to-client message: '%s'",
-				  text);
+			FormatInfo("Unrecognized client-to-client message: '%s'",
+				   text);
 
 		mpd_message_free(msg);
 	}

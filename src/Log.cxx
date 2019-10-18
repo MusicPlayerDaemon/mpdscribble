@@ -23,9 +23,8 @@
 #include "util/StringStrip.hxx"
 #include "config.h"
 
-#include <glib.h>
-
 #include <assert.h>
+#include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
@@ -34,18 +33,9 @@
 #include <syslog.h>
 #endif
 
-static FILE *log_file;
-static GLogLevelFlags log_threshold = G_LOG_LEVEL_MESSAGE;
+static LogLevel log_threshold = LogLevel::INFO;
 
-/**
- * Determines the length of the string excluding trailing whitespace
- * characters.
- */
-static int
-chomp_length(const char *p) noexcept
-{
-	return StripRight(p, strlen(p));
-}
+static FILE *log_file;
 
 const char *
 log_date() noexcept
@@ -69,22 +59,6 @@ log_date() noexcept
 }
 
 static void
-file_log_func(const gchar *log_domain, GLogLevelFlags log_level,
-	      const gchar *message, gpointer) noexcept
-{
-	if (log_level > log_threshold)
-		return;
-
-	if (log_domain == nullptr)
-		log_domain = "";
-
-	fprintf(log_file, "%s %s%s%.*s\n",
-		log_date(),
-		log_domain, *log_domain == 0 ? "" : ": ",
-		chomp_length(message), message);
-}
-
-static void
 log_init_file(const char *path)
 {
 	assert(path != nullptr);
@@ -99,47 +73,28 @@ log_init_file(const char *path)
 	}
 
 	setvbuf(log_file, nullptr, _IONBF, 0);
-
-	g_log_set_default_handler(file_log_func, nullptr);
 }
 
 #ifdef HAVE_SYSLOG
 
 static constexpr int
-glib_to_syslog_level(GLogLevelFlags log_level) noexcept
+ToSyslog(LogLevel log_level) noexcept
 {
-	switch (log_level & G_LOG_LEVEL_MASK) {
-	case G_LOG_LEVEL_ERROR:
-	case G_LOG_LEVEL_CRITICAL:
+	switch (log_level) {
+	case LogLevel::ERROR:
 		return LOG_ERR;
 
-	case G_LOG_LEVEL_WARNING:
+	case LogLevel::WARNING:
 		return LOG_WARNING;
 
-	case G_LOG_LEVEL_MESSAGE:
-		return LOG_NOTICE;
-
-	case G_LOG_LEVEL_INFO:
+	case LogLevel::INFO:
 		return LOG_INFO;
 
-	case G_LOG_LEVEL_DEBUG:
+	case LogLevel::DEBUG:
 		return LOG_DEBUG;
-
-	default:
-		return LOG_NOTICE;
 	}
-}
 
-static void
-syslog_log_func(const gchar *,
-		GLogLevelFlags log_level, const gchar *message,
-		gpointer) noexcept
-{
-	if (log_level > log_threshold)
-		return;
-
-	syslog(glib_to_syslog_level(log_level), "%.*s",
-	       chomp_length(message), message);
+	gcc_unreachable();
 }
 
 static void
@@ -148,7 +103,6 @@ log_init_syslog() noexcept
 	assert(log_file == nullptr);
 
 	openlog(PACKAGE, 0, LOG_DAEMON);
-	g_log_set_default_handler(syslog_log_func, nullptr);
 }
 
 #endif
@@ -161,13 +115,13 @@ log_init(const char *path, int verbose)
 	assert(log_file == nullptr);
 
 	if (verbose == 0)
-		log_threshold = G_LOG_LEVEL_ERROR;
+		log_threshold = LogLevel::ERROR;
 	else if (verbose == 1)
-		log_threshold = G_LOG_LEVEL_WARNING;
+		log_threshold = LogLevel::WARNING;
 	else if (verbose == 2)
-		log_threshold = G_LOG_LEVEL_INFO;
+		log_threshold = LogLevel::INFO;
 	else
-		log_threshold = G_LOG_LEVEL_DEBUG;
+		log_threshold = LogLevel::DEBUG;
 
 #ifdef HAVE_SYSLOG
 	if (strcmp(path, "syslog") == 0)
@@ -189,4 +143,47 @@ log_deinit() noexcept
 	else
 #endif
 		fclose(log_file);
+}
+
+void
+Log(LogLevel level, const char *msg) noexcept
+{
+	if (level > log_threshold)
+		return;
+
+#ifdef HAVE_SYSLOG
+	if (log_file == nullptr)
+		syslog(ToSyslog(level), "%s", msg);
+	else
+#endif
+		fprintf(log_file, "%s %s\n", log_date(), msg);
+}
+
+void
+LogFormat(LogLevel level, const char *fmt, ...) noexcept
+{
+	if (level > log_threshold)
+		return;
+
+#ifdef HAVE_SYSLOG
+	if (log_file == nullptr) {
+		va_list ap;
+		va_start(ap, fmt);
+		vsyslog(ToSyslog(level), fmt, ap);
+		va_end(ap);
+	} else {
+#endif
+		char msg[1024];
+
+		{
+			va_list ap;
+			va_start(ap, fmt);
+			vsnprintf(msg, sizeof(msg), fmt, ap);
+			va_end(ap);
+		}
+
+		fprintf(log_file, "%s %s\n", log_date(), msg);
+#ifdef HAVE_SYSLOG
+	}
+#endif
 }

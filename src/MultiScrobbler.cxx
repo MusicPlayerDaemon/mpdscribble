@@ -23,8 +23,7 @@
 #include "ScrobblerConfig.hxx"
 #include "Protocol.hxx"
 #include "Record.hxx"
-
-#include <glib.h>
+#include "Log.hxx"
 
 #include <string.h>
 
@@ -32,7 +31,7 @@ MultiScrobbler::MultiScrobbler(const std::forward_list<ScrobblerConfig> &configs
 			       boost::asio::io_service &io_service,
 			       CurlGlobal &curl_global)
 {
-	g_message("starting mpdscribble (" AS_CLIENT_ID " " AS_CLIENT_VERSION ")\n");
+	FormatInfo("starting mpdscribble (" AS_CLIENT_ID " " AS_CLIENT_VERSION ")");
 
 	for (const auto &i : configs)
 		scrobblers.emplace_front(i, io_service, curl_global);
@@ -94,14 +93,14 @@ MultiScrobbler::SongChange(const char *file, const char *artist, const char *tra
 	   everything else is mandatory.
 	 */
 	if (!(artist && strlen(artist))) {
-		g_warning("empty artist, not submitting; "
-			  "please check the tags on %s\n", file);
+		FormatWarning("empty artist, not submitting; "
+			      "please check the tags on %s\n", file);
 		return;
 	}
 
 	if (!(track && strlen(track))) {
-		g_warning("empty title, not submitting; "
-			  "please check the tags on %s", file);
+		FormatWarning("empty title, not submitting; "
+			      "please check the tags on %s", file);
 		return;
 	}
 
@@ -122,10 +121,10 @@ MultiScrobbler::SongChange(const char *file, const char *artist, const char *tra
 	record.love = love;
 	record.source = strstr(file, "://") == nullptr ? "P" : "R";
 
-	g_message("%s, songchange: %s - %s (%i)\n",
-		  record.time.c_str(), record.artist.c_str(),
-		  record.track.c_str(),
-		  (int)std::chrono::duration_cast<std::chrono::seconds>(record.length).count());
+	FormatInfo("%s, songchange: %s - %s (%i)\n",
+		   record.time.c_str(), record.artist.c_str(),
+		   record.track.c_str(),
+		   (int)std::chrono::duration_cast<std::chrono::seconds>(record.length).count());
 
 	for (auto &i : scrobblers)
 		i.Push(record);

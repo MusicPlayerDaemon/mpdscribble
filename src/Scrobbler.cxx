@@ -30,8 +30,6 @@
 
 #include <gcrypt.h>
 
-#include <glib.h>
-
 #include <array>
 
 #include <assert.h>
@@ -62,9 +60,9 @@ Scrobbler::Scrobbler(const ScrobblerConfig &_config,
 		queue = journal_read(config.journal.c_str());
 
 		const unsigned queue_length = queue.size();
-		g_message("loaded %u song%s from %s",
-			  queue_length, queue_length == 1 ? "" : "s",
-			  config.journal.c_str());
+		FormatInfo("loaded %u song%s from %s",
+			   queue_length, queue_length == 1 ? "" : "s",
+			   config.journal.c_str());
 	}
 
 	if (!config.file.empty()) {
@@ -94,8 +92,8 @@ Scrobbler::IncreaseInterval() noexcept
 	if (interval > 60 * 60 * 2)
 		interval = 60 * 60 * 2;
 
-	g_warning("[%s] waiting %u seconds before trying again",
-		  config.name.c_str(), interval);
+	FormatWarning("[%s] waiting %u seconds before trying again",
+		      config.name.c_str(), interval);
 }
 
 static as_submitting
@@ -103,26 +101,27 @@ scrobbler_parse_submit_response(const char *scrobbler_name,
 				const char *line, size_t length)
 {
 	if (length == sizeof(OK) - 1 && memcmp(line, OK, length) == 0) {
-		g_message("[%s] OK", scrobbler_name);
+		FormatInfo("[%s] OK", scrobbler_name);
 
 		return AS_SUBMIT_OK;
 	} else if (length == sizeof(BADSESSION) - 1 &&
 		   memcmp(line, BADSESSION, length) == 0) {
-		g_warning("[%s] invalid session", scrobbler_name);
+		FormatWarning("[%s] invalid session", scrobbler_name);
 
 		return AS_SUBMIT_HANDSHAKE;
 	} else if (length == sizeof(FAILED) - 1 &&
 		   memcmp(line, FAILED, length) == 0) {
 		if (length > strlen(FAILED))
-			g_warning("[%s] submission rejected: %.*s",
-				  scrobbler_name,
-				  (int)(length - strlen(FAILED)),
-				  line + strlen(FAILED));
+			FormatError("[%s] submission rejected: %.*s",
+				    scrobbler_name,
+				    (int)(length - strlen(FAILED)),
+				    line + strlen(FAILED));
 		else
-			g_warning("[%s] submission rejected", scrobbler_name);
+			FormatError("[%s] submission rejected",
+				    scrobbler_name);
 	} else {
-		g_warning("[%s] unknown response: %.*s",
-			  scrobbler_name, (int)length, line);
+		FormatError("[%s] unknown response: %.*s",
+			    scrobbler_name, (int)length, line);
 	}
 
 	return AS_SUBMIT_FAILED;
@@ -138,25 +137,25 @@ Scrobbler::ParseHandshakeResponse(const char *line) noexcept
 	/* FIXME: some code duplication between this
 	   and as_parse_submit_response. */
 	if (!strncmp(line, OK, strlen(OK))) {
-		g_message("[%s] handshake successful",
-			  config.name.c_str());
+		FormatInfo("[%s] handshake successful",
+			   config.name.c_str());
 		return true;
 	} else if (!strncmp(line, BANNED, strlen(BANNED))) {
-		g_warning("[%s] handshake failed, we're banned (%s)",
-			  config.name.c_str(), line);
+		FormatError("[%s] handshake failed, we're banned (%s)",
+			    config.name.c_str(), line);
 	} else if (!strncmp(line, BADAUTH, strlen(BADAUTH))) {
-		g_warning("[%s] handshake failed, "
-			  "username or password incorrect (%s)",
-			  config.name.c_str(), line);
+		FormatError("[%s] handshake failed, "
+			    "username or password incorrect (%s)",
+			    config.name.c_str(), line);
 	} else if (!strncmp(line, BADTIME, strlen(BADTIME))) {
-		g_warning("[%s] handshake failed, clock not synchronized (%s)",
-			  config.name.c_str(), line);
+		FormatError("[%s] handshake failed, clock not synchronized (%s)",
+			    config.name.c_str(), line);
 	} else if (!strncmp(line, FAILED, strlen(FAILED))) {
-		g_warning("[%s] handshake failed (%s)",
-			  config.name.c_str(), line);
+		FormatError("[%s] handshake failed (%s)",
+			    config.name.c_str(), line);
 	} else {
-		g_warning("[%s] error parsing handshake response (%s)",
-			  config.name.c_str(), line);
+		FormatError("[%s] error parsing handshake response (%s)",
+			    config.name.c_str(), line);
 	}
 
 	return false;
@@ -201,18 +200,19 @@ Scrobbler::OnHandshakeResponse(std::string body, void *data) noexcept
 	}
 
 	scrobbler->session = next_line(&response, end);
-	g_debug("[%s] session: %s",
-		scrobbler->config.name.c_str(), scrobbler->session.c_str());
+	FormatDebug("[%s] session: %s",
+		    scrobbler->config.name.c_str(),
+		    scrobbler->session.c_str());
 
 	scrobbler->nowplay_url = next_line(&response, end);
-	g_debug("[%s] now playing url: %s",
-		scrobbler->config.name.c_str(),
-		scrobbler->nowplay_url.c_str());
+	FormatDebug("[%s] now playing url: %s",
+		    scrobbler->config.name.c_str(),
+		    scrobbler->nowplay_url.c_str());
 
 	scrobbler->submit_url = next_line(&response, end);
-	g_debug("[%s] submit url: %s",
-		scrobbler->config.name.c_str(),
-		scrobbler->submit_url.c_str());
+	FormatDebug("[%s] submit url: %s",
+		    scrobbler->config.name.c_str(),
+		    scrobbler->submit_url.c_str());
 
 	if (scrobbler->nowplay_url.empty() || scrobbler->submit_url.empty()) {
 		scrobbler->session.clear();
@@ -243,9 +243,9 @@ Scrobbler::OnHandshakeError(std::exception_ptr e, void *data) noexcept
 	scrobbler->http_request.reset();
 	scrobbler->state = SCROBBLER_STATE_NOTHING;
 
-	g_warning("[%s] handshake error: %s",
-		  scrobbler->config.name.c_str(),
-		  GetFullMessage(e).c_str());
+	FormatError("[%s] handshake error: %s",
+		    scrobbler->config.name.c_str(),
+		    GetFullMessage(e).c_str());
 
 	scrobbler->IncreaseInterval();
 	scrobbler->ScheduleHandshake();
@@ -321,9 +321,9 @@ Scrobbler::OnSubmitError(std::exception_ptr e, void *data) noexcept
 	scrobbler->http_request.reset();
 	scrobbler->state = SCROBBLER_STATE_READY;
 
-	g_warning("[%s] submit error: %s",
-		  scrobbler->config.name.c_str(),
-		  GetFullMessage(e).c_str());
+	FormatError("[%s] submit error: %s",
+		    scrobbler->config.name.c_str(),
+		    GetFullMessage(e).c_str());
 
 	scrobbler->IncreaseInterval();
 	scrobbler->ScheduleSubmit();
@@ -458,8 +458,8 @@ Scrobbler::SendNowPlaying(const char *artist,
 	post_data.Append("n", number);
 	post_data.Append("m", mbid);
 
-	g_message("[%s] sending 'now playing' notification",
-		  config.name.c_str());
+	FormatInfo("[%s] sending 'now playing' notification",
+		   config.name.c_str());
 
 	http_request = std::make_unique<CurlRequest>(curl_global,
 						     nowplay_url.c_str(),
@@ -534,13 +534,13 @@ Scrobbler::Submit() noexcept
 		count++;
 	}
 
-	g_message("[%s] submitting %i song%s",
-		  config.name.c_str(), count, count == 1 ? "" : "s");
-	g_debug("[%s] post data: %s",
-		config.name.c_str(), post_data.c_str());
-	g_debug("[%s] url: %s",
-		config.name.c_str(),
-		submit_url.c_str());
+	FormatInfo("[%s] submitting %i song%s",
+		   config.name.c_str(), count, count == 1 ? "" : "s");
+	FormatDebug("[%s] post data: %s",
+		    config.name.c_str(), post_data.c_str());
+	FormatDebug("[%s] url: %s",
+		    config.name.c_str(),
+		    submit_url.c_str());
 
 	pending = count;
 
@@ -601,10 +601,10 @@ Scrobbler::WriteJournal() const noexcept
 
 	if (journal_write(config.journal.c_str(), queue)) {
 		unsigned queue_length = queue.size();
-		g_message("[%s] saved %i song%s to %s",
-			  config.name.c_str(),
-			  queue_length, queue_length == 1 ? "" : "s",
-			  config.journal.c_str());
+		FormatInfo("[%s] saved %i song%s to %s",
+			   config.name.c_str(),
+			   queue_length, queue_length == 1 ? "" : "s",
+			   config.journal.c_str());
 	}
 }
 
