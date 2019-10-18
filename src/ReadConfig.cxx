@@ -20,7 +20,6 @@
 
 #include "ReadConfig.hxx"
 #include "Config.hxx"
-#include "Scrobbler.hxx"
 #include "config.h"
 
 #include <glib.h>

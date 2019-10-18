@@ -19,17 +19,13 @@
 
 #include "Request.hxx"
 #include "Global.hxx"
-#include "util/Exception.hxx"
 #include "util/RuntimeError.hxx"
 #include "Config.hxx"
 #include "config.h"
 
 #include <curl/curl.h>
 
-#include <forward_list>
 #include <stdexcept>
-
-#include <assert.h>
 
 enum {
 	/** maximum length of a response body */

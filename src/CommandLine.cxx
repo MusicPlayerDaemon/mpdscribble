@@ -26,7 +26,6 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 
 static const char *blurb =
 	PACKAGE " version " VERSION "\n"

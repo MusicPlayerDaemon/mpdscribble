@@ -34,11 +34,7 @@
 #include <array>
 
 #include <assert.h>
-#include <ctype.h>
 #include <errno.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <stdarg.h>
 #include <string.h>
 
 /* don't submit more than this amount of songs in a batch. */

@@ -23,9 +23,6 @@
 #include <glib.h>
 
 #ifndef G_OS_WIN32
-#include <assert.h>
-#include <sys/types.h>
-#include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <stdio.h>
@@ -34,7 +31,6 @@
 #include <stdlib.h>
 
 #include <pwd.h>
-#include <grp.h>
 #endif
 
 #ifndef G_OS_WIN32

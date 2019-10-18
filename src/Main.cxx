@@ -27,15 +27,9 @@
 #include "util/PrintException.hxx"
 
 #include <glib.h>
-#ifndef WIN32
-#include <glib-unix.h>
-#endif
 
-#include <signal.h>
 #include <stdlib.h>
-#include <stdio.h>
 #include <unistd.h>
-#include <string.h>
 
 static std::chrono::steady_clock::duration
 GetSongDuration(const struct mpd_song *song) noexcept

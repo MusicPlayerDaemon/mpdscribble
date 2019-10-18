@@ -19,13 +19,11 @@
 */
 
 #include "MpdObserver.hxx"
-#include "Config.hxx"
+
+#include <glib.h>
 
 #include <assert.h>
-#include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
 
 void
 MpdObserver::HandleError() noexcept
