@@ -33,7 +33,7 @@ struct HttpResponseHandler {
 	void (*error)(std::exception_ptr e, void *ctx);
 };
 
-class HttpRequest final
+class CurlRequest final
 {
 	CurlGlobal &global;
 
@@ -53,10 +53,10 @@ class HttpRequest final
 	char error[CURL_ERROR_SIZE];
 
 public:
-	HttpRequest(CurlGlobal &global,
+	CurlRequest(CurlGlobal &global,
 		    const char *url, std::string &&_request_body,
 		    const HttpResponseHandler &_handler, void *_ctx);
-	~HttpRequest() noexcept;
+	~CurlRequest() noexcept;
 
 	/**
 	 * A HTTP request is finished: invoke its callback and free it.

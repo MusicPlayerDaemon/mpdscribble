@@ -47,7 +47,7 @@ main(int argc, char **argv)
 	CurlGlobal curl_global(io_service);
 
 	const char *url = argv[1];
-	HttpRequest request(curl_global, url, {}, my_handler, nullptr);
+	CurlRequest request(curl_global, url, {}, my_handler, nullptr);
 	if (!quit)
 		io_service.run();
 	assert(quit);

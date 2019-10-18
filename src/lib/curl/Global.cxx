@@ -148,7 +148,7 @@ CurlGlobal::Add(CURL *easy)
 /**
  * Find a request by its CURL "easy" handle.
  */
-static HttpRequest *
+static CurlRequest *
 http_client_find_request(CURL *curl) noexcept
 {
 	void *p;
@@ -156,7 +156,7 @@ http_client_find_request(CURL *curl) noexcept
 	if (code != CURLE_OK)
 		return nullptr;
 
-	return (HttpRequest *)p;
+	return (CurlRequest *)p;
 }
 
 void
@@ -168,7 +168,7 @@ CurlGlobal::ReadInfo() noexcept
 	while ((msg = curl_multi_info_read(multi.Get(),
 					   &msgs_in_queue)) != nullptr) {
 		if (msg->msg == CURLMSG_DONE) {
-			HttpRequest *request =
+			CurlRequest *request =
 				http_client_find_request(msg->easy_handle);
 			assert(request != nullptr);
 

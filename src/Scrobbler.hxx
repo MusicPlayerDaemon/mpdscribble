@@ -34,7 +34,7 @@
 
 struct ScrobblerConfig;
 class CurlGlobal;
-class HttpRequest;
+class CurlRequest;
 
 class Scrobbler {
 	const ScrobblerConfig &config;
@@ -69,7 +69,7 @@ class Scrobbler {
 
 	CurlGlobal &curl_global;
 
-	std::unique_ptr<HttpRequest> http_request;
+	std::unique_ptr<CurlRequest> http_request;
 
 	boost::asio::steady_timer handshake_timer, submit_timer;
 

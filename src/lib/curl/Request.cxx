@@ -36,7 +36,7 @@ enum {
 	MAX_RESPONSE_BODY = 8192,
 };
 
-HttpRequest::HttpRequest(CurlGlobal &_global,
+CurlRequest::CurlRequest(CurlGlobal &_global,
 			 const char *url, std::string &&_request_body,
 			 const HttpResponseHandler &_handler,
 			 void *_ctx)
@@ -64,14 +64,14 @@ HttpRequest::HttpRequest(CurlGlobal &_global,
 	global.Add(curl.Get());
 }
 
-HttpRequest::~HttpRequest() noexcept
+CurlRequest::~CurlRequest() noexcept
 {
 	if (curl)
 		global.Remove(curl.Get());
 }
 
 inline void
-HttpRequest::CheckResponse(CURLcode result, long status)
+CurlRequest::CheckResponse(CURLcode result, long status)
 {
 	if (result == CURLE_WRITE_ERROR &&
 	    /* handle the postponed error that was caught in
@@ -87,7 +87,7 @@ HttpRequest::CheckResponse(CURLcode result, long status)
 }
 
 void
-HttpRequest::Done(CURLcode result, long status) noexcept
+CurlRequest::Done(CURLcode result, long status) noexcept
 {
 	/* invoke the handler method */
 
@@ -115,10 +115,10 @@ http_client_uri_escape(const char *src) noexcept
  * Called by curl when new data is available.
  */
 size_t
-HttpRequest::WriteFunction(char *ptr, size_t size, size_t nmemb,
+CurlRequest::WriteFunction(char *ptr, size_t size, size_t nmemb,
 			   void *stream) noexcept
 {
-	auto *request = (HttpRequest *)stream;
+	auto *request = (CurlRequest *)stream;
 
 	request->response_body.append((const char *)ptr, size * nmemb);
 

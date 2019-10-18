@@ -406,7 +406,7 @@ Scrobbler::Handshake() noexcept
 
 	//  notice ("handshake url:\n%s", url);
 
-	http_request = std::make_unique<HttpRequest>(curl_global,
+	http_request = std::make_unique<CurlRequest>(curl_global,
 						     url.c_str(), std::string(),
 						     scrobbler_handshake_handler,
 						     this);
@@ -468,7 +468,7 @@ Scrobbler::SendNowPlaying(const char *artist,
 	g_message("[%s] sending 'now playing' notification",
 		  config.name.c_str());
 
-	http_request = std::make_unique<HttpRequest>(curl_global,
+	http_request = std::make_unique<CurlRequest>(curl_global,
 						     nowplay_url.c_str(),
 						     std::move(post_data),
 						     scrobbler_submit_handler,
@@ -553,7 +553,7 @@ Scrobbler::Submit() noexcept
 
 	pending = count;
 
-	http_request = std::make_unique<HttpRequest>(curl_global,
+	http_request = std::make_unique<CurlRequest>(curl_global,
 						     submit_url.c_str(),
 						     std::move(post_data),
 						     scrobbler_submit_handler, this);
