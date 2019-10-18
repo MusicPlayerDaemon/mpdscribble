@@ -99,18 +99,6 @@ CurlRequest::Done(CURLcode result, long status) noexcept
 	}
 }
 
-std::string
-http_client_uri_escape(const char *src) noexcept
-{
-	/* curl_escape() is deprecated, but for some reason,
-	   curl_easy_escape() wants to have a CURL object, which we
-	   don't have right now */
-	char *tmp = curl_escape(src, 0);
-	std::string dest(tmp == nullptr ? src : tmp);
-	curl_free(tmp);
-	return dest;
-}
-
 /**
  * Called by curl when new data is available.
  */

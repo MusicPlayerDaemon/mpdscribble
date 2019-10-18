@@ -1,6 +1,5 @@
 /* mpdscribble (MPD Client)
  * Copyright (C) 2008-2019 The Music Player Daemon Project
- * Copyright (C) 2005-2008 Kuno Woudt <kuno@frob.nl>
  * Project homepage: http://musicpd.org
  *
  * This program is free software; you can redistribute it and/or modify
@@ -18,24 +17,18 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#include "Form.hxx"
-#include "lib/curl/Escape.hxx"
+#include "Escape.hxx"
 
-void
-add_var_internal(std::string &dest, char sep, const char *key,
-		 signed char idx, const char *val) noexcept
+#include <curl/curl.h>
+
+std::string
+CurlEscape(const char *src) noexcept
 {
-	dest.push_back(sep);
-	dest.append(key);
-
-	if (idx >= 0) {
-		char buffer[16];
-		snprintf(buffer, sizeof(buffer), "[%i]", idx);
-		dest.append(buffer);
-	}
-
-	dest.push_back('=');
-
-	if (val != nullptr)
-		dest.append(CurlEscape(val));
+	/* curl_escape() is deprecated, but for some reason,
+	   curl_easy_escape() wants to have a CURL object, which we
+	   don't have right now */
+	char *tmp = curl_escape(src, 0);
+	std::string dest(tmp == nullptr ? src : tmp);
+	curl_free(tmp);
+	return dest;
 }

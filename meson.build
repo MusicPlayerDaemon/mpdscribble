@@ -104,6 +104,7 @@ executable(
   'src/lib/curl/Init.cxx',
   'src/lib/curl/Global.cxx',
   'src/lib/curl/Request.cxx',
+  'src/lib/curl/Escape.cxx',
   'src/util/Exception.cxx',
   'src/util/PrintException.cxx',
 

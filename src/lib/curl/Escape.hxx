@@ -18,24 +18,16 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#include "Form.hxx"
-#include "lib/curl/Escape.hxx"
+#ifndef CURL_ESCAPE_HXX
+#define CURL_ESCAPE_HXX
 
-void
-add_var_internal(std::string &dest, char sep, const char *key,
-		 signed char idx, const char *val) noexcept
-{
-	dest.push_back(sep);
-	dest.append(key);
+#include <string>
 
-	if (idx >= 0) {
-		char buffer[16];
-		snprintf(buffer, sizeof(buffer), "[%i]", idx);
-		dest.append(buffer);
-	}
+/**
+ * Escapes URI parameters with '%'.  Free the return value with
+ * g_free().
+ */
+std::string
+CurlEscape(const char *src) noexcept;
 
-	dest.push_back('=');
-
-	if (val != nullptr)
-		dest.append(CurlEscape(val));
-}
+#endif

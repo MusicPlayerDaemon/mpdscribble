@@ -74,11 +74,4 @@ private:
 
 };
 
-/**
- * Escapes URI parameters with '%'.  Free the return value with
- * g_free().
- */
-std::string
-http_client_uri_escape(const char *src) noexcept;
-
 #endif
