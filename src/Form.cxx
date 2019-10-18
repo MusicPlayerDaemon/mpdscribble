@@ -19,7 +19,7 @@
  */
 
 #include "Form.hxx"
-#include "HttpClient.hxx"
+#include "lib/curl/Request.hxx"
 
 void
 add_var_internal(std::string &dest, char sep, const char *key,

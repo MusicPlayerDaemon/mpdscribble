@@ -17,8 +17,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#include "HttpClient.hxx"
-#include "lib/curl/Global.hxx"
+#include "Request.hxx"
+#include "Global.hxx"
 #include "util/Exception.hxx"
 #include "util/RuntimeError.hxx"
 #include "Config.hxx"

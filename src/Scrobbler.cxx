@@ -22,7 +22,7 @@
 #include "Protocol.hxx"
 #include "ScrobblerConfig.hxx"
 #include "Journal.hxx"
-#include "HttpClient.hxx"
+#include "lib/curl/Request.hxx"
 #include "Form.hxx"
 #include "Log.hxx" /* for log_date() */
 #include "util/Exception.hxx"

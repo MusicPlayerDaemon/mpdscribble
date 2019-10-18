@@ -18,10 +18,10 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#ifndef HTTP_CLIENT_HXX
-#define HTTP_CLIENT_HXX
+#ifndef CURL_REQUEST_HXX
+#define CURL_REQUEST_HXX
 
-#include "lib/curl/Easy.hxx"
+#include "Easy.hxx"
 
 #include <exception>
 #include <string>

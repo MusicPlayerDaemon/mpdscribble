@@ -93,7 +93,6 @@ executable(
   'src/Protocol.cxx',
   'src/Scrobbler.cxx',
   'src/MultiScrobbler.cxx',
-  'src/HttpClient.cxx',
   'src/Form.cxx',
   'src/CommandLine.cxx',
   'src/Config.cxx',
@@ -104,6 +103,7 @@ executable(
 
   'src/lib/curl/Init.cxx',
   'src/lib/curl/Global.cxx',
+  'src/lib/curl/Request.cxx',
   'src/util/Exception.cxx',
   'src/util/PrintException.cxx',
 

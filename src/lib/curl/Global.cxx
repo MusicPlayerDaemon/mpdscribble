@@ -18,7 +18,7 @@
  */
 
 #include "Global.hxx"
-#include "HttpClient.hxx"
+#include "Request.hxx"
 
 #include <glib.h>
 
