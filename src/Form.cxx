@@ -21,21 +21,18 @@
 #include "Form.hxx"
 #include "lib/curl/Escape.hxx"
 
+#include <stdio.h>
+
 void
-add_var_internal(std::string &dest, char sep, const char *key,
-		 signed char idx, const char *val) noexcept
+FormDataBuilder::AppendVerbatim(unsigned value) noexcept
 {
-	dest.push_back(sep);
-	dest.append(key);
+	char buffer[16];
+	snprintf(buffer, sizeof(buffer), "%u", value);
+	AppendVerbatim(buffer);
+}
 
-	if (idx >= 0) {
-		char buffer[16];
-		snprintf(buffer, sizeof(buffer), "[%i]", idx);
-		dest.append(buffer);
-	}
-
-	dest.push_back('=');
-
-	if (val != nullptr)
-		dest.append(CurlEscape(val));
+void
+FormDataBuilder::AppendEscape(const char *value) noexcept
+{
+	s.append(CurlEscape(value));
 }

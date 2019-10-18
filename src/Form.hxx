@@ -23,40 +23,86 @@
 
 #include <string>
 
-void
-add_var_internal(std::string &dest, char sep, const char *key,
-		 signed char idx, const char *val) noexcept;
+class FormDataBuilder {
+	std::string s;
 
-inline void
-first_var(std::string &s, const char *key, const char *val) noexcept
-{
-	add_var_internal(s, '?', key, -1, val);
-}
+	enum class Separator {
+		NONE,
+		QUESTION_MARK,
+		AMPERSAND,
+	} separator = Separator::NONE;
 
-inline void
-add_var(std::string &s, const char *key, const char *val) noexcept
-{
-	add_var_internal(s, '&', key, -1, val);
-}
+public:
+	FormDataBuilder() = default;
 
-inline void
-add_var(std::string &s, const char *key, const std::string &val) noexcept
-{
-	add_var(s, key, val.c_str());
-}
+	template<typename S>
+	FormDataBuilder(S &&_s) noexcept
+		:s(std::forward<S>(_s)) {
+		if (!s.empty())
+			separator = s.find('?') == s.npos
+				? Separator::QUESTION_MARK
+				: Separator::AMPERSAND;
+	}
 
-inline void
-add_var_i(std::string &s, const char *key, signed char idx,
-	  const char *val) noexcept
-{
-	add_var_internal(s, '&', key, idx, val);
-}
+	const char *c_str() const noexcept {
+		return s.c_str();
+	}
 
-inline void
-add_var_i(std::string &s, const char *key, signed char idx,
-	  const std::string &val) noexcept
-{
-	add_var_i(s, key, idx, val.c_str());
-}
+	operator std::string &&() && noexcept {
+		return std::move(s);
+	}
+
+	template<typename K, typename V>
+	void Append(K &&key, V &&value) noexcept {
+		AppendSeparator();
+
+		AppendVerbatim(std::forward<K>(key));
+		s.push_back('=');
+		AppendEscape(std::forward<V>(value));
+	}
+
+	template<typename K, typename V>
+	void AppendIndexed(K &&key, unsigned idx, V &&value) noexcept {
+		AppendSeparator();
+
+		AppendVerbatim(std::forward<K>(key));
+		s.push_back('[');
+		AppendVerbatim(idx);
+		s.push_back(']');
+		s.push_back('=');
+		AppendEscape(std::forward<V>(value));
+	}
+
+private:
+	void AppendSeparator() noexcept {
+		switch (separator) {
+		case Separator::NONE:
+			break;
+
+		case Separator::QUESTION_MARK:
+			s.push_back('?');
+			break;
+
+		case Separator::AMPERSAND:
+			s.push_back('&');
+			break;
+		}
+
+		separator = Separator::AMPERSAND;
+	}
+
+	template<typename T>
+	void AppendVerbatim(T &&value) noexcept {
+		s.append(std::forward<T>(value));
+	}
+
+	void AppendVerbatim(unsigned value) noexcept;
+
+	void AppendEscape(const char *value) noexcept;
+
+	void AppendEscape(const std::string &value) noexcept {
+		AppendEscape(value.c_str());
+	}
+};
 
 #endif

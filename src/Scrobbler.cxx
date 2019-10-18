@@ -395,14 +395,14 @@ Scrobbler::Handshake() noexcept
 	const auto md5 = as_md5(config.password, timestr);
 
 	/* construct the handshake url. */
-	std::string url(config.url);
-	first_var(url, "hs", "true");
-	add_var(url, "p", "1.2");
-	add_var(url, "c", AS_CLIENT_ID);
-	add_var(url, "v", AS_CLIENT_VERSION);
-	add_var(url, "u", config.username.c_str());
-	add_var(url, "t", timestr.c_str());
-	add_var(url, "a", &md5.front());
+	FormDataBuilder url(config.url);
+	url.Append("hs", "true");
+	url.Append("p", "1.2");
+	url.Append("c", AS_CLIENT_ID);
+	url.Append("v", AS_CLIENT_VERSION);
+	url.Append("u", config.username.c_str());
+	url.Append("t", timestr.c_str());
+	url.Append("a", &md5.front());
 
 	//  notice ("handshake url:\n%s", url);
 
@@ -456,14 +456,14 @@ Scrobbler::SendNowPlaying(const char *artist,
 
 	snprintf(len, sizeof(len), "%i", length);
 
-	std::string post_data;
-	add_var(post_data, "s", session);
-	add_var(post_data, "a", artist);
-	add_var(post_data, "t", track);
-	add_var(post_data, "b", album);
-	add_var(post_data, "l", len);
-	add_var(post_data, "n", number);
-	add_var(post_data, "m", mbid);
+	FormDataBuilder post_data;
+	post_data.Append("s", session);
+	post_data.Append("a", artist);
+	post_data.Append("t", track);
+	post_data.Append("b", album);
+	post_data.Append("l", len);
+	post_data.Append("n", number);
+	post_data.Append("m", mbid);
 
 	g_message("[%s] sending 'now playing' notification",
 		  config.name.c_str());
@@ -515,8 +515,8 @@ Scrobbler::Submit() noexcept
 	state = SCROBBLER_STATE_SUBMITTING;
 
 	/* construct the handshake url. */
-	std::string post_data;
-	add_var(post_data, "s", session);
+	FormDataBuilder post_data;
+	post_data.Append("s", session);
 
 	for (const auto &i : queue) {
 		if (count >= MAX_SUBMIT_COUNT)
@@ -527,18 +527,18 @@ Scrobbler::Submit() noexcept
 
 		snprintf(len, sizeof(len), "%i", song->length);
 
-		add_var_i(post_data, "a", count, song->artist);
-		add_var_i(post_data, "t", count, song->track);
-		add_var_i(post_data, "l", count, len);
-		add_var_i(post_data, "i", count, song->time);
-		add_var_i(post_data, "o", count, song->source);
-		add_var_i(post_data, "r", count, "");
-		add_var_i(post_data, "b", count, song->album);
-		add_var_i(post_data, "n", count, song->number);
-		add_var_i(post_data, "m", count, song->mbid);
+		post_data.AppendIndexed("a", count, song->artist);
+		post_data.AppendIndexed("t", count, song->track);
+		post_data.AppendIndexed("l", count, len);
+		post_data.AppendIndexed("i", count, song->time);
+		post_data.AppendIndexed("o", count, song->source);
+		post_data.AppendIndexed("r", count, "");
+		post_data.AppendIndexed("b", count, song->album);
+		post_data.AppendIndexed("n", count, song->number);
+		post_data.AppendIndexed("m", count, song->mbid);
 
 		if (song->love)
-			add_var_i(post_data, "r", count, "L");
+			post_data.AppendIndexed("r", count, "L");
 
 		count++;
 	}
