@@ -55,6 +55,4 @@ struct Config {
 	std::forward_list<ScrobblerConfig> scrobblers;
 };
 
-extern Config file_config;
-
 #endif

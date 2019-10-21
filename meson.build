@@ -102,7 +102,6 @@ executable(
   'src/MultiScrobbler.cxx',
   'src/Form.cxx',
   'src/CommandLine.cxx',
-  'src/Config.cxx',
   'src/ReadConfig.cxx',
   'src/Journal.cxx',
   'src/MpdObserver.cxx',

@@ -165,27 +165,28 @@ main(int argc, char **argv) noexcept
 try {
 	daemonize_close_stdin();
 
-	parse_cmdline(file_config, argc, argv);
+	Config config{};
+	parse_cmdline(config, argc, argv);
 
-	if (!file_read_config(file_config))
+	if (!file_read_config(config))
 		g_error("cannot read configuration file\n");
 
-	log_init(file_config.log, file_config.verbose);
+	log_init(config.log, config.verbose);
 
-	daemonize_init(file_config.daemon_user, file_config.pidfile);
+	daemonize_init(config.daemon_user, config.pidfile);
 
-	if (!file_config.no_daemon)
+	if (!config.no_daemon)
 		daemonize_detach();
 
 	daemonize_write_pidfile();
 	daemonize_set_user();
 
 #ifndef NDEBUG
-	if (!file_config.no_daemon)
+	if (!config.no_daemon)
 #endif
 		daemonize_close_stdout_stderr();
 
-	Instance instance(file_config);
+	Instance instance(config);
 
 	/* run the main loop */
 
@@ -199,7 +200,7 @@ try {
 
 	instance.scrobblers.WriteJournal();
 
-	file_cleanup(file_config);
+	file_cleanup(config);
 	log_deinit();
 
 	daemonize_finish();
