@@ -21,6 +21,10 @@
 #include "Instance.hxx"
 #include "Config.hxx"
 
+#ifdef HAVE_LIBSYSTEMD
+#include <systemd/sd-daemon.h>
+#endif
+
 Instance::Instance(const struct config &config) noexcept
 	:io_service(),
 #ifndef _WIN32
@@ -47,6 +51,10 @@ Instance::~Instance() noexcept = default;
 inline void
 Instance::Stop() noexcept
 {
+#ifdef HAVE_LIBSYSTEMD
+	sd_notify(0, "STOPPING=1");
+#endif
+
 	this->io_service.stop();
 }
 

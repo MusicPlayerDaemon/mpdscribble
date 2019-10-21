@@ -1,4 +1,5 @@
 mpdscribble 0.23 - not yet released
+  * notify systemd about start-up completion
   * remove libsoup support
   * require MPD 0.16
   * require libmpdclient 2.5

@@ -25,6 +25,11 @@
 #include "Config.hxx"
 #include "Log.hxx"
 #include "util/PrintException.hxx"
+#include "config.h"
+
+#ifdef HAVE_LIBSYSTEMD
+#include <systemd/sd-daemon.h>
+#endif
 
 #include <glib.h>
 
@@ -187,6 +192,10 @@ try {
 	Instance instance(file_config);
 
 	/* run the main loop */
+
+#ifdef HAVE_LIBSYSTEMD
+	sd_notify(0, "READY=1");
+#endif
 
 	instance.Run();
 

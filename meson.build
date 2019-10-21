@@ -29,6 +29,13 @@ libmpdclient_dep = dependency('libmpdclient', version: '>= 2.5')
 libgcrypt_dep = dependency('libgcrypt')
 libcurl_dep = dependency('libcurl', version: '>= 7.18')
 
+if host_machine.system() == 'linux'
+  libsystemd_dep = dependency('libsystemd', required: get_option('systemd'))
+  conf.set('HAVE_LIBSYSTEMD', libsystemd_dep.found())
+else
+  libsystemd_dep = dependency('', required: false)
+endif
+
 common_cflags = [
   # no header bloat for the iostream library we don't use
   '-DBOOST_NO_IOSTREAM',
@@ -117,6 +124,7 @@ executable(
     libmpdclient_dep,
     libgcrypt_dep,
     libcurl_dep,
+    libsystemd_dep,
   ],
   install: true
 )
