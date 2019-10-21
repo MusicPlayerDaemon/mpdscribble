@@ -20,7 +20,6 @@
 #include "Request.hxx"
 #include "Global.hxx"
 #include "util/RuntimeError.hxx"
-#include "Config.hxx"
 #include "config.h"
 
 #include <curl/curl.h>
@@ -48,15 +47,13 @@ CurlRequest::CurlRequest(CurlGlobal &_global,
 	curl.SetOption(CURLOPT_ERRORBUFFER, error);
 	curl.SetOption(CURLOPT_BUFFERSIZE, (long)2048);
 
-	if (file_config.proxy != nullptr)
-		curl.SetOption(CURLOPT_PROXY, file_config.proxy);
-
 	if (!request_body.empty()) {
 		curl.SetOption(CURLOPT_POST, true);
 		curl.SetRequestBody(request_body.data(),
 				    request_body.size());
 	}
 
+	global.Configure(curl);
 	global.Add(curl.Get());
 }
 

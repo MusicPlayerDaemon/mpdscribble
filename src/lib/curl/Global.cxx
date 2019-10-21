@@ -227,8 +227,10 @@ CurlGlobal::SocketAction(curl_socket_t fd, int ev_bitmask) noexcept
 	ScheduleReadInfo();
 }
 
-CurlGlobal::CurlGlobal(boost::asio::io_service &io_service)
-	:timeout_timer(io_service), read_info_timer(io_service)
+CurlGlobal::CurlGlobal(boost::asio::io_service &io_service,
+		       const char *_proxy)
+	:proxy(_proxy),
+	 timeout_timer(io_service), read_info_timer(io_service)
 {
 	multi.SetOption(CURLMOPT_SOCKETFUNCTION, Socket::SocketFunction);
 	multi.SetOption(CURLMOPT_SOCKETDATA, this);
@@ -238,3 +240,10 @@ CurlGlobal::CurlGlobal(boost::asio::io_service &io_service)
 }
 
 CurlGlobal::~CurlGlobal() noexcept = default;
+
+void
+CurlGlobal::Configure(CurlEasy &easy)
+{
+	if (proxy != nullptr)
+		easy.SetOption(CURLOPT_PROXY, proxy);
+}

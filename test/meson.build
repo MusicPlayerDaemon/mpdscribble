@@ -2,7 +2,6 @@ executable(
   'RunHttpClient',
 
   'RunHttpClient.cxx',
-  '../src/Config.cxx',
   '../src/lib/curl/Init.cxx',
   '../src/lib/curl/Global.cxx',
   '../src/lib/curl/Request.cxx',

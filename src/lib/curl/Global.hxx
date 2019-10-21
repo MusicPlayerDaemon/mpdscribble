@@ -28,8 +28,12 @@
 
 #include <boost/asio/steady_timer.hpp>
 
+class CurlEasy;
+
 class CurlGlobal final {
 	class Socket;
+
+	const char *const proxy;
 
 	const ScopeCurlInit init;
 
@@ -39,7 +43,8 @@ class CurlGlobal final {
 	boost::asio::steady_timer timeout_timer, read_info_timer;
 
 public:
-	explicit CurlGlobal(boost::asio::io_service &io_service);
+	CurlGlobal(boost::asio::io_service &io_service,
+		   const char *_proxy);
 	~CurlGlobal() noexcept;
 
 	CurlGlobal(const CurlGlobal &) = delete;
@@ -48,6 +53,8 @@ public:
 	auto &get_io_service() noexcept {
 		return ::get_io_service(timeout_timer);
 	}
+
+	void Configure(CurlEasy &easy);
 
 	void Add(CURL *easy);
 

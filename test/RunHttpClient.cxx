@@ -44,7 +44,7 @@ main(int argc, char **argv)
 		return EXIT_FAILURE;
 	}
 
-	CurlGlobal curl_global(io_service);
+	CurlGlobal curl_global(io_service, nullptr);
 
 	const char *url = argv[1];
 	CurlRequest request(curl_global, url, {}, my_handler, nullptr);
