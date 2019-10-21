@@ -24,6 +24,6 @@
 struct Config;
 
 void
-parse_cmdline(Config &config, int argc, char **argv) noexcept;
+parse_cmdline(Config &config, int argc, char **argv);
 
 #endif

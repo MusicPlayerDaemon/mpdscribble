@@ -112,6 +112,7 @@ executable(
   'src/lib/curl/Request.cxx',
   'src/lib/curl/Escape.cxx',
   'src/util/Exception.cxx',
+  'src/util/OptionParser.cxx',
   'src/util/PrintException.cxx',
   'src/util/StringStrip.cxx',
 

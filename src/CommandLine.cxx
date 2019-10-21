@@ -19,10 +19,11 @@
 */
 
 #include "CommandLine.hxx"
+#include "util/OptionDef.hxx"
+#include "util/OptionParser.hxx"
+#include "util/RuntimeError.hxx"
 #include "Config.hxx"
 #include "config.h"
-
-#include <glib.h>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -37,8 +38,7 @@ static const char *summary =
 	"A Music Player Daemon (MPD) client which submits information about\n"
 	"tracks being played to Last.fm (formerly Audioscrobbler).";
 
-static gboolean option_version;
-
+gcc_noreturn
 static void
 version() noexcept
 {
@@ -55,50 +55,119 @@ version() noexcept
 	exit(EXIT_SUCCESS);
 }
 
-void
-parse_cmdline(Config &config, int argc, char **argv) noexcept
+enum Option {
+	OPTION_VERSION,
+	OPTION_NO_DAEMON,
+	OPTION_VERBOSE,
+	OPTION_CONF,
+	OPTION_PIDFILE,
+	OPTION_DAEMON_USER,
+	OPTION_LOG,
+	OPTION_HOST,
+	OPTION_PORT,
+	OPTION_PROXY,
+	OPTION_HELP,
+};
+
+static constexpr OptionDef option_defs[] = {
+	{"version", 'V', "print version number"},
+	{"no-daemon", 'D', "don't daemonize"},
+	{"verbose", 'v', true, "verbosity (0-2, default 2)"},
+	{"conf", 0, true, "load configuration from this file"},
+	{"pidfile", 0, true, "write the process id to this file"},
+	{"daemon-user", 0, true, "run daemon as this user"},
+	{"log", 0, true, "log file or 'syslog'"},
+	{"host", 0, true, "MPD host name to connect to, or Unix domain socket path"},
+	{"port", 0, true, "MPD port to connect to"},
+	{"proxy", 0, true, "HTTP proxy URI"},
+	{"help", 'h', "show help options"},
+};
+
+static void
+PrintOption(const OptionDef &opt) noexcept
 {
-	const GOptionEntry entries[] = {
-		{ "version", 'V', 0, G_OPTION_ARG_NONE, &option_version,
-		  "print version number", nullptr },
-		{ "no-daemon", 'D', 0, G_OPTION_ARG_NONE, &config.no_daemon,
-		  "don't daemonize", nullptr },
-		{ "verbose", 'v', 0, G_OPTION_ARG_INT, &config.verbose,
-		  "verbosity (0-2, default 2)", nullptr },
-		{ "conf", 0, 0, G_OPTION_ARG_STRING, &config.conf,
-		  "load configuration from this file", nullptr },
-		{ "pidfile", 0, 0, G_OPTION_ARG_STRING, &config.pidfile,
-		  "write the process id to this file", nullptr },
-		{ "daemon-user", 0, 0, G_OPTION_ARG_STRING, &config.daemon_user,
-		  "run daemon as this user", nullptr },
-		{ "log", 0, 0, G_OPTION_ARG_STRING, &config.log,
-		  "log file or 'syslog'", nullptr },
-		{ "host", 0, 0, G_OPTION_ARG_STRING, &config.host,
-		  "MPD host name to connect to, or Unix domain socket path", nullptr },
-		{ "port", 0, 0, G_OPTION_ARG_INT, &config.port,
-		  "MPD port to connect to", nullptr },
-		{ "proxy", 0, 0, G_OPTION_ARG_STRING, &config.host,
-		  "HTTP proxy URI", nullptr },
-		{ .long_name = nullptr }
-	};
+	if (opt.HasShortOption())
+		printf("  -%c, --%-12s%s\n",
+		       opt.GetShortOption(),
+		       opt.GetLongOption(),
+		       opt.GetDescription());
+	else
+		printf("  --%-16s%s\n",
+		       opt.GetLongOption(),
+		       opt.GetDescription());
+}
 
-	GError *error = nullptr;
-	GOptionContext *context;
-	bool ret;
+gcc_noreturn
+static void
+help() noexcept
+{
+	printf("Usage:\n"
+	       "  mpdscribble [OPTION...]\n"
+	       "\n"
+	       "%s\n"
+	       "\n"
+	       "Options:\n",
+	       summary);
 
-	context = g_option_context_new(nullptr);
-	g_option_context_add_main_entries(context, entries, nullptr);
+	for (const auto &i : option_defs)
+		if(i.HasDescription() == true) // hide hidden options from help print
+			PrintOption(i);
 
-	g_option_context_set_summary(context, summary);
+	exit(EXIT_SUCCESS);
+}
 
-	ret = g_option_context_parse(context, &argc, &argv, &error);
-	g_option_context_free(context);
+void
+parse_cmdline(Config &config, int argc, char **argv)
+{
+	// First pass: handle command line options
+	OptionParser parser(option_defs, argc, argv);
+	while (auto o = parser.Next()) {
+		switch (Option(o.index)) {
+		case OPTION_VERSION:
+			version();
 
-	if (!ret) {
-		g_print ("option parsing failed: %s\n", error->message);
-		exit (1);
+		case OPTION_NO_DAEMON:
+			config.no_daemon = true;
+			break;
+
+		case OPTION_VERBOSE:
+			config.verbose = atoi(o.value);
+			break;
+
+		case OPTION_CONF:
+			config.conf = g_strdup(o.value);
+			break;
+
+		case OPTION_PIDFILE:
+			config.pidfile = g_strdup(o.value);
+			break;
+
+		case OPTION_DAEMON_USER:
+			config.daemon_user = g_strdup(o.value);
+			break;
+
+		case OPTION_LOG:
+			config.log = g_strdup(o.value);
+			break;
+
+		case OPTION_HOST:
+			config.host = g_strdup(o.value);
+			break;
+
+		case OPTION_PORT:
+			config.port = atoi(o.value);
+			break;
+
+		case OPTION_PROXY:
+			config.proxy = g_strdup(o.value);
+			break;
+
+		case OPTION_HELP:
+			help();
+		}
 	}
 
-	if (option_version)
-		version();
+	const auto remaining = parser.GetRemaining();
+	if (!remaining.empty())
+		throw FormatRuntimeError("Unknown option: %s", remaining.front());
 }
