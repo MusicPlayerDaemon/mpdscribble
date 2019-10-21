@@ -167,7 +167,7 @@ try {
 
 	parse_cmdline(argc, argv);
 
-	if (!file_read_config())
+	if (!file_read_config(file_config))
 		g_error("cannot read configuration file\n");
 
 	log_init(file_config.log, file_config.verbose);
@@ -199,7 +199,7 @@ try {
 
 	instance.scrobblers.WriteJournal();
 
-	file_cleanup();
+	file_cleanup(file_config);
 	log_deinit();
 
 	daemonize_finish();

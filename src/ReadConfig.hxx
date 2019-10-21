@@ -21,7 +21,12 @@
 #ifndef READ_CONFIG_HXX
 #define READ_CONFIG_HXX
 
-int file_read_config();
-void file_cleanup();
+struct Config;
+
+int
+file_read_config(Config &config);
+
+void
+file_cleanup(Config &config);
 
 #endif

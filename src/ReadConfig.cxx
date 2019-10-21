@@ -71,12 +71,12 @@ file_expand_tilde(const char *path)
 }
 
 static char *
-get_default_config_path()
+get_default_config_path(Config &config)
 {
 #ifndef G_OS_WIN32
 	char *file = file_expand_tilde(FILE_HOME_CONF);
 	if (file_exists(file)) {
-		file_config.loc = file_home;
+		config.loc = file_home;
 		return file;
 	} else {
 		g_free(file);
@@ -84,10 +84,11 @@ get_default_config_path()
 		if (!file_exists(FILE_CONF))
 			return nullptr;
 
-		file_config.loc = file_etc;
+		config.loc = file_etc;
 		return g_strdup(FILE_CONF);
 	}
 #else
+	(void)config;
 	return g_strdup("mpdscribble.conf");
 #endif
 }
@@ -105,10 +106,10 @@ get_default_log_path()
 }
 
 static char *
-get_default_cache_path()
+get_default_cache_path(const Config &config)
 {
 #ifndef G_OS_WIN32
-	switch (file_config.loc) {
+	switch (config.loc) {
 	case file_home:
 		return file_expand_tilde(FILE_HOME_CACHE);
 
@@ -122,6 +123,7 @@ get_default_cache_path()
 	assert(false);
 	return nullptr;
 #else
+	(void)config;
 	return g_strdup("mpdscribble.cache");
 #endif
 }
@@ -209,7 +211,7 @@ load_unsigned(GKeyFile *file, const char *name, unsigned *value_r)
 }
 
 static ScrobblerConfig *
-load_scrobbler_config(GKeyFile *file, const char *group)
+load_scrobbler_config(const Config &config, GKeyFile *file, const char *group)
 {
 	ScrobblerConfig *scrobbler = new ScrobblerConfig();
 	GError *error = nullptr;
@@ -259,14 +261,14 @@ load_scrobbler_config(GKeyFile *file, const char *group)
 		/* mpdscribble <= 0.17 compatibility */
 		scrobbler->journal = get_std_string(file, group, "cache", nullptr);
 		if (scrobbler->journal.empty())
-			scrobbler->journal = get_default_cache_path();
+			scrobbler->journal = get_default_cache_path(config);
 	}
 
 	return scrobbler;
 }
 
 static void
-load_config_file(const char *path)
+load_config_file(Config &config, const char *path)
 {
 	bool ret;
 	char *data1, *data2;
@@ -293,24 +295,24 @@ load_config_file(const char *path)
 	if (error != nullptr)
 		g_error("%s\n", error->message);
 
-	load_string(file, "pidfile", &file_config.pidfile);
-	load_string(file, "daemon_user", &file_config.daemon_user);
-	load_string(file, "log", &file_config.log);
-	load_string(file, "host", &file_config.host);
-	load_unsigned(file, "port", &file_config.port);
-	load_string(file, "proxy", &file_config.proxy);
+	load_string(file, "pidfile", &config.pidfile);
+	load_string(file, "daemon_user", &config.daemon_user);
+	load_string(file, "log", &config.log);
+	load_string(file, "host", &config.host);
+	load_unsigned(file, "port", &config.port);
+	load_string(file, "proxy", &config.proxy);
 	if (!load_unsigned(file, "journal_interval",
-			   &file_config.journal_interval))
+			   &config.journal_interval))
 		load_unsigned(file, "cache_interval",
-			      &file_config.journal_interval);
-	load_integer(file, "verbose", &file_config.verbose);
+			      &config.journal_interval);
+	load_integer(file, "verbose", &config.verbose);
 
 	groups = g_key_file_get_groups(file, nullptr);
 	while(groups[++i]) {
 		ScrobblerConfig *scrobbler =
-			load_scrobbler_config(file, groups[i]);
+			load_scrobbler_config(config, file, groups[i]);
 		if (scrobbler != nullptr) {
-			file_config.scrobblers.emplace_front(std::move(*scrobbler));
+			config.scrobblers.emplace_front(std::move(*scrobbler));
 			delete scrobbler;
 		}
 	}
@@ -319,39 +321,41 @@ load_config_file(const char *path)
 	g_key_file_free(file);
 }
 
-int file_read_config()
+int
+file_read_config(Config &config)
 {
-	if (file_config.conf == nullptr)
-		file_config.conf = get_default_config_path();
+	if (config.conf == nullptr)
+		config.conf = get_default_config_path(config);
 
 	/* parse config file options. */
 
-	if (file_config.conf != nullptr)
-		load_config_file(file_config.conf);
+	if (config.conf != nullptr)
+		load_config_file(config, config.conf);
 
-	if (!file_config.conf)
+	if (!config.conf)
 		g_error("cannot find configuration file\n");
 
-	if (file_config.scrobblers.empty())
+	if (config.scrobblers.empty())
 		g_error("No audioscrobbler host configured in %s",
-			file_config.conf);
+			config.conf);
 
-	if (!file_config.log)
-		file_config.log = get_default_log_path();
+	if (!config.log)
+		config.log = get_default_log_path();
 
-	if (!file_config.proxy)
-		file_config.proxy = getenv("http_proxy");
-	if (file_config.verbose == -1)
-		file_config.verbose = 1;
+	if (!config.proxy)
+		config.proxy = getenv("http_proxy");
+	if (config.verbose == -1)
+		config.verbose = 1;
 
 	return 1;
 }
 
-void file_cleanup()
+void
+file_cleanup(Config &config)
 {
-	g_free(file_config.host);
-	g_free(file_config.log);
-	g_free(file_config.conf);
+	g_free(config.host);
+	g_free(config.log);
+	g_free(config.conf);
 
-	file_config.scrobblers.clear();
+	config.scrobblers.clear();
 }
