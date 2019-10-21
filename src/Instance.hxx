@@ -32,7 +32,7 @@
 #include <boost/asio/signal_set.hpp>
 #endif
 
-struct config;
+struct Config;
 
 struct Instance final : MpdObserverListener {
 	boost::asio::io_service io_service;
@@ -53,7 +53,7 @@ struct Instance final : MpdObserverListener {
 	const std::chrono::seconds save_journal_interval;
 	boost::asio::steady_timer save_journal_timer;
 
-	Instance(const struct config &config) noexcept;
+	Instance(const Config &config) noexcept;
 	~Instance() noexcept;
 
 	void Run() noexcept {

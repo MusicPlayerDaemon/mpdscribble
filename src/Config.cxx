@@ -20,4 +20,4 @@
 
 #include "Config.hxx"
 
-struct config file_config;
+struct Config file_config;

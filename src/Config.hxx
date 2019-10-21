@@ -29,7 +29,7 @@
 
 enum file_location { file_etc, file_home, file_unknown, };
 
-struct config {
+struct Config {
 	/** don't daemonize the mpdscribble process */
 	gboolean no_daemon;
 
@@ -55,6 +55,6 @@ struct config {
 	std::forward_list<ScrobblerConfig> scrobblers;
 };
 
-extern struct config file_config;
+extern Config file_config;
 
 #endif

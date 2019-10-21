@@ -22,7 +22,7 @@
 #include "Config.hxx"
 #include "SdDaemon.hxx"
 
-Instance::Instance(const struct config &config) noexcept
+Instance::Instance(const Config &config) noexcept
 	:io_service(),
 #ifndef _WIN32
 	 quit_signal(io_service, SIGTERM, SIGINT),
