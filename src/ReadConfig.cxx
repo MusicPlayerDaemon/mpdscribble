@@ -349,13 +349,3 @@ file_read_config(Config &config)
 
 	return 1;
 }
-
-void
-file_cleanup(Config &config)
-{
-	g_free(config.host);
-	g_free(config.log);
-	g_free(config.conf);
-
-	config.scrobblers.clear();
-}

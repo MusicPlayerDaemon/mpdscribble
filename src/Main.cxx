@@ -200,7 +200,6 @@ try {
 
 	instance.scrobblers.WriteJournal();
 
-	file_cleanup(config);
 	log_deinit();
 
 	daemonize_finish();

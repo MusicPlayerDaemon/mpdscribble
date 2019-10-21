@@ -26,7 +26,4 @@ struct Config;
 int
 file_read_config(Config &config);
 
-void
-file_cleanup(Config &config);
-
 #endif

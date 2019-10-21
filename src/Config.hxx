@@ -53,6 +53,12 @@ struct Config {
 	enum file_location loc = file_unknown;
 
 	std::forward_list<ScrobblerConfig> scrobblers;
+
+	~Config() noexcept {
+		g_free(host);
+		g_free(log);
+		g_free(conf);
+	}
 };
 
 #endif
