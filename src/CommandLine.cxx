@@ -39,30 +39,6 @@ static const char *summary =
 
 static gboolean option_version;
 
-static const GOptionEntry entries[] = {
-	{ "version", 'V', 0, G_OPTION_ARG_NONE, &option_version,
-	  "print version number", nullptr },
-	{ "no-daemon", 'D', 0, G_OPTION_ARG_NONE, &file_config.no_daemon,
-	  "don't daemonize", nullptr },
-	{ "verbose", 'v', 0, G_OPTION_ARG_INT, &file_config.verbose,
-	  "verbosity (0-2, default 2)", nullptr },
-	{ "conf", 0, 0, G_OPTION_ARG_STRING, &file_config.conf,
-	  "load configuration from this file", nullptr },
-	{ "pidfile", 0, 0, G_OPTION_ARG_STRING, &file_config.pidfile,
-	  "write the process id to this file", nullptr },
-	{ "daemon-user", 0, 0, G_OPTION_ARG_STRING, &file_config.daemon_user,
-	  "run daemon as this user", nullptr },
-	{ "log", 0, 0, G_OPTION_ARG_STRING, &file_config.log,
-	  "log file or 'syslog'", nullptr },
-	{ "host", 0, 0, G_OPTION_ARG_STRING, &file_config.host,
-	  "MPD host name to connect to, or Unix domain socket path", nullptr },
-	{ "port", 0, 0, G_OPTION_ARG_INT, &file_config.port,
-	  "MPD port to connect to", nullptr },
-	{ "proxy", 0, 0, G_OPTION_ARG_STRING, &file_config.host,
-	  "HTTP proxy URI", nullptr },
-	{ .long_name = nullptr }
-};
-
 static void
 version() noexcept
 {
@@ -80,8 +56,32 @@ version() noexcept
 }
 
 void
-parse_cmdline(int argc, char **argv) noexcept
+parse_cmdline(Config &config, int argc, char **argv) noexcept
 {
+	const GOptionEntry entries[] = {
+		{ "version", 'V', 0, G_OPTION_ARG_NONE, &option_version,
+		  "print version number", nullptr },
+		{ "no-daemon", 'D', 0, G_OPTION_ARG_NONE, &config.no_daemon,
+		  "don't daemonize", nullptr },
+		{ "verbose", 'v', 0, G_OPTION_ARG_INT, &config.verbose,
+		  "verbosity (0-2, default 2)", nullptr },
+		{ "conf", 0, 0, G_OPTION_ARG_STRING, &config.conf,
+		  "load configuration from this file", nullptr },
+		{ "pidfile", 0, 0, G_OPTION_ARG_STRING, &config.pidfile,
+		  "write the process id to this file", nullptr },
+		{ "daemon-user", 0, 0, G_OPTION_ARG_STRING, &config.daemon_user,
+		  "run daemon as this user", nullptr },
+		{ "log", 0, 0, G_OPTION_ARG_STRING, &config.log,
+		  "log file or 'syslog'", nullptr },
+		{ "host", 0, 0, G_OPTION_ARG_STRING, &config.host,
+		  "MPD host name to connect to, or Unix domain socket path", nullptr },
+		{ "port", 0, 0, G_OPTION_ARG_INT, &config.port,
+		  "MPD port to connect to", nullptr },
+		{ "proxy", 0, 0, G_OPTION_ARG_STRING, &config.host,
+		  "HTTP proxy URI", nullptr },
+		{ .long_name = nullptr }
+	};
+
 	GError *error = nullptr;
 	GOptionContext *context;
 	bool ret;

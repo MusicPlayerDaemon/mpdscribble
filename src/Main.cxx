@@ -165,7 +165,7 @@ main(int argc, char **argv) noexcept
 try {
 	daemonize_close_stdin();
 
-	parse_cmdline(argc, argv);
+	parse_cmdline(file_config, argc, argv);
 
 	if (!file_read_config(file_config))
 		g_error("cannot read configuration file\n");

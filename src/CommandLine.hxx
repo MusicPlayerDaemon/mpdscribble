@@ -21,7 +21,9 @@
 #ifndef CMDLINE_HXX
 #define CMDLINE_HXX
 
+struct Config;
+
 void
-parse_cmdline(int argc, char **argv) noexcept;
+parse_cmdline(Config &config, int argc, char **argv) noexcept;
 
 #endif
