@@ -1,6 +1,7 @@
 mpdscribble 0.23 - not yet released
   * notify systemd about start-up completion
   * add a systemd service file
+  * log to journal by default if systemd is used
   * remove libsoup support
   * require MPD 0.16
   * require libmpdclient 2.5

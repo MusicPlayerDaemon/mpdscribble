@@ -20,7 +20,12 @@
 
 #include "ReadConfig.hxx"
 #include "Config.hxx"
+#include "SdDaemon.hxx"
 #include "config.h"
+
+#ifdef HAVE_LIBSYSTEMD
+#include <systemd/sd-daemon.h>
+#endif
 
 #include <glib.h>
 
@@ -91,7 +96,9 @@ static char *
 get_default_log_path()
 {
 #ifndef G_OS_WIN32
-	return g_strdup("syslog");
+	return sd_booted()
+		? g_strdup("-") /* log to journal if systemd is used */
+		: g_strdup("syslog");
 #else
 	return g_strdup("-");
 #endif

@@ -33,6 +33,12 @@ sd_notify(int, const char *) noexcept
 {
 }
 
+static constexpr bool
+sd_booted() noexcept
+{
+	return false;
+}
+
 #endif
 
 #endif
