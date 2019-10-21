@@ -31,7 +31,7 @@ static const char *blurb =
 	PACKAGE " version " VERSION "\n"
 	"another audioscrobbler plugin for music player daemon.\n"
 	"Copyright 2005,2006 Kuno Woudt <kuno@frob.nl>.\n"
-	"Copyright 2008-2010 Max Kellermann <max@duempel.org>\n" "\n";
+	"Copyright 2008-2019 Max Kellermann <max.kellermann+mpdscribble@gmail.com>\n" "\n";
 
 static const char *summary =
 	"A Music Player Daemon (MPD) client which submits information about\n"
