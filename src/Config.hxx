@@ -31,7 +31,7 @@ enum file_location { file_etc, file_home, file_unknown, };
 
 struct Config {
 	/** don't daemonize the mpdscribble process */
-	gboolean no_daemon = false;
+	bool no_daemon = false;
 
 	char *pidfile = nullptr;
 
