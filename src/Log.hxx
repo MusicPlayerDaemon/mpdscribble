@@ -21,8 +21,11 @@
 #ifndef LOG_HXX
 #define LOG_HXX
 
+/**
+ * Throws on error.
+ */
 void
-log_init(const char *path, int verbose) noexcept;
+log_init(const char *path, int verbose);
 
 void
 log_deinit() noexcept;

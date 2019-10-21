@@ -25,6 +25,7 @@
 #include "lib/curl/Request.hxx"
 #include "Form.hxx"
 #include "Log.hxx" /* for log_date() */
+#include "system/Error.hxx"
 #include "util/Exception.hxx"
 
 #include <gcrypt.h>
@@ -52,7 +53,7 @@ typedef enum {
 
 Scrobbler::Scrobbler(const ScrobblerConfig &_config,
 		     boost::asio::io_service &io_service,
-		     CurlGlobal &_curl_global) noexcept
+		     CurlGlobal &_curl_global)
 	:config(_config), curl_global(_curl_global),
 	 handshake_timer(io_service),
 	 submit_timer(io_service)
@@ -71,9 +72,9 @@ Scrobbler::Scrobbler(const ScrobblerConfig &_config,
 	if (!config.file.empty()) {
 		file = fopen(config.file.c_str(), "a");
 		if (file == nullptr)
-			g_error("Failed to open file '%s' of scrobbler '%s': %s\n",
-				config.file.c_str(), config.name.c_str(),
-				g_strerror(errno));
+			throw FormatErrno("Failed to open file '%s' of scrobbler '%s'",
+					  config.file.c_str(),
+					  config.name.c_str());
 	} else
 		ScheduleHandshake();
 }

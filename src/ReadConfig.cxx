@@ -19,6 +19,8 @@
 */
 
 #include "ReadConfig.hxx"
+#include "util/RuntimeError.hxx"
+#include "util/ScopeExit.hxx"
 #include "Config.hxx"
 #include "SdDaemon.hxx"
 #include "config.h"
@@ -159,9 +161,9 @@ load_string(GKeyFile *file, const char *name, std::string &value)
 
 	value = get_std_string(file, PACKAGE, name, &error);
 	if (error != nullptr) {
+		AtScopeExit(error) { g_error_free(error); };
 		if (error->code != G_KEY_FILE_ERROR_KEY_NOT_FOUND)
-			g_error("%s\n", error->message);
-		g_error_free(error);
+			throw std::runtime_error(error->message);
 		return false;
 	}
 
@@ -180,9 +182,9 @@ load_integer(GKeyFile * file, const char *name, int *value_r)
 
 	value = g_key_file_get_integer(file, PACKAGE, name, &error);
 	if (error != nullptr) {
+		AtScopeExit(error) { g_error_free(error); };
 		if (error->code != G_KEY_FILE_ERROR_KEY_NOT_FOUND)
-			g_error("%s\n", error->message);
-		g_error_free(error);
+			throw std::runtime_error(error->message);
 		return false;
 	}
 
@@ -199,7 +201,7 @@ load_unsigned(GKeyFile *file, const char *name, unsigned *value_r)
 		return false;
 
 	if (value < 0)
-		g_error("Setting '%s' must not be negative", name);
+		throw FormatRuntimeError("Setting '%s' must not be negative", name);
 
 	*value_r = (unsigned)value;
 	return true;
@@ -235,7 +237,7 @@ load_scrobbler_config(const Config &config, GKeyFile *file, const char *group)
 			scrobbler->url = get_std_string(file, group, "url",
 							&error);
 			if (error != nullptr)
-				g_error("%s\n", error->message);
+				throw std::runtime_error(error->message);
 		}
 	}
 
@@ -244,11 +246,11 @@ load_scrobbler_config(const Config &config, GKeyFile *file, const char *group)
 
 		scrobbler->username = get_std_string(file, group, "username", &error);
 		if (error != nullptr)
-			g_error("%s\n", error->message);
+			throw std::runtime_error(error->message);
 
 		scrobbler->password = get_std_string(file, group, "password", &error);
 		if (error != nullptr)
-			g_error("%s\n", error->message);
+			throw std::runtime_error(error->message);
 	}
 
 	scrobbler->journal = get_std_string(file, group, "journal", nullptr);
@@ -274,7 +276,7 @@ load_config_file(Config &config, const char *path)
 
 	ret = g_file_get_contents(path, &data1, nullptr, &error);
 	if (!ret)
-		g_error("%s\n", error->message);
+		throw std::runtime_error(error->message);
 
 	/* GKeyFile does not allow values without a section.  Apply a
 	   hack here: prepend the string "[mpdscribble]" to have all
@@ -288,7 +290,7 @@ load_config_file(Config &config, const char *path)
 				  G_KEY_FILE_NONE, &error);
 	g_free(data2);
 	if (error != nullptr)
-		g_error("%s\n", error->message);
+		throw std::runtime_error(error->message);
 
 	load_string(file, "pidfile", config.pidfile);
 	load_string(file, "daemon_user", config.daemon_user);
@@ -328,11 +330,11 @@ file_read_config(Config &config)
 		load_config_file(config, config.conf.c_str());
 
 	if (config.conf.empty())
-		g_error("cannot find configuration file\n");
+		throw std::runtime_error("cannot find configuration file");
 
 	if (config.scrobblers.empty())
-		g_error("No audioscrobbler host configured in %s",
-			config.conf.c_str());
+		throw FormatRuntimeError("No audioscrobbler host configured in %s",
+					 config.conf.c_str());
 
 	if (config.log.empty())
 		config.log = get_default_log_path();

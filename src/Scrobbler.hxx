@@ -95,7 +95,7 @@ class Scrobbler {
 public:
 	Scrobbler(const ScrobblerConfig &_config,
 		  boost::asio::io_service &io_service,
-		  CurlGlobal &_curl_global) noexcept;
+		  CurlGlobal &_curl_global);
 	~Scrobbler() noexcept;
 
 	void Push(const Record &song) noexcept;

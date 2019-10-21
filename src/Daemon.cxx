@@ -19,6 +19,8 @@
 */
 
 #include "Daemon.hxx"
+#include "system/Error.hxx"
+#include "util/RuntimeError.hxx"
 
 #include <glib.h>
 
@@ -85,7 +87,7 @@ daemonize_close_stdout_stderr() noexcept
 }
 
 void
-daemonize_set_user() noexcept
+daemonize_set_user()
 {
 #ifndef _WIN32
 	if (user_name == nullptr)
@@ -93,8 +95,8 @@ daemonize_set_user() noexcept
 
 	/* get uid */
 	if (setgid(user_gid) == -1)
-		g_error("cannot setgid for user \"%s\": %s",
-			user_name, g_strerror(errno));
+		throw FormatErrno("cannot setgid for user \"%s\"",
+				  user_name);
 
 #ifdef _BSD_SOURCE
 	/* init suplementary groups
@@ -108,13 +110,13 @@ daemonize_set_user() noexcept
 
 	/* set uid */
 	if (setuid(user_uid) == -1)
-		g_error("cannot change to uid of user \"%s\": %s",
-			user_name, g_strerror(errno));
+		throw FormatErrno("cannot change to uid of user \"%s\"",
+				  user_name);
 #endif
 }
 
 void
-daemonize_detach() noexcept
+daemonize_detach()
 {
 #ifndef _WIN32
 	int ret;
@@ -123,7 +125,7 @@ daemonize_detach() noexcept
 
 	ret = fork();
 	if (ret < 0)
-		g_error("fork() failed: %s", g_strerror(errno));
+		throw MakeErrno("fork() failed");
 
 	if (ret > 0)
 		/* exit the parent process */
@@ -133,7 +135,7 @@ daemonize_detach() noexcept
 
 	ret = chdir("/");
 	if (ret < 0)
-		g_error("chdir() failed: %s\n", g_strerror(errno));
+		throw MakeErrno("chdir() failed");
 
 	/* detach from the current session */
 
@@ -142,7 +144,7 @@ daemonize_detach() noexcept
 }
 
 void
-daemonize_write_pidfile() noexcept
+daemonize_write_pidfile()
 {
 #ifndef _WIN32
 	FILE *file;
@@ -154,8 +156,7 @@ daemonize_write_pidfile() noexcept
 
 	file = fopen(pidfile, "w");
 	if (file == nullptr)
-		g_error("Failed to create pidfile %s: %s",
-			pidfile, g_strerror(errno));
+		throw FormatErrno("Failed to create pidfile %s", pidfile);
 
 	fprintf(file, "%d\n", getpid());
 	fclose(file);
@@ -163,7 +164,7 @@ daemonize_write_pidfile() noexcept
 }
 
 void
-daemonize_init(const char *user, const char *_pidfile) noexcept
+daemonize_init(const char *user, const char *_pidfile)
 {
 #ifndef _WIN32
 	if (user != nullptr && strcmp(user, g_get_user_name()) != 0) {
@@ -173,7 +174,8 @@ daemonize_init(const char *user, const char *_pidfile) noexcept
 
 		pwd = getpwnam(user_name);
 		if (pwd == nullptr)
-			g_error("no such user \"%s\"", user_name);
+			throw FormatRuntimeError("no such user \"%s\"",
+						 user_name);
 
 		user_uid = pwd->pw_uid;
 		user_gid = pwd->pw_gid;

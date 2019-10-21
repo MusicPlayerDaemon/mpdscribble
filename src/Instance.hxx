@@ -53,7 +53,7 @@ struct Instance final : MpdObserverListener {
 	const std::chrono::seconds save_journal_interval;
 	boost::asio::steady_timer save_journal_timer;
 
-	Instance(const Config &config) noexcept;
+	Instance(const Config &config);
 	~Instance() noexcept;
 
 	void Run() noexcept {

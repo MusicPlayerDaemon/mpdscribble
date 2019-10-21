@@ -36,7 +36,7 @@ class MultiScrobbler {
 public:
 	explicit MultiScrobbler(const std::forward_list<ScrobblerConfig> &configs,
 				boost::asio::io_service &io_service,
-				CurlGlobal &curl_global) noexcept;
+				CurlGlobal &curl_global);
 	~MultiScrobbler() noexcept;
 
 	void WriteJournal() noexcept;

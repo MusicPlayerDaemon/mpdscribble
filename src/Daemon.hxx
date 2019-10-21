@@ -21,8 +21,11 @@
 #ifndef DAEMON_HXX
 #define DAEMON_HXX
 
+/**
+ * Throws on error.
+ */
 void
-daemonize_init(const char *user, const char *pidfile) noexcept;
+daemonize_init(const char *user, const char *pidfile);
 
 void
 daemonize_finish() noexcept;
@@ -39,20 +42,27 @@ daemonize_close_stdin() noexcept;
 void
 daemonize_close_stdout_stderr() noexcept;
 
+/**
+ * Throws on error.
+ */
 void
-daemonize_set_user() noexcept;
+daemonize_set_user();
 
 /**
  * Daemonize the process: detach it from the parent process and the
  * session.
+ *
+ * Throws on error.
  */
 void
-daemonize_detach() noexcept;
+daemonize_detach();
 
 /**
  * Writes the id of the current process to the configured pidfile.
+ *
+ * Throws on error.
  */
 void
-daemonize_write_pidfile() noexcept;
+daemonize_write_pidfile();
 
 #endif

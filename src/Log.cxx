@@ -19,6 +19,7 @@
 */
 
 #include "Log.hxx"
+#include "system/Error.hxx"
 #include "util/StringStrip.hxx"
 #include "config.h"
 
@@ -84,7 +85,7 @@ file_log_func(const gchar *log_domain, GLogLevelFlags log_level,
 }
 
 static void
-log_init_file(const char *path) noexcept
+log_init_file(const char *path)
 {
 	assert(path != nullptr);
 	assert(log_file == nullptr);
@@ -94,8 +95,7 @@ log_init_file(const char *path) noexcept
 	} else {
 		log_file = fopen(path, "ab");
 		if (log_file == nullptr)
-			g_error("cannot open %s: %s\n",
-				path, g_strerror(errno));
+			throw FormatErrno("cannot open %s", path);
 	}
 
 	setvbuf(log_file, nullptr, _IONBF, 0);
@@ -154,7 +154,7 @@ log_init_syslog() noexcept
 #endif
 
 void
-log_init(const char *path, int verbose) noexcept
+log_init(const char *path, int verbose)
 {
 	assert(path != nullptr);
 	assert(verbose >= 0);

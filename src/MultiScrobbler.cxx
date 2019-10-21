@@ -30,7 +30,7 @@
 
 MultiScrobbler::MultiScrobbler(const std::forward_list<ScrobblerConfig> &configs,
 			       boost::asio::io_service &io_service,
-			       CurlGlobal &curl_global) noexcept
+			       CurlGlobal &curl_global)
 {
 	g_message("starting mpdscribble (" AS_CLIENT_ID " " AS_CLIENT_VERSION ")\n");
 
