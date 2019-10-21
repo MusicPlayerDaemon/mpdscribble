@@ -1,4 +1,7 @@
 option('systemd', type: 'feature', description: 'systemd support')
+option('systemd_system_unit_dir', type: 'string', description: 'systemd system service directory')
+option('systemd_user_unit_dir', type: 'string', description: 'systemd user service directory')
+
 option('syslog', type: 'feature', description: 'syslog support')
 
 option('test', type: 'boolean', value: false, description: 'Build the unit tests and debug programs')

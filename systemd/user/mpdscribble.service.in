@@ -1,0 +1,33 @@
+[Unit]
+Description=AudioScrobbler for MPD
+Documentation=man:mpdscribble(1)
+After=mpd.service
+
+[Service]
+Type=notify
+ExecStart=@prefix@/bin/mpdscribble --no-daemon
+
+# resource limits
+MemoryMax=64M
+MemorySwapMax=64M
+TasksMax=4
+DevicePolicy=closed
+
+# disallow writing to /usr, /bin, /sbin, ...
+ProtectSystem=yes
+
+# more paranoid security settings
+NoNewPrivileges=yes
+ProtectKernelTunables=yes
+ProtectControlGroups=yes
+# AF_NETLINK is required by libsmbclient, or it will exit() .. *sigh*
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX AF_NETLINK
+RestrictNamespaces=yes
+
+# Note that "ProtectKernelModules=yes" is missing in the user unit
+# because systemd 232 is unable to reduce its own capabilities
+# ("Failed at step CAPABILITIES spawning /usr/bin/mpd: Operation not
+# permitted")
+
+[Install]
+WantedBy=multi-user.target

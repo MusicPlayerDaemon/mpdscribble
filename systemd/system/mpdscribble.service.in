@@ -1,0 +1,29 @@
+[Unit]
+Description=AudioScrobbler for MPD
+Documentation=man:mpdscribble(1)
+After=mpd.service
+
+[Service]
+Type=notify
+ExecStart=@prefix@/bin/mpdscribble --no-daemon
+User=mpdscribble
+
+# resource limits
+MemoryMax=64M
+MemorySwapMax=64M
+TasksMax=4
+DevicePolicy=closed
+
+# disallow writing to /usr, /bin, /sbin, ...
+ProtectSystem=yes
+
+# more paranoid security settings
+NoNewPrivileges=yes
+ProtectKernelTunables=yes
+ProtectControlGroups=yes
+ProtectKernelModules=yes
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+RestrictNamespaces=yes
+
+[Install]
+WantedBy=multi-user.target

@@ -134,6 +134,10 @@ install_data(
   install_dir: join_paths(get_option('datadir'), 'doc', meson.project_name()),
 )
 
+if libsystemd_dep.found()
+  subdir('systemd')
+endif
+
 subdir('doc')
 
 if get_option('test')
