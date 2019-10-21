@@ -31,16 +31,16 @@ enum file_location { file_etc, file_home, file_unknown, };
 
 struct Config {
 	/** don't daemonize the mpdscribble process */
-	gboolean no_daemon;
+	gboolean no_daemon = false;
 
-	char *pidfile;
+	char *pidfile = nullptr;
 
-	char *daemon_user;
+	char *daemon_user = nullptr;
 
-	char *log;
-	char *conf;
-	char *host;
-	char *proxy;
+	char *log = nullptr;
+	char *conf = nullptr;
+	char *host = nullptr;
+	char *proxy = nullptr;
 	unsigned port = 0;
 
 	/**

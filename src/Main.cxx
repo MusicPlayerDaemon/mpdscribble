@@ -165,7 +165,7 @@ main(int argc, char **argv) noexcept
 try {
 	daemonize_close_stdin();
 
-	Config config{};
+	Config config;
 	parse_cmdline(config, argc, argv);
 
 	if (!file_read_config(config))
