@@ -24,23 +24,29 @@
 #include "ScrobblerConfig.hxx"
 
 #include <forward_list>
-
-#include <glib.h>
+#include <string>
 
 enum file_location { file_etc, file_home, file_unknown, };
+
+static inline const char *
+NullableString(const std::string &s) noexcept
+{
+	return s.empty() ? nullptr : s.c_str();
+}
 
 struct Config {
 	/** don't daemonize the mpdscribble process */
 	bool no_daemon = false;
 
-	char *pidfile = nullptr;
+	std::string pidfile;
 
-	char *daemon_user = nullptr;
+	std::string daemon_user;
 
-	char *log = nullptr;
-	char *conf = nullptr;
-	char *host = nullptr;
-	char *proxy = nullptr;
+	std::string log;
+	std::string conf;
+	std::string host;
+	std::string proxy;
+
 	unsigned port = 0;
 
 	/**
@@ -53,12 +59,6 @@ struct Config {
 	enum file_location loc = file_unknown;
 
 	std::forward_list<ScrobblerConfig> scrobblers;
-
-	~Config() noexcept {
-		g_free(host);
-		g_free(log);
-		g_free(conf);
-	}
 };
 
 #endif

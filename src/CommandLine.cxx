@@ -135,23 +135,23 @@ parse_cmdline(Config &config, int argc, char **argv)
 			break;
 
 		case OPTION_CONF:
-			config.conf = g_strdup(o.value);
+			config.conf = o.value;
 			break;
 
 		case OPTION_PIDFILE:
-			config.pidfile = g_strdup(o.value);
+			config.pidfile = o.value;
 			break;
 
 		case OPTION_DAEMON_USER:
-			config.daemon_user = g_strdup(o.value);
+			config.daemon_user = o.value;
 			break;
 
 		case OPTION_LOG:
-			config.log = g_strdup(o.value);
+			config.log = o.value;
 			break;
 
 		case OPTION_HOST:
-			config.host = g_strdup(o.value);
+			config.host = o.value;
 			break;
 
 		case OPTION_PORT:
@@ -159,7 +159,7 @@ parse_cmdline(Config &config, int argc, char **argv)
 			break;
 
 		case OPTION_PROXY:
-			config.proxy = g_strdup(o.value);
+			config.proxy = o.value;
 			break;
 
 		case OPTION_HELP:

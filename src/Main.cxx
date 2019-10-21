@@ -171,9 +171,10 @@ try {
 	if (!file_read_config(config))
 		g_error("cannot read configuration file\n");
 
-	log_init(config.log, config.verbose);
+	log_init(NullableString(config.log), config.verbose);
 
-	daemonize_init(config.daemon_user, config.pidfile);
+	daemonize_init(NullableString(config.daemon_user),
+		       NullableString(config.pidfile));
 
 	if (!config.no_daemon)
 		daemonize_detach();

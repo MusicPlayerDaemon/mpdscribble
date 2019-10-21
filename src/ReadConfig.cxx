@@ -55,41 +55,39 @@ static int file_exists(const char *filename)
 	return g_file_test(filename, G_FILE_TEST_IS_REGULAR);
 }
 
-static char *
+static std::string
 file_expand_tilde(const char *path)
 {
 	const char *home;
 
 	if (path[0] != '~')
-		return g_strdup(path);
+		return path;
 
 	home = getenv("HOME");
 	if (!home)
 		home = "./";
 
-	return g_strconcat(home, path + 1, nullptr);
+	return std::string(home) + (path + 1);
 }
 
-static char *
+static std::string
 get_default_config_path(Config &config)
 {
 #ifndef _WIN32
-	char *file = file_expand_tilde(FILE_HOME_CONF);
-	if (file_exists(file)) {
+	auto file = file_expand_tilde(FILE_HOME_CONF);
+	if (file_exists(file.c_str())) {
 		config.loc = file_home;
 		return file;
 	} else {
-		g_free(file);
-
 		if (!file_exists(FILE_CONF))
-			return nullptr;
+			return {};
 
 		config.loc = file_etc;
-		return g_strdup(FILE_CONF);
+		return FILE_CONF;
 	}
 #else
 	(void)config;
-	return g_strdup("mpdscribble.conf");
+	return "mpdscribble.conf";
 #endif
 }
 
@@ -105,7 +103,7 @@ get_default_log_path()
 #endif
 }
 
-static char *
+static std::string
 get_default_cache_path(const Config &config)
 {
 #ifndef _WIN32
@@ -114,17 +112,17 @@ get_default_cache_path(const Config &config)
 		return file_expand_tilde(FILE_HOME_CACHE);
 
 	case file_etc:
-		return g_strdup(FILE_CACHE);
+		return FILE_CACHE;
 
 	case file_unknown:
-		return nullptr;
+		return {};
 	}
 
 	assert(false);
-	return nullptr;
+	return {};
 #else
 	(void)config;
-	return g_strdup("mpdscribble.cache");
+	return "mpdscribble.cache";
 #endif
 }
 
@@ -151,16 +149,15 @@ get_std_string(GKeyFile *file, const char *group_name, const char *key,
 }
 
 static bool
-load_string(GKeyFile *file, const char *name, char **value_r)
+load_string(GKeyFile *file, const char *name, std::string &value)
 {
 	GError *error = nullptr;
-	char *value;
 
-	if (*value_r != nullptr)
+	if (!value.empty())
 		/* already set by command line */
 		return false;
 
-	value = get_string(file, PACKAGE, name, &error);
+	value = get_std_string(file, PACKAGE, name, &error);
 	if (error != nullptr) {
 		if (error->code != G_KEY_FILE_ERROR_KEY_NOT_FOUND)
 			g_error("%s\n", error->message);
@@ -168,8 +165,6 @@ load_string(GKeyFile *file, const char *name, char **value_r)
 		return false;
 	}
 
-	g_free(*value_r);
-	*value_r = value;
 	return true;
 }
 
@@ -295,12 +290,12 @@ load_config_file(Config &config, const char *path)
 	if (error != nullptr)
 		g_error("%s\n", error->message);
 
-	load_string(file, "pidfile", &config.pidfile);
-	load_string(file, "daemon_user", &config.daemon_user);
-	load_string(file, "log", &config.log);
-	load_string(file, "host", &config.host);
+	load_string(file, "pidfile", config.pidfile);
+	load_string(file, "daemon_user", config.daemon_user);
+	load_string(file, "log", config.log);
+	load_string(file, "host", config.host);
 	load_unsigned(file, "port", &config.port);
-	load_string(file, "proxy", &config.proxy);
+	load_string(file, "proxy", config.proxy);
 	if (!load_unsigned(file, "journal_interval",
 			   &config.journal_interval))
 		load_unsigned(file, "cache_interval",
@@ -324,26 +319,30 @@ load_config_file(Config &config, const char *path)
 int
 file_read_config(Config &config)
 {
-	if (config.conf == nullptr)
+	if (config.conf.empty())
 		config.conf = get_default_config_path(config);
 
 	/* parse config file options. */
 
-	if (config.conf != nullptr)
-		load_config_file(config, config.conf);
+	if (!config.conf.empty())
+		load_config_file(config, config.conf.c_str());
 
-	if (!config.conf)
+	if (config.conf.empty())
 		g_error("cannot find configuration file\n");
 
 	if (config.scrobblers.empty())
 		g_error("No audioscrobbler host configured in %s",
-			config.conf);
+			config.conf.c_str());
 
-	if (!config.log)
+	if (config.log.empty())
 		config.log = get_default_log_path();
 
-	if (!config.proxy)
-		config.proxy = getenv("http_proxy");
+	if (config.proxy.empty()) {
+		const char *proxy = getenv("http_proxy");
+		if (proxy != nullptr)
+			config.proxy = proxy;
+	}
+
 	if (config.verbose == -1)
 		config.verbose = 1;
 

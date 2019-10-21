@@ -28,8 +28,9 @@ Instance::Instance(const Config &config) noexcept
 	 quit_signal(io_service, SIGTERM, SIGINT),
 	 submit_signal(io_service, SIGUSR1),
 #endif
-	 curl_global(io_service, config.proxy),
-	 mpd_observer(io_service, *this, config.host, config.port),
+	 curl_global(io_service, NullableString(config.proxy)),
+	 mpd_observer(io_service, *this,
+		      NullableString(config.host), config.port),
 	 scrobblers(config.scrobblers, io_service, curl_global),
 	 save_journal_interval(config.journal_interval),
 	 save_journal_timer(io_service)
