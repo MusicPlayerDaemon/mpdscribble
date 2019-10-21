@@ -40,7 +40,7 @@
   FILE_USR_* will be used instead if FILE_USR_CONF exists.
 */
 
-#ifndef G_OS_WIN32
+#ifndef _WIN32
 
 #define FILE_CACHE "/var/cache/mpdscribble/mpdscribble.cache"
 #define FILE_HOME_CONF "~/.mpdscribble/mpdscribble.conf"
@@ -73,7 +73,7 @@ file_expand_tilde(const char *path)
 static char *
 get_default_config_path(Config &config)
 {
-#ifndef G_OS_WIN32
+#ifndef _WIN32
 	char *file = file_expand_tilde(FILE_HOME_CONF);
 	if (file_exists(file)) {
 		config.loc = file_home;
@@ -96,7 +96,7 @@ get_default_config_path(Config &config)
 static char *
 get_default_log_path()
 {
-#ifndef G_OS_WIN32
+#ifndef _WIN32
 	return sd_booted()
 		? g_strdup("-") /* log to journal if systemd is used */
 		: g_strdup("syslog");
@@ -108,7 +108,7 @@ get_default_log_path()
 static char *
 get_default_cache_path(const Config &config)
 {
-#ifndef G_OS_WIN32
+#ifndef _WIN32
 	switch (config.loc) {
 	case file_home:
 		return file_expand_tilde(FILE_HOME_CACHE);

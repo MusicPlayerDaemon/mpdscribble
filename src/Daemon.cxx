@@ -22,7 +22,7 @@
 
 #include <glib.h>
 
-#ifndef G_OS_WIN32
+#ifndef _WIN32
 #include <fcntl.h>
 #include <unistd.h>
 #include <stdio.h>
@@ -33,7 +33,7 @@
 #include <pwd.h>
 #endif
 
-#ifndef G_OS_WIN32
+#ifndef _WIN32
 
 /** the Unix user name which MPD runs as */
 static char *user_name;
@@ -52,7 +52,7 @@ static char *pidfile;
 void
 daemonize_close_stdin() noexcept
 {
-#ifndef G_OS_WIN32
+#ifndef _WIN32
 	int fd = open("/dev/null", O_RDONLY);
 
 	if (fd < 0)
@@ -67,7 +67,7 @@ daemonize_close_stdin() noexcept
 void
 daemonize_close_stdout_stderr() noexcept
 {
-#ifndef G_OS_WIN32
+#ifndef _WIN32
 	int fd = open("/dev/null", O_WRONLY);
 
 	if (fd >= 0) {
@@ -87,7 +87,7 @@ daemonize_close_stdout_stderr() noexcept
 void
 daemonize_set_user() noexcept
 {
-#ifndef G_OS_WIN32
+#ifndef _WIN32
 	if (user_name == nullptr)
 		return;
 
@@ -116,7 +116,7 @@ daemonize_set_user() noexcept
 void
 daemonize_detach() noexcept
 {
-#ifndef G_OS_WIN32
+#ifndef _WIN32
 	int ret;
 
 	/* detach from parent process */
@@ -144,7 +144,7 @@ daemonize_detach() noexcept
 void
 daemonize_write_pidfile() noexcept
 {
-#ifndef G_OS_WIN32
+#ifndef _WIN32
 	FILE *file;
 
 	if (pidfile == nullptr)
@@ -165,7 +165,7 @@ daemonize_write_pidfile() noexcept
 void
 daemonize_init(const char *user, const char *_pidfile) noexcept
 {
-#ifndef G_OS_WIN32
+#ifndef _WIN32
 	if (user != nullptr && strcmp(user, g_get_user_name()) != 0) {
 		struct passwd *pwd;
 
@@ -189,7 +189,7 @@ daemonize_init(const char *user, const char *_pidfile) noexcept
 void
 daemonize_finish() noexcept
 {
-#ifndef G_OS_WIN32
+#ifndef _WIN32
 	if (pidfile != nullptr)
 		unlink(pidfile);
 
