@@ -60,6 +60,8 @@ struct Instance final : MpdObserverListener {
 		io_service.run();
 	}
 
+	void Stop() noexcept;
+
 	void OnMpdSongChanged(const struct mpd_song *song) noexcept;
 
 	/* virtual methods from MpdObserverListener */

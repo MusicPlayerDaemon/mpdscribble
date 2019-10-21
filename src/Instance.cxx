@@ -34,9 +34,7 @@ Instance::Instance(const struct config &config) noexcept
 	 save_journal_timer(io_service)
 {
 #ifndef _WIN32
-	quit_signal.async_wait([this](const auto &, int){
-		this->io_service.stop();
-	});
+	quit_signal.async_wait(std::bind(&Instance::Stop, this));
 
 	AsyncWaitSubmitSignal();
 #endif
@@ -45,6 +43,12 @@ Instance::Instance(const struct config &config) noexcept
 }
 
 Instance::~Instance() noexcept = default;
+
+inline void
+Instance::Stop() noexcept
+{
+	this->io_service.stop();
+}
 
 #ifndef _WIN32
 
