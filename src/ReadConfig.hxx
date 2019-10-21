@@ -23,7 +23,7 @@
 
 struct Config;
 
-int
+void
 file_read_config(Config &config);
 
 #endif

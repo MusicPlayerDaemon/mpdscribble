@@ -167,9 +167,7 @@ try {
 
 	Config config;
 	parse_cmdline(config, argc, argv);
-
-	if (!file_read_config(config))
-		g_error("cannot read configuration file\n");
+	file_read_config(config);
 
 	log_init(NullableString(config.log), config.verbose);
 

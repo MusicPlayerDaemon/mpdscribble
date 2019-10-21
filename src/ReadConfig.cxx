@@ -316,7 +316,7 @@ load_config_file(Config &config, const char *path)
 	g_key_file_free(file);
 }
 
-int
+void
 file_read_config(Config &config)
 {
 	if (config.conf.empty())
@@ -345,6 +345,4 @@ file_read_config(Config &config)
 
 	if (config.verbose == -1)
 		config.verbose = 1;
-
-	return 1;
 }
