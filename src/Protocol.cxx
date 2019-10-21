@@ -20,17 +20,12 @@
 
 #include "Protocol.hxx"
 
-#include <glib.h>
+#include <time.h>
 
 std::string
 as_timestamp() noexcept
 {
-	/* create timestamp for 1.2 protocol. */
-	GTimeVal time_val;
-
-	g_get_current_time(&time_val);
-
 	char buffer[64];
-	snprintf(buffer, sizeof(buffer), "%ld", time_val.tv_sec);
+	snprintf(buffer, sizeof(buffer), "%ld", (long)time(nullptr));
 	return buffer;
 }
