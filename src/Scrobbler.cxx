@@ -59,12 +59,10 @@ Scrobbler::Scrobbler(const ScrobblerConfig &_config,
 	 submit_timer(io_service)
 {
 	if (!config.journal.empty()) {
-		guint queue_length;
-
 		queue = journal_read(config.journal.c_str());
 
-		queue_length = queue.size();
-		g_message("loaded %i song%s from %s",
+		const unsigned queue_length = queue.size();
+		g_message("loaded %u song%s from %s",
 			  queue_length, queue_length == 1 ? "" : "s",
 			  config.journal.c_str());
 	}
