@@ -48,7 +48,7 @@ settings_name(const struct mpd_settings *settings)
 	if (host == nullptr)
 		host = "unknown";
 
-	if (host[0] == '/')
+	if (host[0] == '/' || host[0] == '@')
 		return g_strdup(host);
 
 	unsigned port = mpd_settings_get_port(settings);
