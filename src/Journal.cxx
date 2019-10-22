@@ -102,49 +102,6 @@ journal_commit_record(std::list<Record> &queue, Record &&record)
 	}
 }
 
-/**
- * Imports an old (protocol v1.2) timestamp, format "%Y-%m-%d
- * %H:%M:%S".
- */
-static std::string
-import_old_timestamp(const char *p)
-{
-	char *q;
-	bool success;
-	GTimeVal time_val;
-
-	if (strlen(p) <= 10 || p[10] != ' ')
-		return {};
-
-	/* replace a space with 'T', as expected by
-	   g_time_val_from_iso8601() */
-	q = g_strdup(p);
-	q[10] = 'T';
-
-	success = g_time_val_from_iso8601(q, &time_val);
-	g_free(q);
-	if (!success)
-		return {};
-
-	char buffer[64];
-	snprintf(buffer, sizeof(buffer), "%ld", time_val.tv_sec);
-	return buffer;
-}
-
-/**
- * Parses the time stamp.  If needed, converts the time stamp, and
- * returns an allocated string.
- */
-static std::string
-parse_timestamp(const char *p)
-{
-	auto ret = import_old_timestamp(p);
-	if (!ret.empty())
-		return ret;
-
-	return p;
-}
-
 std::list<Record>
 journal_read(const char *path)
 {
@@ -195,7 +152,7 @@ journal_read(const char *path)
 		else if (!strcmp("m", key))
 			record.mbid = value;
 		else if (!strcmp("i", key))
-			record.time = parse_timestamp(value);
+			record.time = value;
 		else if (!strcmp("l", key))
 			record.length = std::chrono::seconds(atoi(value));
 		else if (strcmp("o", key) == 0 && value[0] == 'R')
