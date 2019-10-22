@@ -20,6 +20,7 @@
 
 #include "Journal.hxx"
 #include "Record.hxx"
+#include "util/StringStrip.hxx"
 
 #include <glib.h>
 
@@ -126,7 +127,7 @@ journal_read(const char *path)
 	while (fgets(line, sizeof(line), file) != nullptr) {
 		char *key, *value;
 
-		key = g_strchug(line);
+		key = StripLeft(line);
 		if (*key == 0 || *key == '#')
 			continue;
 
@@ -136,8 +137,8 @@ journal_read(const char *path)
 
 		*value++ = 0;
 
-		key = g_strchomp(key);
-		value = g_strstrip(value);
+		StripRight(key);
+		value = Strip(value);
 
 		if (!strcmp("a", key)) {
 			journal_commit_record(queue, std::move(record));

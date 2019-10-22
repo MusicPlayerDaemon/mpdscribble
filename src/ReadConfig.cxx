@@ -21,6 +21,7 @@
 #include "ReadConfig.hxx"
 #include "util/RuntimeError.hxx"
 #include "util/ScopeExit.hxx"
+#include "util/StringStrip.hxx"
 #include "Config.hxx"
 #include "SdDaemon.hxx"
 #include "config.h"
@@ -134,7 +135,7 @@ get_string(GKeyFile *file, const char *group_name, const char *key,
 {
 	char *value = g_key_file_get_string(file, group_name, key, error_r);
 	if (value != nullptr)
-		g_strchomp(value);
+		StripRight(value);
 	return value;
 }
 
