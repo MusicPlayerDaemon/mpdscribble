@@ -42,7 +42,7 @@ MpdObserver::HandleError() noexcept
 }
 
 static std::string
-settings_name(const struct mpd_settings *settings)
+settings_name(const struct mpd_settings *settings) noexcept
 {
 	const char *host = mpd_settings_get_host(settings);
 	if (host == nullptr)
@@ -61,7 +61,7 @@ settings_name(const struct mpd_settings *settings)
 }
 
 static std::string
-connection_settings_name(const struct mpd_connection *connection)
+connection_settings_name(const struct mpd_connection *connection) noexcept
 {
 	const struct mpd_settings *settings =
 		mpd_connection_get_settings(connection);
