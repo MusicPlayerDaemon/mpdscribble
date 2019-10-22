@@ -116,8 +116,6 @@ import_old_timestamp(const char *p)
 	if (strlen(p) <= 10 || p[10] != ' ')
 		return {};
 
-	g_debug("importing time stamp '%s'", p);
-
 	/* replace a space with 'T', as expected by
 	   g_time_val_from_iso8601() */
 	q = g_strdup(p);
@@ -125,12 +123,9 @@ import_old_timestamp(const char *p)
 
 	success = g_time_val_from_iso8601(q, &time_val);
 	g_free(q);
-	if (!success) {
-		g_debug("import of '%s' failed", p);
+	if (!success)
 		return {};
-	}
 
-	g_debug("'%s' -> %ld", p, time_val.tv_sec);
 	char buffer[64];
 	snprintf(buffer, sizeof(buffer), "%ld", time_val.tv_sec);
 	return buffer;
