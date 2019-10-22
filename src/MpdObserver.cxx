@@ -25,6 +25,7 @@
 
 #include <assert.h>
 #include <string.h>
+#include <stdio.h>
 
 void
 MpdObserver::HandleError() noexcept
@@ -40,7 +41,7 @@ MpdObserver::HandleError() noexcept
 	connection = nullptr;
 }
 
-static char *
+static std::string
 settings_name(const struct mpd_settings *settings)
 {
 	const char *host = mpd_settings_get_host(settings);
@@ -54,16 +55,18 @@ settings_name(const struct mpd_settings *settings)
 	if (port == 0 || port == 6600)
 		return g_strdup(host);
 
-	return g_strdup_printf("%s:%u", host, port);
+	char buffer[256];
+	snprintf(buffer, sizeof(buffer), "%s:%u", host, port);
+	return buffer;
 }
 
-static char *
+static std::string
 connection_settings_name(const struct mpd_connection *connection)
 {
 	const struct mpd_settings *settings =
 		mpd_connection_get_settings(connection);
 	if (settings == nullptr)
-		return g_strdup("unknown");
+		return "unknown";
 
 	return settings_name(settings);
 }
@@ -90,11 +93,10 @@ MpdObserver::Connect() noexcept
 		return false;
 	}
 
-	char *name = connection_settings_name(connection);
+	const auto name = connection_settings_name(connection);
 	FormatInfo("connected to mpd %i.%i.%i at %s",
 		   version[0], version[1], version[2],
-		   name);
-	g_free(name);
+		   name.c_str());
 
 	socket.assign(mpd_connection_get_fd(connection));
 
