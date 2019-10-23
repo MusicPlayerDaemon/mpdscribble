@@ -103,6 +103,7 @@ executable(
   'src/Form.cxx',
   'src/CommandLine.cxx',
   'src/ReadConfig.cxx',
+  'src/IniFile.cxx',
   'src/Journal.cxx',
   'src/MpdObserver.cxx',
   'src/Log.cxx',
@@ -115,6 +116,7 @@ executable(
   'src/util/OptionParser.cxx',
   'src/util/PrintException.cxx',
   'src/util/StringStrip.cxx',
+  'src/util/StringView.cxx',
 
   include_directories: inc,
   dependencies: [

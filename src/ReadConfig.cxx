@@ -24,14 +24,13 @@
 #include "util/ScopeExit.hxx"
 #include "util/StringStrip.hxx"
 #include "Config.hxx"
+#include "IniFile.hxx"
 #include "SdDaemon.hxx"
 #include "config.h"
 
 #ifdef HAVE_LIBSYSTEMD
 #include <systemd/sd-daemon.h>
 #endif
-
-#include <glib.h>
 
 #include <assert.h>
 #include <stdlib.h>
@@ -134,72 +133,65 @@ get_default_cache_path(const Config &config)
 #endif
 }
 
-static char *
-get_string(GKeyFile *file, const char *group_name, const char *key,
-	   GError **error_r)
+static const char *
+GetString(const IniSection &section, const std::string &key) noexcept
 {
-	char *value = g_key_file_get_string(file, group_name, key, error_r);
-	if (value != nullptr)
-		StripRight(value);
-	return value;
+	auto i = section.find(key);
+	if (i == section.end())
+		return nullptr;
+	return i->second.c_str();
 }
 
 static std::string
-get_std_string(GKeyFile *file, const char *group_name, const char *key,
-	       GError **error_r)
+GetStdString(const IniSection &section, const std::string &key) noexcept
 {
-	char *value = get_string(file, group_name, key, error_r);
-	if (value == nullptr)
+	auto i = section.find(key);
+	if (i == section.end())
 		return {};
-	std::string result(value);
-	g_free(value);
-	return result;
+	return i->second;
 }
 
 static bool
-load_string(GKeyFile *file, const char *name, std::string &value)
+load_string(const IniFile &file, const char *name, std::string &value) noexcept
 {
-	GError *error = nullptr;
-
 	if (!value.empty())
 		/* already set by command line */
 		return false;
 
-	value = get_std_string(file, PACKAGE, name, &error);
-	if (error != nullptr) {
-		AtScopeExit(error) { g_error_free(error); };
-		if (error->code != G_KEY_FILE_ERROR_KEY_NOT_FOUND)
-			throw std::runtime_error(error->message);
+	auto section = file.find(std::string());
+	if (section == file.end())
 		return false;
-	}
 
-	return true;
+	value = GetStdString(section->second, name);
+	return !value.empty();
 }
 
 static bool
-load_integer(GKeyFile * file, const char *name, int *value_r)
+load_integer(const IniFile &file, const char *name, int *value_r)
 {
-	GError *error = nullptr;
-	int value;
-
 	if (*value_r != -1)
 		/* already set by command line */
 		return false;
 
-	value = g_key_file_get_integer(file, PACKAGE, name, &error);
-	if (error != nullptr) {
-		AtScopeExit(error) { g_error_free(error); };
-		if (error->code != G_KEY_FILE_ERROR_KEY_NOT_FOUND)
-			throw std::runtime_error(error->message);
+	auto section = file.find(std::string());
+	if (section == file.end())
 		return false;
-	}
+
+	const char *s = GetString(section->second, name);
+	if (s == nullptr)
+		return false;
+
+	char *endptr;
+	auto value = strtol(s, &endptr, 10);
+	if (endptr == s || *endptr != 0)
+		throw FormatRuntimeError("Not a number: '%s'", s);
 
 	*value_r = value;
 	return true;
 }
 
 static bool
-load_unsigned(GKeyFile *file, const char *name, unsigned *value_r)
+load_unsigned(const IniFile &file, const char *name, unsigned *value_r)
 {
 	int value = -1;
 
@@ -214,14 +206,15 @@ load_unsigned(GKeyFile *file, const char *name, unsigned *value_r)
 }
 
 static ScrobblerConfig *
-load_scrobbler_config(const Config &config, GKeyFile *file, const char *group)
+load_scrobbler_config(const Config &config,
+		      const std::string &section_name,
+		      const IniSection &section)
 {
 	ScrobblerConfig *scrobbler = new ScrobblerConfig();
-	GError *error = nullptr;
 
 	/* Use default host for mpdscribble group, for backward compatability */
-	if(strcmp(group, "mpdscribble") == 0) {
-		char *username = get_string(file, group, "username", nullptr);
+	if (section_name.empty()) {
+		const char *username = GetString(section, "username");
 		if (username == nullptr) {
 			/* the default section does not contain a
 			   username: don't set up the last.fm default
@@ -230,39 +223,32 @@ load_scrobbler_config(const Config &config, GKeyFile *file, const char *group)
 			return nullptr;
 		}
 
-		g_free(username);
-
 		scrobbler->name = "last.fm";
 		scrobbler->url = AS_HOST;
 	} else {
-		scrobbler->name = group;
-		scrobbler->file = get_std_string(file, group,
-						 "file", nullptr);
-
+		scrobbler->name = section_name;
+		scrobbler->file = GetStdString(section, "file");
 		if (scrobbler->file.empty()) {
-			scrobbler->url = get_std_string(file, group, "url",
-							&error);
-			if (error != nullptr)
-				throw std::runtime_error(error->message);
+			scrobbler->url = GetStdString(section, "url");
+			if (scrobbler->url.empty())
+				throw std::runtime_error("Section has neither 'file' nor 'url'");
 		}
 	}
 
 	if (scrobbler->file.empty()) {
-		scrobbler->username = get_std_string(file, group, "username", &error);
+		scrobbler->username = GetStdString(section, "username");
+		if (scrobbler->username.empty())
+			throw std::runtime_error("No 'username'");
 
-		scrobbler->username = get_std_string(file, group, "username", &error);
-		if (error != nullptr)
-			throw std::runtime_error(error->message);
-
-		scrobbler->password = get_std_string(file, group, "password", &error);
-		if (error != nullptr)
-			throw std::runtime_error(error->message);
+		scrobbler->password = GetStdString(section, "password");
+		if (scrobbler->password.empty())
+			throw std::runtime_error("No 'password'");
 	}
 
-	scrobbler->journal = get_std_string(file, group, "journal", nullptr);
-	if (scrobbler->journal.empty() && strcmp(group, "mpdscribble") == 0) {
+	scrobbler->journal = GetStdString(section, "journal");
+	if (scrobbler->journal.empty() && section_name.empty()) {
 		/* mpdscribble <= 0.17 compatibility */
-		scrobbler->journal = get_std_string(file, group, "cache", nullptr);
+		scrobbler->journal = GetStdString(section, "cache");
 		if (scrobbler->journal.empty())
 			scrobbler->journal = get_default_cache_path(config);
 	}
@@ -273,30 +259,7 @@ load_scrobbler_config(const Config &config, GKeyFile *file, const char *group)
 static void
 load_config_file(Config &config, const char *path)
 {
-	bool ret;
-	char *data1, *data2;
-	char **groups;
-	int i = -1;
-	GKeyFile *file;
-	GError *error = nullptr;
-
-	ret = g_file_get_contents(path, &data1, nullptr, &error);
-	if (!ret)
-		throw std::runtime_error(error->message);
-
-	/* GKeyFile does not allow values without a section.  Apply a
-	   hack here: prepend the string "[mpdscribble]" to have all
-	   values in the "mpdscribble" section */
-
-	data2 = g_strconcat("[" PACKAGE "]\n", data1, nullptr);
-	g_free(data1);
-
-	file = g_key_file_new();
-	g_key_file_load_from_data(file, data2, strlen(data2),
-				  G_KEY_FILE_NONE, &error);
-	g_free(data2);
-	if (error != nullptr)
-		throw std::runtime_error(error->message);
+	const auto file = ReadIniFile(path);
 
 	load_string(file, "pidfile", config.pidfile);
 	load_string(file, "daemon_user", config.daemon_user);
@@ -310,18 +273,14 @@ load_config_file(Config &config, const char *path)
 			      &config.journal_interval);
 	load_integer(file, "verbose", &config.verbose);
 
-	groups = g_key_file_get_groups(file, nullptr);
-	while(groups[++i]) {
+	for (const auto &section : file) {
 		ScrobblerConfig *scrobbler =
-			load_scrobbler_config(config, file, groups[i]);
+			load_scrobbler_config(config, section.first, section.second);
 		if (scrobbler != nullptr) {
 			config.scrobblers.emplace_front(std::move(*scrobbler));
 			delete scrobbler;
 		}
 	}
-	g_strfreev(groups);
-
-	g_key_file_free(file);
 }
 
 void
