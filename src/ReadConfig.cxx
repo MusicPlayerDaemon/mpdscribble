@@ -94,15 +94,15 @@ get_default_config_path(Config &config)
 #endif
 }
 
-static char *
-get_default_log_path()
+static const char *
+get_default_log_path() noexcept
 {
 #ifndef _WIN32
 	return sd_booted()
-		? g_strdup("-") /* log to journal if systemd is used */
-		: g_strdup("syslog");
+		? "-" /* log to journal if systemd is used */
+		: "syslog";
 #else
-	return g_strdup("-");
+	return "-";
 #endif
 }
 
