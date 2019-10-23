@@ -23,8 +23,6 @@
 #include "util/RuntimeError.hxx"
 #include "Log.hxx"
 
-#include <glib.h>
-
 #ifndef _WIN32
 #include <fcntl.h>
 #include <unistd.h>
@@ -178,10 +176,11 @@ daemonize_init(const char *user, const char *_pidfile)
 		user_gid = pwd->pw_gid;
 
 		if (user_uid != getuid())
-			user_name = g_strdup(user);
+			user_name = strdup(user);
 	}
 
-	pidfile = g_strdup(_pidfile);
+	if (_pidfile != nullptr)
+		pidfile = strdup(_pidfile);
 #else
 	(void)user;
 	(void)_pidfile;
@@ -195,7 +194,7 @@ daemonize_finish() noexcept
 	if (pidfile != nullptr)
 		unlink(pidfile);
 
-	g_free(user_name);
-	g_free(pidfile);
+	free(user_name);
+	free(pidfile);
 #endif
 }
