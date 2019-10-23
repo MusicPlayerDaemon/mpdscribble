@@ -19,6 +19,7 @@
 */
 
 #include "ReadConfig.hxx"
+#include "util/Compiler.h"
 #include "util/RuntimeError.hxx"
 #include "util/ScopeExit.hxx"
 #include "util/StringStrip.hxx"
@@ -35,6 +36,7 @@
 #include <assert.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
 
 /*
   default locations for files.
@@ -53,9 +55,12 @@
 
 #define AS_HOST "http://post.audioscrobbler.com/"
 
-static int file_exists(const char *filename)
+gcc_pure
+static bool
+file_exists(const char *filename) noexcept
 {
-	return g_file_test(filename, G_FILE_TEST_IS_REGULAR);
+	struct stat st;
+	return stat(filename, &st) == 0 && S_ISREG(st.st_mode);
 }
 
 static std::string
