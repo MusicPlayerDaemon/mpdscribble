@@ -168,18 +168,17 @@ void
 daemonize_init(const char *user, const char *_pidfile)
 {
 #ifndef _WIN32
-	if (user != nullptr && strcmp(user, g_get_user_name()) != 0) {
-		struct passwd *pwd;
-
-		user_name = g_strdup(user);
-
-		pwd = getpwnam(user_name);
+	if (user != nullptr) {
+		const auto *pwd = getpwnam(user_name);
 		if (pwd == nullptr)
 			throw FormatRuntimeError("no such user \"%s\"",
 						 user_name);
 
 		user_uid = pwd->pw_uid;
 		user_gid = pwd->pw_gid;
+
+		if (user_uid != getuid())
+			user_name = g_strdup(user);
 	}
 
 	pidfile = g_strdup(_pidfile);
