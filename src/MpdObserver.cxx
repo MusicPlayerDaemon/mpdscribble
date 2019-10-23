@@ -21,8 +21,6 @@
 #include "MpdObserver.hxx"
 #include "Log.hxx"
 
-#include <glib.h>
-
 #include <assert.h>
 #include <string.h>
 #include <stdio.h>
@@ -30,11 +28,9 @@
 void
 MpdObserver::HandleError() noexcept
 {
-	char *msg = g_strescape(mpd_connection_get_error_message(connection),
-				nullptr);
 	FormatWarning("mpd error (%u): %s",
-		      mpd_connection_get_error(connection), msg);
-	g_free(msg);
+		      mpd_connection_get_error(connection),
+		      mpd_connection_get_error_message(connection));
 
 	socket.release();
 	mpd_connection_free(connection);
