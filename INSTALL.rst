@@ -7,7 +7,6 @@ Requirements
 - a C++14 compliant compiler (e.g. gcc or clang)
 - `libmpdclient 2.2 <https://www.musicpd.org/libs/libmpdclient/>`__
 - `Boost 1.62 <https://www.boost.org/>`__
-- `glib 2.16 <https://wiki.gnome.org/Projects/GLib>`__
 - libsoup (2.2 or 2.4) or libcurl
 - `libcurl <https://curl.haxx.se/>`__
 - `libgcrypt <https://gnupg.org/software/libgcrypt/index.html>`__

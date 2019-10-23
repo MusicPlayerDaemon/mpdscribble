@@ -11,7 +11,6 @@ executable(
   dependencies: [
     thread_dep,
     boost_dep,
-    glib_dep,
     libcurl_dep,
   ],
 )

@@ -24,7 +24,6 @@ endif
 
 thread_dep = dependency('threads')
 boost_dep = dependency('boost', version: '>= 1.62')
-glib_dep = dependency('glib-2.0', version: '>= 2.16')
 libmpdclient_dep = dependency('libmpdclient', version: '>= 2.5')
 libgcrypt_dep = dependency('libgcrypt')
 libcurl_dep = dependency('libcurl', version: '>= 7.18')
@@ -122,7 +121,6 @@ executable(
   dependencies: [
     thread_dep,
     boost_dep,
-    glib_dep,
     libmpdclient_dep,
     libgcrypt_dep,
     libcurl_dep,
