@@ -49,11 +49,11 @@ settings_name(const struct mpd_settings *settings) noexcept
 		host = "unknown";
 
 	if (host[0] == '/' || host[0] == '@')
-		return g_strdup(host);
+		return host;
 
 	unsigned port = mpd_settings_get_port(settings);
 	if (port == 0 || port == 6600)
-		return g_strdup(host);
+		return host;
 
 	char buffer[256];
 	snprintf(buffer, sizeof(buffer), "%s:%u", host, port);
