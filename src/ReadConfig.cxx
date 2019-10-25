@@ -205,43 +205,43 @@ load_unsigned(const IniFile &file, const char *name, unsigned *value_r)
 	return true;
 }
 
-static ScrobblerConfig *
+static ScrobblerConfig
 load_scrobbler_config(const Config &config,
 		      const std::string &section_name,
 		      const IniSection &section)
 {
-	ScrobblerConfig *scrobbler = new ScrobblerConfig();
+	ScrobblerConfig scrobbler;
 
 	/* Use default host for mpdscribble group, for backward compatability */
 	if (section_name.empty()) {
-		scrobbler->name = "last.fm";
-		scrobbler->url = AS_HOST;
+		scrobbler.name = "last.fm";
+		scrobbler.url = AS_HOST;
 	} else {
-		scrobbler->name = section_name;
-		scrobbler->file = GetStdString(section, "file");
-		if (scrobbler->file.empty()) {
-			scrobbler->url = GetStdString(section, "url");
-			if (scrobbler->url.empty())
+		scrobbler.name = section_name;
+		scrobbler.file = GetStdString(section, "file");
+		if (scrobbler.file.empty()) {
+			scrobbler.url = GetStdString(section, "url");
+			if (scrobbler.url.empty())
 				throw std::runtime_error("Section has neither 'file' nor 'url'");
 		}
 	}
 
-	if (scrobbler->file.empty()) {
-		scrobbler->username = GetStdString(section, "username");
-		if (scrobbler->username.empty())
+	if (scrobbler.file.empty()) {
+		scrobbler.username = GetStdString(section, "username");
+		if (scrobbler.username.empty())
 			throw std::runtime_error("No 'username'");
 
-		scrobbler->password = GetStdString(section, "password");
-		if (scrobbler->password.empty())
+		scrobbler.password = GetStdString(section, "password");
+		if (scrobbler.password.empty())
 			throw std::runtime_error("No 'password'");
 	}
 
-	scrobbler->journal = GetStdString(section, "journal");
-	if (scrobbler->journal.empty() && section_name.empty()) {
+	scrobbler.journal = GetStdString(section, "journal");
+	if (scrobbler.journal.empty() && section_name.empty()) {
 		/* mpdscribble <= 0.17 compatibility */
-		scrobbler->journal = GetStdString(section, "cache");
-		if (scrobbler->journal.empty())
-			scrobbler->journal = get_default_cache_path(config);
+		scrobbler.journal = GetStdString(section, "cache");
+		if (scrobbler.journal.empty())
+			scrobbler.journal = get_default_cache_path(config);
 	}
 
 	return scrobbler;
@@ -272,12 +272,9 @@ load_config_file(Config &config, const char *path)
 			   scrobbler */
 			continue;
 
-		ScrobblerConfig *scrobbler =
-			load_scrobbler_config(config, section.first, section.second);
-		if (scrobbler != nullptr) {
-			config.scrobblers.emplace_front(std::move(*scrobbler));
-			delete scrobbler;
-		}
+		config.scrobblers.emplace_front(load_scrobbler_config(config,
+								      section.first,
+								      section.second));
 	}
 }
 
