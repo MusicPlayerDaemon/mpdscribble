@@ -214,15 +214,6 @@ load_scrobbler_config(const Config &config,
 
 	/* Use default host for mpdscribble group, for backward compatability */
 	if (section_name.empty()) {
-		const char *username = GetString(section, "username");
-		if (username == nullptr) {
-			/* the default section does not contain a
-			   username: don't set up the last.fm default
-			   scrobbler */
-			delete scrobbler;
-			return nullptr;
-		}
-
 		scrobbler->name = "last.fm";
 		scrobbler->url = AS_HOST;
 	} else {
@@ -274,6 +265,13 @@ load_config_file(Config &config, const char *path)
 	load_integer(file, "verbose", &config.verbose);
 
 	for (const auto &section : file) {
+		if (section.first.empty() &&
+		    section.second.find("username") == section.second.end())
+			/* the default section does not contain a
+			   username: don't set up the last.fm default
+			   scrobbler */
+			continue;
+
 		ScrobblerConfig *scrobbler =
 			load_scrobbler_config(config, section.first, section.second);
 		if (scrobbler != nullptr) {
