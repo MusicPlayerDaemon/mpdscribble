@@ -50,7 +50,7 @@ IsValidSectionName(StringView name) noexcept
 static constexpr bool
 IsValidKeyChar(char ch) noexcept
 {
-	return IsAlphaNumericASCII(ch);
+	return IsAlphaNumericASCII(ch) || ch == '_';
 }
 
 gcc_pure
