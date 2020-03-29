@@ -1,0 +1,62 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: \n"
+"Report-Msgid-Bugs-To: mpdscribble@packages.debian.org\n"
+"POT-Creation-Date: 2008-09-22 14:51+0200\n"
+"PO-Revision-Date: 2020-03-29 19:58+0200\n"
+"Language-Team: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: Poedit 2.3\n"
+"Last-Translator: \n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"Language: sv\n"
+
+#. Type: boolean
+#. Description
+#: ../mpdscribble.templates:1001
+msgid "Install system mpdscribble service?"
+msgstr "Installera mpdscribble system tjänst?"
+
+#. Type: boolean
+#. Description
+#: ../mpdscribble.templates:1001
+msgid ""
+"You can install mpdscribble as a system daemon.  The mpdscribble service "
+"will be started on boot. Note that is not necessary to run mpd as a system "
+"service as it runs fine when started manually using a regular user account."
+msgstr ""
+"Du kan installera mpdscribble som en system demon. mpdscribble tjänsten "
+"kommer att starta vid uppstart. Notera detta är inte nödvändigt för att "
+"köra mpd som en system tjänst eftersom det också går bra när man startar "
+"manuellt med ett vanligt användarkonto."
+
+#. Type: string
+#. Description
+#: ../mpdscribble.templates:2001
+msgid "Last.fm username:"
+msgstr "Last.fm användarnamn:"
+
+#. Type: string
+#. Description
+#: ../mpdscribble.templates:2001
+msgid "Enter username you use on Last.fm."
+msgstr "Ange det användarnamn som du använder på Last.fm."
+
+#. Type: password
+#. Description
+#: ../mpdscribble.templates:3001
+msgid "Last.fm password:"
+msgstr "Last.fm lösenord:"
+
+#. Type: password
+#. Description
+#: ../mpdscribble.templates:3001
+msgid "Enter password you use on Last.fm."
+msgstr "Ange det lösenord som du använder på Last.fm."
