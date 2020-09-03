@@ -124,7 +124,7 @@ MpdObserver::ScheduleConnect() noexcept
 {
 	assert(connection == nullptr);
 
-	FormatInfo("waiting 15 seconds before reconnecting");
+	LogInfo("waiting 15 seconds before reconnecting");
 
 	connect_timer.expires_from_now(std::chrono::seconds(15));
 	connect_timer.async_wait(std::bind(&MpdObserver::OnConnectTimer,
