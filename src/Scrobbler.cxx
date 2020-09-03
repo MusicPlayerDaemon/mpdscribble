@@ -39,9 +39,9 @@
 /* don't submit more than this amount of songs in a batch. */
 #define MAX_SUBMIT_COUNT 10
 
-static const char OK[] = "OK";
-static const char BADSESSION[] = "BADSESSION";
-static const char FAILED[] = "FAILED";
+static constexpr char OK[] = "OK";
+static constexpr char BADSESSION[] = "BADSESSION";
+static constexpr char FAILED[] = "FAILED";
 
 typedef enum {
 	AS_SUBMIT_OK,
