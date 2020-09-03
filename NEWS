@@ -1,4 +1,4 @@
-mpdscribble 0.23 - not yet released
+mpdscribble 0.23 - (2020-09-03)
   * notify systemd about start-up completion
   * add a systemd service file
   * log to journal by default if systemd is used
