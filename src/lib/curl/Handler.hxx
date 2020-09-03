@@ -18,54 +18,16 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#ifndef CURL_REQUEST_HXX
-#define CURL_REQUEST_HXX
+#ifndef CURL_HANDLER_HXX
+#define CURL_HANDLER_HXX
 
-#include "Easy.hxx"
-
+#include <exception>
 #include <string>
 
-class CurlGlobal;
-class HttpResponseHandler;
-
-class CurlRequest final
-{
-	CurlGlobal &global;
-
-	HttpResponseHandler &handler;
-
-	/** the CURL easy handle */
-	CurlEasy curl;
-
-	/** the POST request body */
-	std::string request_body;
-
-	/** the response body */
-	std::string response_body;
-
-	/** error message provided by libcurl */
-	char error[CURL_ERROR_SIZE];
-
+class HttpResponseHandler {
 public:
-	CurlRequest(CurlGlobal &global,
-		    const char *url, std::string &&_request_body,
-		    HttpResponseHandler &_handler);
-	~CurlRequest() noexcept;
-
-	/**
-	 * A HTTP request is finished: invoke its callback and free it.
-	 */
-	void Done(CURLcode result, long status) noexcept;
-
-private:
-	void CheckResponse(CURLcode result, long status);
-
-	/**
-	 * Called by curl when new data is available.
-	 */
-	static size_t WriteFunction(char *ptr, size_t size, size_t nmemb,
-				    void *stream) noexcept;
-
+	virtual void OnHttpResponse(std::string body) noexcept = 0;
+	virtual void OnHttpError(std::exception_ptr e) noexcept = 0;
 };
 
 #endif

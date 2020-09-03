@@ -21,6 +21,7 @@
 #ifndef SCROBBLER_HXX
 #define SCROBBLER_HXX
 
+#include "lib/curl/Handler.hxx"
 #include "AsioServiceFwd.hxx"
 #include "Record.hxx"
 
@@ -36,7 +37,7 @@ struct ScrobblerConfig;
 class CurlGlobal;
 class CurlRequest;
 
-class Scrobbler {
+class Scrobbler final : HttpResponseHandler {
 	const ScrobblerConfig &config;
 
 	FILE *file = nullptr;
@@ -123,14 +124,14 @@ private:
 	void OnSubmitTimer(const boost::system::error_code &error) noexcept;
 
 public:
-	static void OnHandshakeResponse(std::string body,
-					void *data) noexcept;
-	static void OnHandshakeError(std::exception_ptr e,
-				     void *data) noexcept;
-	static void OnSubmitResponse(std::string body,
-					void *data) noexcept;
-	static void OnSubmitError(std::exception_ptr e,
-				  void *data) noexcept;
+	void OnHandshakeResponse(std::string body) noexcept;
+	void OnHandshakeError(std::exception_ptr e) noexcept;
+	void OnSubmitResponse(std::string body) noexcept;
+	void OnSubmitError(std::exception_ptr e) noexcept;
+
+	/* virtual methods from class HttpResponseHandler */
+	void OnHttpResponse(std::string body) noexcept override;
+	void OnHttpError(std::exception_ptr e) noexcept override;
 };
 
 #endif /* SCROBBLER_H */

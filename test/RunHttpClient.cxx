@@ -1,5 +1,6 @@
 #include "lib/curl/Global.hxx"
 #include "lib/curl/Request.hxx"
+#include "lib/curl/Handler.hxx"
 #include "util/PrintException.hxx"
 
 #include <boost/asio/io_service.hpp>
@@ -13,26 +14,28 @@ static boost::asio::io_service io_service;
 static std::exception_ptr error;
 static bool quit;
 
-static void
-my_response(std::string body, void *)
+class MyResponseHandler final : public HttpResponseHandler {
+public:
+	/* virtual methods from class HttpResponseHandler */
+	void OnHttpResponse(std::string body) noexcept override;
+	void OnHttpError(std::exception_ptr e) noexcept override;
+};
+
+void
+MyResponseHandler::OnHttpResponse(std::string body) noexcept
 {
 	write(STDOUT_FILENO, body.data(), body.size());
 	io_service.stop();
 	quit = true;
 }
 
-static void
-my_error(std::exception_ptr _error, void *)
+void
+MyResponseHandler::OnHttpError(std::exception_ptr _error) noexcept
 {
 	error = _error;
 	io_service.stop();
 	quit = true;
 }
-
-static constexpr HttpResponseHandler my_handler = {
-	.response = my_response,
-	.error = my_error,
-};
 
 int
 main(int argc, char **argv)
@@ -45,7 +48,9 @@ main(int argc, char **argv)
 	CurlGlobal curl_global(io_service, nullptr);
 
 	const char *url = argv[1];
-	CurlRequest request(curl_global, url, {}, my_handler, nullptr);
+
+	MyResponseHandler handler;
+	CurlRequest request(curl_global, url, {}, handler);
 	if (!quit)
 		io_service.run();
 	assert(quit);

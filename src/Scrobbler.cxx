@@ -181,85 +181,75 @@ next_line(const char **input_r, const char *end)
 	return line;
 }
 
-void
-Scrobbler::OnHandshakeResponse(std::string body, void *data) noexcept
+inline void
+Scrobbler::OnHandshakeResponse(std::string body) noexcept
 {
-	auto *scrobbler = (Scrobbler *)data;
 	const char *response = body.data();
 	const char *end = response + body.length();
 	bool ret;
 
-	assert(scrobbler != nullptr);
-	assert(scrobbler->config.file.empty());
-	assert(scrobbler->state == State::HANDSHAKE);
+	assert(config.file.empty());
+	assert(state == State::HANDSHAKE);
 
-	scrobbler->http_request.reset();
-	scrobbler->state = State::NOTHING;
+	http_request.reset();
+	state = State::NOTHING;
 
 	auto line = next_line(&response, end);
-	ret = scrobbler->ParseHandshakeResponse(line.c_str());
+	ret = ParseHandshakeResponse(line.c_str());
 	if (!ret) {
-		scrobbler->IncreaseInterval();
-		scrobbler->ScheduleHandshake();
+		IncreaseInterval();
+		ScheduleHandshake();
 		return;
 	}
 
-	scrobbler->session = next_line(&response, end);
+	session = next_line(&response, end);
 	FormatDebug("[%s] session: %s",
-		    scrobbler->config.name.c_str(),
-		    scrobbler->session.c_str());
+		    config.name.c_str(),
+		    session.c_str());
 
-	scrobbler->nowplay_url = next_line(&response, end);
+	nowplay_url = next_line(&response, end);
 	FormatDebug("[%s] now playing url: %s",
-		    scrobbler->config.name.c_str(),
-		    scrobbler->nowplay_url.c_str());
+		    config.name.c_str(),
+		    nowplay_url.c_str());
 
-	scrobbler->submit_url = next_line(&response, end);
+	submit_url = next_line(&response, end);
 	FormatDebug("[%s] submit url: %s",
-		    scrobbler->config.name.c_str(),
-		    scrobbler->submit_url.c_str());
+		    config.name.c_str(),
+		    submit_url.c_str());
 
-	if (scrobbler->nowplay_url.empty() || scrobbler->submit_url.empty()) {
-		scrobbler->session.clear();
-		scrobbler->nowplay_url.clear();
-		scrobbler->submit_url.clear();
+	if (nowplay_url.empty() || submit_url.empty()) {
+		session.clear();
+		nowplay_url.clear();
+		submit_url.clear();
 
-		scrobbler->IncreaseInterval();
-		scrobbler->ScheduleHandshake();
+		IncreaseInterval();
+		ScheduleHandshake();
 		return;
 	}
 
-	scrobbler->state = State::READY;
-	scrobbler->interval = 1;
+	state = State::READY;
+	interval = 1;
 
 	/* handshake was successful: see if we have songs to submit */
-	scrobbler->Submit();
+	Submit();
 }
 
-void
-Scrobbler::OnHandshakeError(std::exception_ptr e, void *data) noexcept
+inline void
+Scrobbler::OnHandshakeError(std::exception_ptr e) noexcept
 {
-	auto *scrobbler = (Scrobbler *)data;
+	assert(config.file.empty());
+	assert(state == State::HANDSHAKE);
 
-	assert(scrobbler != nullptr);
-	assert(scrobbler->config.file.empty());
-	assert(scrobbler->state == State::HANDSHAKE);
-
-	scrobbler->http_request.reset();
-	scrobbler->state = State::NOTHING;
+	http_request.reset();
+	state = State::NOTHING;
 
 	FormatError("[%s] handshake error: %s",
-		    scrobbler->config.name.c_str(),
+		    config.name.c_str(),
 		    GetFullMessage(e).c_str());
 
-	scrobbler->IncreaseInterval();
-	scrobbler->ScheduleHandshake();
+	IncreaseInterval();
+	ScheduleHandshake();
 }
-
-static constexpr HttpResponseHandler scrobbler_handshake_handler = {
-	.response = Scrobbler::OnHandshakeResponse,
-	.error = Scrobbler::OnHandshakeError,
-};
 
 static void
 scrobbler_queue_remove_oldest(std::list<Record> &queue, unsigned count)
@@ -270,76 +260,67 @@ scrobbler_queue_remove_oldest(std::list<Record> &queue, unsigned count)
 		queue.pop_front();
 }
 
-void
-Scrobbler::OnSubmitResponse(std::string body, void *data) noexcept
+inline void
+Scrobbler::OnSubmitResponse(std::string body) noexcept
 {
-	auto *scrobbler = (Scrobbler *)data;
+	assert(config.file.empty());
+	assert(state == State::SUBMITTING);
 
-	assert(scrobbler->config.file.empty());
-	assert(scrobbler->state == State::SUBMITTING);
-
-	scrobbler->http_request.reset();
-	scrobbler->state = State::READY;
+	http_request.reset();
+	state = State::READY;
 
 	auto newline = body.find('\n');
 	if (newline != body.npos)
 		body.resize(newline);
 
-	switch (scrobbler_parse_submit_response(scrobbler->config.name.c_str(),
+	switch (scrobbler_parse_submit_response(config.name.c_str(),
 						body.data(), body.length())) {
 	case SubmitResponseType::OK:
-		scrobbler->interval = 1;
+		interval = 1;
 
 		/* submission was accepted, so clean up the cache. */
-		if (scrobbler->pending > 0) {
-			scrobbler_queue_remove_oldest(scrobbler->queue, scrobbler->pending);
-			scrobbler->pending = 0;
+		if (pending > 0) {
+			scrobbler_queue_remove_oldest(queue, pending);
+			pending = 0;
 		} else {
-			assert(record_is_defined(&scrobbler->now_playing));
+			assert(record_is_defined(&now_playing));
 
-			scrobbler->now_playing = {};
+			now_playing = {};
 		}
 
 
 		/* submit the next chunk (if there is some left) */
-		scrobbler->Submit();
+		Submit();
 		break;
 
 	case SubmitResponseType::FAILED:
-		scrobbler->IncreaseInterval();
-		scrobbler->ScheduleSubmit();
+		IncreaseInterval();
+		ScheduleSubmit();
 		break;
 
 	case SubmitResponseType::HANDSHAKE:
-		scrobbler->state = State::NOTHING;
-		scrobbler->ScheduleHandshake();
+		state = State::NOTHING;
+		ScheduleHandshake();
 		break;
 	}
 }
 
-void
-Scrobbler::OnSubmitError(std::exception_ptr e, void *data) noexcept
+inline void
+Scrobbler::OnSubmitError(std::exception_ptr e) noexcept
 {
-	auto *scrobbler = (Scrobbler *)data;
+	assert(config.file.empty());
+	assert(state == State::SUBMITTING);
 
-	assert(scrobbler->config.file.empty());
-	assert(scrobbler->state == State::SUBMITTING);
-
-	scrobbler->http_request.reset();
-	scrobbler->state = State::READY;
+	http_request.reset();
+	state = State::READY;
 
 	FormatError("[%s] submit error: %s",
-		    scrobbler->config.name.c_str(),
+		    config.name.c_str(),
 		    GetFullMessage(e).c_str());
 
-	scrobbler->IncreaseInterval();
-	scrobbler->ScheduleSubmit();
+	IncreaseInterval();
+	ScheduleSubmit();
 }
-
-static constexpr HttpResponseHandler scrobbler_submit_handler = {
-	.response = Scrobbler::OnSubmitResponse,
-	.error = Scrobbler::OnSubmitError,
-};
 
 static constexpr size_t MD5_SIZE = 16;
 static constexpr size_t MD5_HEX_SIZE = MD5_SIZE * 2;
@@ -408,10 +389,10 @@ Scrobbler::Handshake() noexcept
 
 	//  notice ("handshake url:\n%s", url);
 
+	HttpResponseHandler &handler = *this;
 	http_request = std::make_unique<CurlRequest>(curl_global,
 						     url.c_str(), std::string(),
-						     scrobbler_handshake_handler,
-						     this);
+						     handler);
 }
 
 void
@@ -468,11 +449,11 @@ Scrobbler::SendNowPlaying(const char *artist,
 	FormatInfo("[%s] sending 'now playing' notification",
 		   config.name.c_str());
 
+	HttpResponseHandler &handler = *this;
 	http_request = std::make_unique<CurlRequest>(curl_global,
 						     nowplay_url.c_str(),
 						     std::move(post_data),
-						     scrobbler_submit_handler,
-						     this);
+						     handler);
 }
 
 void
@@ -551,10 +532,11 @@ Scrobbler::Submit() noexcept
 
 	pending = count;
 
+	HttpResponseHandler &handler = *this;
 	http_request = std::make_unique<CurlRequest>(curl_global,
 						     submit_url.c_str(),
 						     std::move(post_data),
-						     scrobbler_submit_handler, this);
+						     handler);
 }
 
 void
@@ -630,5 +612,43 @@ Scrobbler::SubmitNow() noexcept
 		submit_timer.cancel();
 		submit_timer_scheduled = false;
 		ScheduleSubmit();
+	}
+}
+
+void
+Scrobbler::OnHttpResponse(std::string body) noexcept
+{
+	switch (state) {
+	case State::NOTHING:
+	case State::READY:
+		assert(false);
+		break;
+
+	case State::HANDSHAKE:
+		OnHandshakeResponse(std::move(body));
+		break;
+
+	case State::SUBMITTING:
+		OnSubmitResponse(std::move(body));
+		break;
+	}
+}
+
+void
+Scrobbler::OnHttpError(std::exception_ptr e) noexcept
+{
+	switch (state) {
+	case State::NOTHING:
+	case State::READY:
+		assert(false);
+		break;
+
+	case State::HANDSHAKE:
+		OnHandshakeError(std::move(e));
+		break;
+
+	case State::SUBMITTING:
+		OnSubmitError(std::move(e));
+		break;
 	}
 }

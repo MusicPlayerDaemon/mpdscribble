@@ -18,6 +18,7 @@
  */
 
 #include "Request.hxx"
+#include "Handler.hxx"
 #include "Global.hxx"
 #include "util/RuntimeError.hxx"
 #include "config.h"
@@ -33,10 +34,9 @@ enum {
 
 CurlRequest::CurlRequest(CurlGlobal &_global,
 			 const char *url, std::string &&_request_body,
-			 const HttpResponseHandler &_handler,
-			 void *_ctx)
+			 HttpResponseHandler &_handler)
 	:global(_global),
-	 handler(_handler), handler_ctx(_ctx),
+	 handler(_handler),
 	 curl(url),
 	 request_body(std::move(_request_body))
 {
@@ -86,9 +86,9 @@ CurlRequest::Done(CURLcode result, long status) noexcept
 
 	try {
 		CheckResponse(result, status);
-		handler.response(std::move(response_body), handler_ctx);
+		handler.OnHttpResponse(std::move(response_body));
 	} catch (...) {
-		handler.error(std::current_exception(), handler_ctx);
+		handler.OnHttpError(std::current_exception());
 	}
 }
 
