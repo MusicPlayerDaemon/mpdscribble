@@ -39,9 +39,14 @@
 /* don't submit more than this amount of songs in a batch. */
 #define MAX_SUBMIT_COUNT 10
 
+namespace ResponseStrings {
 static constexpr char OK[] = "OK";
 static constexpr char BADSESSION[] = "BADSESSION";
 static constexpr char FAILED[] = "FAILED";
+static constexpr char BANNED[] = "BANNED";
+static constexpr char BADAUTH[] = "BADAUTH";
+static constexpr char BADTIME[] = "BADTIME";
+}
 
 typedef enum {
 	AS_SUBMIT_OK,
@@ -100,6 +105,8 @@ static as_submitting
 scrobbler_parse_submit_response(const char *scrobbler_name,
 				const char *line, size_t length)
 {
+	using namespace ResponseStrings;
+
 	if (length == sizeof(OK) - 1 && memcmp(line, OK, length) == 0) {
 		FormatInfo("[%s] OK", scrobbler_name);
 
@@ -130,9 +137,7 @@ scrobbler_parse_submit_response(const char *scrobbler_name,
 bool
 Scrobbler::ParseHandshakeResponse(const char *line) noexcept
 {
-	static const char *BANNED = "BANNED";
-	static const char *BADAUTH = "BADAUTH";
-	static const char *BADTIME = "BADTIME";
+	using namespace ResponseStrings;
 
 	/* FIXME: some code duplication between this
 	   and as_parse_submit_response. */
