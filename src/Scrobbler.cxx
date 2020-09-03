@@ -48,12 +48,6 @@ static constexpr char BADAUTH[] = "BADAUTH";
 static constexpr char BADTIME[] = "BADTIME";
 }
 
-typedef enum {
-	AS_SUBMIT_OK,
-	AS_SUBMIT_FAILED,
-	AS_SUBMIT_HANDSHAKE,
-} as_submitting;
-
 Scrobbler::Scrobbler(const ScrobblerConfig &_config,
 		     boost::asio::io_service &io_service,
 		     CurlGlobal &_curl_global)
@@ -101,7 +95,13 @@ Scrobbler::IncreaseInterval() noexcept
 		      config.name.c_str(), interval);
 }
 
-static as_submitting
+enum class SubmitResponseType {
+	OK,
+	FAILED,
+	HANDSHAKE,
+};
+
+static SubmitResponseType
 scrobbler_parse_submit_response(const char *scrobbler_name,
 				const char *line, size_t length)
 {
@@ -110,12 +110,12 @@ scrobbler_parse_submit_response(const char *scrobbler_name,
 	if (length == sizeof(OK) - 1 && memcmp(line, OK, length) == 0) {
 		FormatInfo("[%s] OK", scrobbler_name);
 
-		return AS_SUBMIT_OK;
+		return SubmitResponseType::OK;
 	} else if (length == sizeof(BADSESSION) - 1 &&
 		   memcmp(line, BADSESSION, length) == 0) {
 		FormatWarning("[%s] invalid session", scrobbler_name);
 
-		return AS_SUBMIT_HANDSHAKE;
+		return SubmitResponseType::HANDSHAKE;
 	} else if (length == sizeof(FAILED) - 1 &&
 		   memcmp(line, FAILED, length) == 0) {
 		if (length > strlen(FAILED))
@@ -131,7 +131,7 @@ scrobbler_parse_submit_response(const char *scrobbler_name,
 			    scrobbler_name, (int)length, line);
 	}
 
-	return AS_SUBMIT_FAILED;
+	return SubmitResponseType::FAILED;
 }
 
 bool
@@ -191,10 +191,10 @@ Scrobbler::OnHandshakeResponse(std::string body, void *data) noexcept
 
 	assert(scrobbler != nullptr);
 	assert(scrobbler->config.file.empty());
-	assert(scrobbler->state == SCROBBLER_STATE_HANDSHAKE);
+	assert(scrobbler->state == State::HANDSHAKE);
 
 	scrobbler->http_request.reset();
-	scrobbler->state = SCROBBLER_STATE_NOTHING;
+	scrobbler->state = State::NOTHING;
 
 	auto line = next_line(&response, end);
 	ret = scrobbler->ParseHandshakeResponse(line.c_str());
@@ -229,7 +229,7 @@ Scrobbler::OnHandshakeResponse(std::string body, void *data) noexcept
 		return;
 	}
 
-	scrobbler->state = SCROBBLER_STATE_READY;
+	scrobbler->state = State::READY;
 	scrobbler->interval = 1;
 
 	/* handshake was successful: see if we have songs to submit */
@@ -243,10 +243,10 @@ Scrobbler::OnHandshakeError(std::exception_ptr e, void *data) noexcept
 
 	assert(scrobbler != nullptr);
 	assert(scrobbler->config.file.empty());
-	assert(scrobbler->state == SCROBBLER_STATE_HANDSHAKE);
+	assert(scrobbler->state == State::HANDSHAKE);
 
 	scrobbler->http_request.reset();
-	scrobbler->state = SCROBBLER_STATE_NOTHING;
+	scrobbler->state = State::NOTHING;
 
 	FormatError("[%s] handshake error: %s",
 		    scrobbler->config.name.c_str(),
@@ -276,10 +276,10 @@ Scrobbler::OnSubmitResponse(std::string body, void *data) noexcept
 	auto *scrobbler = (Scrobbler *)data;
 
 	assert(scrobbler->config.file.empty());
-	assert(scrobbler->state == SCROBBLER_STATE_SUBMITTING);
+	assert(scrobbler->state == State::SUBMITTING);
 
 	scrobbler->http_request.reset();
-	scrobbler->state = SCROBBLER_STATE_READY;
+	scrobbler->state = State::READY;
 
 	auto newline = body.find('\n');
 	if (newline != body.npos)
@@ -287,7 +287,7 @@ Scrobbler::OnSubmitResponse(std::string body, void *data) noexcept
 
 	switch (scrobbler_parse_submit_response(scrobbler->config.name.c_str(),
 						body.data(), body.length())) {
-	case AS_SUBMIT_OK:
+	case SubmitResponseType::OK:
 		scrobbler->interval = 1;
 
 		/* submission was accepted, so clean up the cache. */
@@ -304,12 +304,14 @@ Scrobbler::OnSubmitResponse(std::string body, void *data) noexcept
 		/* submit the next chunk (if there is some left) */
 		scrobbler->Submit();
 		break;
-	case AS_SUBMIT_FAILED:
+
+	case SubmitResponseType::FAILED:
 		scrobbler->IncreaseInterval();
 		scrobbler->ScheduleSubmit();
 		break;
-	case AS_SUBMIT_HANDSHAKE:
-		scrobbler->state = SCROBBLER_STATE_NOTHING;
+
+	case SubmitResponseType::HANDSHAKE:
+		scrobbler->state = State::NOTHING;
 		scrobbler->ScheduleHandshake();
 		break;
 	}
@@ -321,10 +323,10 @@ Scrobbler::OnSubmitError(std::exception_ptr e, void *data) noexcept
 	auto *scrobbler = (Scrobbler *)data;
 
 	assert(scrobbler->config.file.empty());
-	assert(scrobbler->state == SCROBBLER_STATE_SUBMITTING);
+	assert(scrobbler->state == State::SUBMITTING);
 
 	scrobbler->http_request.reset();
-	scrobbler->state = SCROBBLER_STATE_READY;
+	scrobbler->state = State::READY;
 
 	FormatError("[%s] submit error: %s",
 		    scrobbler->config.name.c_str(),
@@ -389,7 +391,7 @@ Scrobbler::Handshake() noexcept
 {
 	assert(config.file.empty());
 
-	state = SCROBBLER_STATE_HANDSHAKE;
+	state = State::HANDSHAKE;
 
 	const auto timestr = as_timestamp();
 	const auto md5 = as_md5(config.password, timestr);
@@ -419,7 +421,7 @@ Scrobbler::OnHandshakeTimer(const boost::system::error_code &error) noexcept
 		return;
 
 	assert(config.file.empty());
-	assert(state == SCROBBLER_STATE_NOTHING);
+	assert(state == State::NOTHING);
 
 	assert(handshake_timer_scheduled);
 	handshake_timer_scheduled = false;
@@ -431,7 +433,7 @@ void
 Scrobbler::ScheduleHandshake() noexcept
 {
 	assert(config.file.empty());
-	assert(state == SCROBBLER_STATE_NOTHING);
+	assert(state == State::NOTHING);
 	assert(!handshake_timer_scheduled);
 
 	handshake_timer_scheduled = true;
@@ -449,9 +451,9 @@ Scrobbler::SendNowPlaying(const char *artist,
 			  std::chrono::steady_clock::duration length) noexcept
 {
 	assert(config.file.empty());
-	assert(state == SCROBBLER_STATE_READY);
+	assert(state == State::READY);
 
-	state = SCROBBLER_STATE_SUBMITTING;
+	state = State::SUBMITTING;
 
 	FormDataBuilder post_data;
 	post_data.Append("s", session);
@@ -482,7 +484,7 @@ Scrobbler::ScheduleNowPlaying(const Record &song) noexcept
 
 	now_playing = song;
 
-	if (state == SCROBBLER_STATE_READY && !submit_timer_scheduled)
+	if (state == State::READY && !submit_timer_scheduled)
 		ScheduleSubmit();
 }
 
@@ -493,7 +495,7 @@ Scrobbler::Submit() noexcept
 	unsigned count = 0;
 
 	assert(config.file.empty());
-	assert(state == SCROBBLER_STATE_READY);
+	assert(state == State::READY);
 	assert(!submit_timer_scheduled);
 
 	if (queue.empty()) {
@@ -510,7 +512,7 @@ Scrobbler::Submit() noexcept
 		return;
 	}
 
-	state = SCROBBLER_STATE_SUBMITTING;
+	state = State::SUBMITTING;
 
 	/* construct the handshake url. */
 	FormDataBuilder post_data;
@@ -568,7 +570,7 @@ Scrobbler::Push(const Record &song) noexcept
 
 	queue.emplace_back(song);
 
-	if (state == SCROBBLER_STATE_READY && !submit_timer_scheduled)
+	if (state == State::READY && !submit_timer_scheduled)
 		ScheduleSubmit();
 }
 
@@ -578,7 +580,7 @@ Scrobbler::OnSubmitTimer(const boost::system::error_code &error) noexcept
 	if (error)
 		return;
 
-	assert(state == SCROBBLER_STATE_READY);
+	assert(state == State::READY);
 
 	assert(submit_timer_scheduled);
 	submit_timer_scheduled = false;

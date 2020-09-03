@@ -41,29 +41,29 @@ class Scrobbler {
 
 	FILE *file = nullptr;
 
-	enum scrobbler_state {
+	enum class State {
 		/**
 		 * mpdscribble has started, and doesn't have a session yet.
 		 * Handshake to be submitted.
 		 */
-		SCROBBLER_STATE_NOTHING,
+		NOTHING,
 
 		/**
 		 * Handshake is in progress, waiting for the server's
 		 * response.
 		 */
-		SCROBBLER_STATE_HANDSHAKE,
+		HANDSHAKE,
 
 		/**
 		 * We have a session, and we're ready to submit.
 		 */
-		SCROBBLER_STATE_READY,
+		READY,
 
 		/**
 		 * Submission in progress, waiting for the server's response.
 		 */
-		SCROBBLER_STATE_SUBMITTING,
-	} state = SCROBBLER_STATE_NOTHING;
+		SUBMITTING,
+	} state = State::NOTHING;
 
 	unsigned interval = 1;
 
