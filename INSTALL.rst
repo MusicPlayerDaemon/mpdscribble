@@ -18,15 +18,15 @@ Compiling mpdscribble
 
 Download and unpack the source code.  In the mpdscribble directory, type::
 
- ./configure --sysconfdir=/etc --enable-debug
+ meson build
 
 The configure option ``--help`` lists all available compile time
 options.
 
 Compile and install::
 
- make
- sudo make install
+ cd build
+ ninja install
 
 Now edit the file ``/etc/mpdscribble.conf``, and enter your last.fm
 account information.
