@@ -28,5 +28,5 @@ Compile and install::
  cd build
  ninja install
 
-Now edit the file ``/etc/mpdscribble.conf``, and enter your last.fm
+Now edit the config file at ``~/.mpdscribble/mpdscribble.conf`` (or ``/etc/mpdscribble.conf``), and enter your last.fm
 account information.
