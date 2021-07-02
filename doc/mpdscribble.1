@@ -70,8 +70,8 @@ HTTP proxy URL.
 Specify how verbosely mpdscribble should log.  Possible values are 0
 to 3, defaulting to 1.
 .SH CONFIGURATION
-mpdscribble looks for its configuration file first at 
-~/.mpdscribble/mpdscribble.conf and then at /etc/mpdscribble.conf
+mpdscribble looks for its configuration file in the following order:
+$XDG_CONFIG_HOME/mpdscribble/mpdscribble.conf, ~/.config/mpdscribble/mpdscribble.conf, ~/.mpdscribble/mpdscribble.conf, /etc/mpdscribble.conf
 (if \-\-sysconfdir=/etc)
 but this can be overridden by specifying an alternate configuration
 file using the command line option
@@ -132,7 +132,7 @@ have a connection to the scrobbler.  This option used to be called
 The system wide configuration file. 
 .RE
 
-.I ~/.mpdscribble/mpdscribble.conf
+.I ~/.config/mpdscribble/mpdscribble.conf
 .RS
 Per user configuration file. 
 .RE
@@ -142,7 +142,7 @@ Per user configuration file.
 The system wide Last.fm cache file.
 .RE
 
-.I ~/.mpdscribble/mpdscribble.cache
+.I ~/.cache/mpdscribble/mpdscribble.cache
 .RS
 Per user Last.fm cache file.
 .RE
@@ -152,9 +152,6 @@ Per user Last.fm cache file.
 The system wide log file. 
 .RE
 
-.I ~/.mpdscribble/mpdscribble.log
-.RS
-Per user log file. 
 .RE
 .SH BUGS
 File permissions on cache/log file may be insecure by default.
