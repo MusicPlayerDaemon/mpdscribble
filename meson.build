@@ -45,7 +45,6 @@ test_global_common_flags = [
 ]
 
 test_common_flags = [
-  '-Wno-deprecated-declarations',
   '-Wshadow',
   '-Wpointer-arith',
   '-Wcast-qual',
@@ -54,14 +53,33 @@ test_common_flags = [
   '-Wmissing-declarations', '-Wmissing-noreturn', '-Wmissing-format-attribute',
   '-Wredundant-decls', '-Wundef',
 
-  '-Wno-missing-field-initializers',
-  '-Wno-non-virtual-dtor',
+  # clang specific warning options:
+  '-Wunreachable-code-aggressive',
+  '-Wused-but-marked-unused',
 ]
 
 test_global_cxxflags = test_global_common_flags + [
 ]
 
 test_cxxflags = test_common_flags + [
+  '-fno-threadsafe-statics',
+  '-fmerge-all-constants',
+
+  '-Wcomma-subscript',
+  '-Wextra-semi',
+  '-Wmismatched-tags',
+  '-Woverloaded-virtual',
+  '-Wsign-promo',
+  '-Wvolatile',
+  '-Wvirtual-inheritance',
+
+  # a vtable without a dtor is just fine
+  '-Wno-non-virtual-dtor',
+
+  # clang specific warning options:
+  '-Wcomma',
+  '-Wheader-hygiene',
+  '-Winconsistent-missing-destructor-override',
 ]
 
 test_ldflags = [
