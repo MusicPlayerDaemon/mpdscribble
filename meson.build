@@ -89,6 +89,8 @@ inc = include_directories(
   '.',
 )
 
+subdir('src/util')
+
 executable(
   'mpdscribble',
 
@@ -110,14 +112,10 @@ executable(
   'src/lib/curl/Global.cxx',
   'src/lib/curl/Request.cxx',
   'src/lib/curl/Escape.cxx',
-  'src/util/Exception.cxx',
-  'src/util/OptionParser.cxx',
-  'src/util/PrintException.cxx',
-  'src/util/StringStrip.cxx',
-  'src/util/StringView.cxx',
 
   include_directories: inc,
   dependencies: [
+    util_dep,
     thread_dep,
     boost_dep,
     libmpdclient_dep,

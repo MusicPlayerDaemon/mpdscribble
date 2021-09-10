@@ -12,5 +12,6 @@ executable(
     thread_dep,
     boost_dep,
     libcurl_dep,
+    util_dep,
   ],
 )
