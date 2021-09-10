@@ -11,10 +11,9 @@ Installing mpdscribble
 Requirements
 ^^^^^^^^^^^^
 
-- a C++14 compliant compiler (e.g. gcc or clang)
+- a C++17 compliant compiler (e.g. gcc or clang)
 - `libmpdclient 2.2 <https://www.musicpd.org/libs/libmpdclient/>`__
 - `Boost 1.62 <https://www.boost.org/>`__
-- libsoup (2.2 or 2.4) or libcurl
 - `libcurl <https://curl.haxx.se/>`__
 - `libgcrypt <https://gnupg.org/software/libgcrypt/index.html>`__
 - `Meson 0.47 <http://mesonbuild.com/>`__ and `Ninja <https://ninja-build.org/>`__
