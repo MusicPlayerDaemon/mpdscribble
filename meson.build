@@ -11,7 +11,7 @@ project('mpdscribble', 'cpp',
 is_linux = host_machine.system() == 'linux'
 is_windows = host_machine.system() == 'windows'
 
-cc = meson.get_compiler('cpp')
+compiler = meson.get_compiler('cpp')
 
 conf = configuration_data()
 conf.set_quoted('PACKAGE', meson.project_name())
@@ -19,7 +19,7 @@ conf.set_quoted('VERSION', meson.project_version())
 conf.set_quoted('FILE_CONF', join_paths(get_option('prefix'), get_option('sysconfdir'), 'mpdscribble.conf'))
 
 if not get_option('syslog').disabled()
-  if cc.has_function('syslog')
+  if compiler.has_function('syslog')
     conf.set('HAVE_SYSLOG', true)
   elif get_option('syslog').enabled()
     error('syslog() not found')
@@ -40,7 +40,11 @@ endif
 common_cflags = [
 ]
 
-test_cflags = [
+test_global_common_flags = [
+  '-fvisibility=hidden',
+]
+
+test_common_flags = [
   '-Wno-deprecated-declarations',
   '-Wshadow',
   '-Wpointer-arith',
@@ -52,15 +56,19 @@ test_cflags = [
 
   '-Wno-missing-field-initializers',
   '-Wno-non-virtual-dtor',
+]
 
-  '-fvisibility=hidden',
+test_global_cxxflags = test_global_common_flags + [
+]
+
+test_cxxflags = test_common_flags + [
 ]
 
 test_ldflags = [
 ]
 
 if get_option('buildtype') != 'debug'
-  test_cflags += [
+  test_global_cxxflags += [
     '-ffunction-sections',
     '-fdata-sections',
   ]
@@ -69,9 +77,9 @@ if get_option('buildtype') != 'debug'
   ]
 endif
 
-add_global_arguments(common_cflags, language: 'cpp')
-add_global_arguments(cc.get_supported_arguments(test_cflags), language: 'cpp')
-add_global_link_arguments(cc.get_supported_link_arguments(test_ldflags), language: 'cpp')
+add_global_arguments(compiler.get_supported_arguments(test_global_cxxflags), language: 'cpp')
+add_project_arguments(compiler.get_supported_arguments(test_cxxflags), language: 'cpp')
+add_project_link_arguments(compiler.get_supported_link_arguments(test_ldflags), language: 'cpp')
 
 configure_file(output: 'config.h', configuration: conf)
 
