@@ -2,7 +2,7 @@ project('mpdscribble', 'cpp',
   version: '0.24',
   meson_version: '>= 0.47',
   default_options: [
-    'cpp_std=c++14',
+    'cpp_std=c++17',
     'warning_level=3',
   ],
   license: 'GPLv2+',
