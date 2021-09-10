@@ -222,7 +222,7 @@ load_scrobbler_config(const Config &config,
 		if (scrobbler.file.empty()) {
 			scrobbler.url = GetStdString(section, "url");
 			if (scrobbler.url.empty())
-				throw std::runtime_error("Section has neither 'file' nor 'url'");
+				throw FormatRuntimeError("Section '%s' has neither 'file' nor 'url'", section_name.c_str());
 		}
 	}
 
