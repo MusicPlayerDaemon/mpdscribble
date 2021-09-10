@@ -57,4 +57,3 @@ Links
 - `Home page and download <http://www.musicpd.org/clients/mpdscribble/>`__
 - `git repository <https://github.com/MusicPlayerDaemon/mpdscribble/>`__
 - `Bug tracker <https://github.com/MusicPlayerDaemon/mpdscribble/issues>`__
-- `Forum <http://forum.musicpd.org/>`__
