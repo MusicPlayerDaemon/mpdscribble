@@ -9,7 +9,7 @@ curl = static_library(
   include_directories: inc,
   dependencies: [
     curl_dep,
-    boost_dep,
+    event_dep,
   ],
 )
 

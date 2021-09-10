@@ -52,6 +52,10 @@ public:
 		    HttpResponseHandler &_handler);
 	~CurlRequest() noexcept;
 
+	CURL *Get() noexcept {
+		return curl.Get();
+	}
+
 	/**
 	 * A HTTP request is finished: invoke its callback and free it.
 	 */

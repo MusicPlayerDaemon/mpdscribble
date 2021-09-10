@@ -10,7 +10,6 @@ executable(
   include_directories: inc,
   dependencies: [
     thread_dep,
-    boost_dep,
     curl_dep,
     util_dep,
   ],

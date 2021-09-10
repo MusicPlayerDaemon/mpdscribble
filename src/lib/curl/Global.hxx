@@ -1,91 +1,95 @@
-/* mpdscribble (MPD Client)
- * Copyright (C) 2008-2019 The Music Player Daemon Project
- * Copyright (C) 2005-2008 Kuno Woudt <kuno@frob.nl>
- * Project homepage: http://musicpd.org
+/*
+ * Copyright 2008-2020 Max Kellermann <max.kellermann@gmail.com>
  *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * - Redistributions of source code must retain the above copyright
+ * notice, this list of conditions and the following disclaimer.
  *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+ * - Redistributions in binary form must reproduce the above copyright
+ * notice, this list of conditions and the following disclaimer in the
+ * documentation and/or other materials provided with the
+ * distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+ * FOR A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE
+ * FOUNDATION OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+ * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
+ * STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
+ * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 #ifndef CURL_GLOBAL_HXX
 #define CURL_GLOBAL_HXX
 
-#include "lib/curl/Init.hxx"
-#include "lib/curl/Multi.hxx"
-#include "AsioServiceFwd.hxx"
-#include "AsioGetIoService.hxx"
+#include "Init.hxx"
+#include "Multi.hxx"
+#include "event/CoarseTimerEvent.hxx"
+#include "event/DeferEvent.hxx"
 
-#include <boost/asio/steady_timer.hpp>
-
+class CurlSocket;
+class CurlRequest;
 class CurlEasy;
 
+/**
+ * Manager for the global CURLM object.
+ */
 class CurlGlobal final {
-	class Socket;
-
 	const char *const proxy;
 
 	const ScopeCurlInit init;
 
-	/** the CURL multi handle */
 	CurlMulti multi;
 
-	boost::asio::steady_timer timeout_timer, read_info_timer;
+	DeferEvent defer_read_info;
+
+	CoarseTimerEvent timeout_event;
 
 public:
-	CurlGlobal(boost::asio::io_service &io_service,
-		   const char *_proxy);
-	~CurlGlobal() noexcept;
+	explicit CurlGlobal(EventLoop &_loop,
+			    const char *_proxy);
 
-	CurlGlobal(const CurlGlobal &) = delete;
-	CurlGlobal &operator=(const CurlGlobal &) = delete;
-
-	auto &get_io_service() noexcept {
-		return ::get_io_service(timeout_timer);
+	auto &GetEventLoop() const noexcept {
+		return timeout_event.GetEventLoop();
 	}
 
 	void Configure(CurlEasy &easy);
 
-	void Add(CURL *easy);
+	void Add(CurlRequest &r);
+	void Remove(CurlRequest &r) noexcept;
 
-	void Remove(CURL *easy) noexcept {
-		multi.Remove(easy);
-	}
-
-	void Assign(curl_socket_t fd, Socket &s) noexcept {
-		curl_multi_assign(multi.Get(), fd, &s);
+	void Assign(curl_socket_t fd, CurlSocket &cs) noexcept {
+		curl_multi_assign(multi.Get(), fd, &cs);
 	}
 
 	void SocketAction(curl_socket_t fd, int ev_bitmask) noexcept;
 
+	void InvalidateSockets() noexcept {
+		SocketAction(CURL_SOCKET_TIMEOUT, 0);
+	}
+
 private:
 	/**
 	 * Check for finished HTTP responses.
+	 *
+	 * Runs in the I/O thread.  The caller must not hold locks.
 	 */
 	void ReadInfo() noexcept;
-
-	void ScheduleReadInfo() noexcept {
-		read_info_timer.cancel();
-		read_info_timer.expires_from_now(std::chrono::seconds(0));
-		read_info_timer.async_wait([this](const boost::system::error_code &error){
-			if (!error)
-				ReadInfo();
-		});
-	}
 
 	void UpdateTimeout(long timeout_ms) noexcept;
 	static int TimerFunction(CURLM *multi, long timeout_ms,
 				 void *userp) noexcept;
+
+	/* callback for #timeout_event */
+	void OnTimeout() noexcept;
 };
 
 #endif

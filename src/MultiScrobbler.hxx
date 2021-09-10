@@ -21,21 +21,20 @@
 #ifndef MULTI_SCROBBLER_HXX
 #define MULTI_SCROBBLER_HXX
 
-#include "AsioServiceFwd.hxx"
-
 #include <chrono>
 #include <forward_list>
 
 struct ScrobblerConfig;
 class CurlGlobal;
 class Scrobbler;
+class EventLoop;
 
 class MultiScrobbler {
 	std::forward_list<Scrobbler> scrobblers;
 
 public:
 	explicit MultiScrobbler(const std::forward_list<ScrobblerConfig> &configs,
-				boost::asio::io_service &io_service,
+				EventLoop &event_loop,
 				CurlGlobal &curl_global);
 	~MultiScrobbler() noexcept;
 

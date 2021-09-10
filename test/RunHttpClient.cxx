@@ -1,9 +1,8 @@
 #include "lib/curl/Global.hxx"
 #include "lib/curl/Request.hxx"
 #include "lib/curl/Handler.hxx"
+#include "event/Loop.hxx"
 #include "util/PrintException.hxx"
-
-#include <boost/asio/io_service.hpp>
 
 #include <cassert>
 
@@ -11,7 +10,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-static boost::asio::io_service io_service;
+static EventLoop event_loop;
 static std::exception_ptr error;
 static bool quit;
 
@@ -26,7 +25,7 @@ void
 MyResponseHandler::OnHttpResponse(std::string body) noexcept
 {
 	write(STDOUT_FILENO, body.data(), body.size());
-	io_service.stop();
+	event_loop.Break();
 	quit = true;
 }
 
@@ -34,7 +33,7 @@ void
 MyResponseHandler::OnHttpError(std::exception_ptr _error) noexcept
 {
 	error = _error;
-	io_service.stop();
+	event_loop.Break();
 	quit = true;
 }
 
@@ -46,14 +45,14 @@ main(int argc, char **argv)
 		return EXIT_FAILURE;
 	}
 
-	CurlGlobal curl_global(io_service, nullptr);
+	CurlGlobal curl_global(event_loop, nullptr);
 
 	const char *url = argv[1];
 
 	MyResponseHandler handler;
 	CurlRequest request(curl_global, url, {}, handler);
 	if (!quit)
-		io_service.run();
+		event_loop.Run();
 	assert(quit);
 
 	if (error) {

@@ -21,12 +21,11 @@
 #ifndef MPD_OBSERVER_HXX
 #define MPD_OBSERVER_HXX
 
-#include "AsioServiceFwd.hxx"
+#include "event/CoarseTimerEvent.hxx"
+#include "event/DeferEvent.hxx"
+#include "event/SocketEvent.hxx"
 
 #include <mpd/client.h>
-
-#include <boost/asio/steady_timer.hpp>
-#include <boost/asio/posix/stream_descriptor.hpp>
 
 #include <chrono>
 
@@ -62,11 +61,12 @@ class MpdObserver {
 
 	bool subscribed = false;
 
-	boost::asio::steady_timer connect_timer, update_timer;
-	boost::asio::posix::stream_descriptor socket;
+	CoarseTimerEvent connect_timer;
+	DeferEvent update_timer;
+	SocketEvent socket;
 
 public:
-	MpdObserver(boost::asio::io_service &io_service,
+	MpdObserver(EventLoop &event_loop,
 		    MpdObserverListener &_listener,
 		    const char *_host, int _port) noexcept;
 	~MpdObserver() noexcept;
@@ -75,11 +75,11 @@ private:
 	void HandleError() noexcept;
 
 	void ScheduleConnect() noexcept;
-	void OnConnectTimer(const boost::system::error_code &error) noexcept;
+	void OnConnectTimer() noexcept;
 	bool Connect() noexcept;
 
 	void ScheduleUpdate() noexcept;
-	void OnUpdateTimer(const boost::system::error_code &error) noexcept;
+	void OnUpdateTimer() noexcept;
 	enum mpd_state QueryState(struct mpd_song **song_r,
 				  std::chrono::steady_clock::duration &elapsed_r) noexcept;
 	/**
@@ -89,6 +89,7 @@ private:
 
 	bool ReadMessages() noexcept;
 
+	void OnSocketReady(unsigned events) noexcept;
 	void ScheduleIdle() noexcept;
 	void OnIdleResponse() noexcept;
 };

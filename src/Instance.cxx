@@ -21,64 +21,58 @@
 #include "Instance.hxx"
 #include "Config.hxx"
 #include "SdDaemon.hxx"
+#include "event/SignalMonitor.hxx"
 
 Instance::Instance(const Config &config)
-	:io_service(),
-#ifndef _WIN32
-	 quit_signal(io_service, SIGTERM, SIGINT),
-	 submit_signal(io_service, SIGUSR1),
-#endif
-	 curl_global(io_service, NullableString(config.proxy)),
-	 mpd_observer(io_service, *this,
+	:curl_global(event_loop, NullableString(config.proxy)),
+	 mpd_observer(event_loop, *this,
 		      NullableString(config.host), config.port),
-	 scrobblers(config.scrobblers, io_service, curl_global),
-	 save_journal_interval(config.journal_interval),
-	 save_journal_timer(io_service)
+	 scrobblers(config.scrobblers, event_loop, curl_global),
+	 save_journal_interval(std::chrono::seconds{config.journal_interval}),
+	 save_journal_timer(event_loop, BIND_THIS_METHOD(OnSaveJournalTimer))
 {
 #ifndef _WIN32
-	quit_signal.async_wait(std::bind(&Instance::Stop, this));
-
-	AsyncWaitSubmitSignal();
+	SignalMonitorInit(event_loop);
+	SignalMonitorRegister(SIGTERM, BIND_THIS_METHOD(Stop));
+	SignalMonitorRegister(SIGINT, BIND_THIS_METHOD(Stop));
+	SignalMonitorRegister(SIGUSR1, BIND_THIS_METHOD(OnSubmitSignal));
 #endif
 
 	ScheduleSaveJournalTimer();
 }
 
-Instance::~Instance() noexcept = default;
+Instance::~Instance() noexcept
+{
+	SignalMonitorFinish();
+}
 
 inline void
 Instance::Stop() noexcept
 {
 	sd_notify(0, "STOPPING=1");
 
-	this->io_service.stop();
+	event_loop.Break();
 }
 
 #ifndef _WIN32
 
 void
-Instance::AsyncWaitSubmitSignal() noexcept
+Instance::OnSubmitSignal() noexcept
 {
-	submit_signal.async_wait([this](const auto &error, int){
-			if (error)
-				return;
-
-			scrobblers.SubmitNow();
-			this->AsyncWaitSubmitSignal();
-		});
+	scrobblers.SubmitNow();
 }
 
 #endif
 
 void
+Instance::OnSaveJournalTimer() noexcept
+{
+	scrobblers.WriteJournal();
+	ScheduleSaveJournalTimer();
+}
+
+void
 Instance::ScheduleSaveJournalTimer() noexcept
 {
-	save_journal_timer.expires_from_now(save_journal_interval);
-	save_journal_timer.async_wait([this](const boost::system::error_code &error){
-		if (error)
-			return;
-
-		scrobblers.WriteJournal();
-		ScheduleSaveJournalTimer();
-	});
+	save_journal_timer.Schedule(save_journal_interval);
 }

@@ -5,3 +5,7 @@ option('systemd_user_unit_dir', type: 'string', description: 'systemd user servi
 option('syslog', type: 'feature', description: 'syslog support')
 
 option('test', type: 'boolean', value: false, description: 'Build the unit tests and debug programs')
+
+option('epoll', type: 'boolean', value: true, description: 'Use epoll on Linux')
+option('eventfd', type: 'boolean', value: true, description: 'Use eventfd() on Linux')
+option('signalfd', type: 'boolean', value: true, description: 'Use signalfd() on Linux')

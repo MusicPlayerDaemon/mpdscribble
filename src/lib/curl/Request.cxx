@@ -55,13 +55,13 @@ CurlRequest::CurlRequest(CurlGlobal &_global,
 	}
 
 	global.Configure(curl);
-	global.Add(curl.Get());
+	global.Add(*this);
 }
 
 CurlRequest::~CurlRequest() noexcept
 {
 	if (curl)
-		global.Remove(curl.Get());
+		global.Remove(*this);
 }
 
 inline void

@@ -22,10 +22,8 @@
 #define SCROBBLER_HXX
 
 #include "lib/curl/Handler.hxx"
-#include "AsioServiceFwd.hxx"
+#include "event/CoarseTimerEvent.hxx"
 #include "Record.hxx"
-
-#include <boost/asio/steady_timer.hpp>
 
 #include <list>
 #include <memory>
@@ -72,7 +70,7 @@ class Scrobbler final : HttpResponseHandler {
 
 	std::unique_ptr<CurlRequest> http_request;
 
-	boost::asio::steady_timer handshake_timer, submit_timer;
+	CoarseTimerEvent handshake_timer, submit_timer;
 
 	std::string session;
 	std::string nowplay_url;
@@ -91,11 +89,9 @@ class Scrobbler final : HttpResponseHandler {
 	 */
 	unsigned pending = 0;
 
-	bool handshake_timer_scheduled = false, submit_timer_scheduled = false;
-
 public:
 	Scrobbler(const ScrobblerConfig &_config,
-		  boost::asio::io_service &io_service,
+		  EventLoop &event_loop,
 		  CurlGlobal &_curl_global);
 	~Scrobbler() noexcept;
 
@@ -120,8 +116,8 @@ private:
 	void Submit() noexcept;
 	void IncreaseInterval() noexcept;
 
-	void OnHandshakeTimer(const boost::system::error_code &error) noexcept;
-	void OnSubmitTimer(const boost::system::error_code &error) noexcept;
+	void OnHandshakeTimer() noexcept;
+	void OnSubmitTimer() noexcept;
 
 public:
 	void OnHandshakeResponse(std::string body) noexcept;

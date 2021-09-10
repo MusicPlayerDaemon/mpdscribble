@@ -22,6 +22,7 @@
 #include "Log.hxx"
 
 #include <cassert>
+#include <string>
 
 #include <string.h>
 #include <stdio.h>
@@ -33,9 +34,10 @@ MpdObserver::HandleError() noexcept
 		      mpd_connection_get_error(connection),
 		      mpd_connection_get_error_message(connection));
 
-	socket.release();
 	mpd_connection_free(connection);
 	connection = nullptr;
+
+	socket.Abandon();
 }
 
 static std::string
@@ -95,7 +97,8 @@ MpdObserver::Connect() noexcept
 		   version[0], version[1], version[2],
 		   name.c_str());
 
-	socket.assign(mpd_connection_get_fd(connection));
+	socket.Open(SocketDescriptor{mpd_connection_get_fd(connection)});
+	socket.ScheduleRead();
 
 	subscribed = mpd_run_subscribe(connection, "mpdscribble");
 	if (!subscribed && !mpd_connection_clear_error(connection)) {
@@ -107,11 +110,8 @@ MpdObserver::Connect() noexcept
 }
 
 void
-MpdObserver::OnConnectTimer(const boost::system::error_code &error) noexcept
+MpdObserver::OnConnectTimer() noexcept
 {
-	if (error)
-		return;
-
 	if (!Connect()) {
 		ScheduleConnect();
 		return;
@@ -127,31 +127,25 @@ MpdObserver::ScheduleConnect() noexcept
 
 	LogInfo("waiting 15 seconds before reconnecting");
 
-	connect_timer.expires_from_now(std::chrono::seconds(15));
-	connect_timer.async_wait(std::bind(&MpdObserver::OnConnectTimer,
-					   this, std::placeholders::_1));
+	connect_timer.Schedule(std::chrono::seconds{15});
 }
 
-MpdObserver::MpdObserver(boost::asio::io_service &io_service,
+MpdObserver::MpdObserver(EventLoop &event_loop,
 			 MpdObserverListener &_listener,
 			 const char *_host, int _port) noexcept
 	:listener(_listener),
 	 host(_host), port(_port),
-	 connect_timer(io_service),
-	 update_timer(io_service),
-	 socket(io_service)
+	 connect_timer(event_loop, BIND_THIS_METHOD(OnConnectTimer)),
+	 update_timer(event_loop, BIND_THIS_METHOD(OnUpdateTimer)),
+	 socket(event_loop, BIND_THIS_METHOD(OnSocketReady))
 {
-	connect_timer.expires_from_now(std::chrono::seconds(0));
-	connect_timer.async_wait(std::bind(&MpdObserver::OnConnectTimer,
-					   this, std::placeholders::_1));
+	connect_timer.Schedule(std::chrono::seconds{0});
 }
 
 MpdObserver::~MpdObserver() noexcept
 {
-	if (connection != nullptr) {
-		socket.release();
+	if (connection != nullptr)
 		mpd_connection_free(connection);
-	}
 
 	if (current_song != nullptr)
 		mpd_song_free(current_song);
@@ -291,22 +285,15 @@ MpdObserver::Update() noexcept
 }
 
 void
-MpdObserver::OnUpdateTimer(const boost::system::error_code &error) noexcept
+MpdObserver::OnUpdateTimer() noexcept
 {
-	if (error)
-		return;
-
 	Update();
 }
 
-void
+inline void
 MpdObserver::ScheduleUpdate() noexcept
 {
-	update_timer.expires_from_now(std::chrono::seconds(0));
-	update_timer.async_wait([this](const boost::system::error_code &error){
-		if (!error)
-			Update();
-	});
+	update_timer.Schedule();
 }
 
 bool
@@ -366,6 +353,12 @@ MpdObserver::OnIdleResponse() noexcept
 }
 
 void
+MpdObserver::OnSocketReady(unsigned) noexcept
+{
+	OnIdleResponse();
+}
+
+void
 MpdObserver::ScheduleIdle() noexcept
 {
 	assert(connection != nullptr);
@@ -379,12 +372,4 @@ MpdObserver::ScheduleIdle() noexcept
 		ScheduleConnect();
 		return;
 	}
-
-	/* add a GLib watch on the libmpdclient socket */
-
-	socket.async_read_some(boost::asio::null_buffers(),
-			       [this](const boost::system::error_code &error, size_t){
-				       if (!error)
-					       OnIdleResponse();
-			       });
 }

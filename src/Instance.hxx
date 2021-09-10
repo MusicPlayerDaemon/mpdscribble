@@ -21,26 +21,17 @@
 #ifndef INSTANCE_HXX
 #define INSTANCE_HXX
 
+#include "event/Loop.hxx"
+#include "event/CoarseTimerEvent.hxx"
 #include "lib/curl/Global.hxx"
 #include "time/Stopwatch.hxx"
 #include "MpdObserver.hxx"
 #include "MultiScrobbler.hxx"
 
-#include <boost/asio/io_service.hpp>
-#include <boost/asio/steady_timer.hpp>
-#ifndef _WIN32
-#include <boost/asio/signal_set.hpp>
-#endif
-
 struct Config;
 
 struct Instance final : MpdObserverListener {
-	boost::asio::io_service io_service;
-
-#ifndef _WIN32
-	boost::asio::signal_set quit_signal;
-	boost::asio::signal_set submit_signal;
-#endif
+	EventLoop event_loop;
 
 	Stopwatch stopwatch;
 
@@ -50,14 +41,14 @@ struct Instance final : MpdObserverListener {
 
 	MultiScrobbler scrobblers;
 
-	const std::chrono::seconds save_journal_interval;
-	boost::asio::steady_timer save_journal_timer;
+	const Event::Duration save_journal_interval;
+	CoarseTimerEvent save_journal_timer;
 
 	Instance(const Config &config);
 	~Instance() noexcept;
 
 	void Run() noexcept {
-		io_service.run();
+		event_loop.Run();
 	}
 
 	void Stop() noexcept;
@@ -75,9 +66,10 @@ struct Instance final : MpdObserverListener {
 
 private:
 #ifndef _WIN32
-	void AsyncWaitSubmitSignal() noexcept;
+	void OnSubmitSignal() noexcept;
 #endif
 
+	void OnSaveJournalTimer() noexcept;
 	void ScheduleSaveJournalTimer() noexcept;
 };
 

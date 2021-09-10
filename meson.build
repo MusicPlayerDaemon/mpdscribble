@@ -8,6 +8,9 @@ project('mpdscribble', 'cpp',
   license: 'GPLv2+',
 )
 
+is_linux = host_machine.system() == 'linux'
+is_windows = host_machine.system() == 'windows'
+
 cc = meson.get_compiler('cpp')
 
 conf = configuration_data()
@@ -24,7 +27,6 @@ if not get_option('syslog').disabled()
 endif
 
 thread_dep = dependency('threads')
-boost_dep = dependency('boost', version: '>= 1.62')
 libmpdclient_dep = dependency('libmpdclient', version: '>= 2.5')
 libgcrypt_dep = dependency('libgcrypt')
 
@@ -36,14 +38,6 @@ else
 endif
 
 common_cflags = [
-  # no header bloat for the iostream library we don't use
-  '-DBOOST_NO_IOSTREAM',
-
-  # avoid the runtime dependency on libboost_system
-  '-DBOOST_ERROR_CODE_HEADER_ONLY',
-
-  # disable deprecated boost::system features
-  '-DBOOST_SYSTEM_NO_DEPRECATED',
 ]
 
 test_cflags = [
@@ -89,6 +83,10 @@ inc = include_directories(
 )
 
 subdir('src/util')
+subdir('src/io')
+subdir('src/system')
+subdir('src/net')
+subdir('src/event')
 subdir('src/lib/curl')
 
 executable(
@@ -111,8 +109,8 @@ executable(
   include_directories: inc,
   dependencies: [
     util_dep,
+    event_dep,
     thread_dep,
-    boost_dep,
     libmpdclient_dep,
     libgcrypt_dep,
     curl_dep,

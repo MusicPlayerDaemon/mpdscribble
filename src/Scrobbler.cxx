@@ -49,11 +49,11 @@ static constexpr char BADTIME[] = "BADTIME";
 }
 
 Scrobbler::Scrobbler(const ScrobblerConfig &_config,
-		     boost::asio::io_service &io_service,
+		     EventLoop &event_loop,
 		     CurlGlobal &_curl_global)
 	:config(_config), curl_global(_curl_global),
-	 handshake_timer(io_service),
-	 submit_timer(io_service)
+	 handshake_timer(event_loop, BIND_THIS_METHOD(OnHandshakeTimer)),
+	 submit_timer(event_loop, BIND_THIS_METHOD(OnSubmitTimer))
 {
 	if (!config.journal.empty()) {
 		queue = journal_read(config.journal.c_str());
@@ -396,16 +396,10 @@ Scrobbler::Handshake() noexcept
 }
 
 void
-Scrobbler::OnHandshakeTimer(const boost::system::error_code &error) noexcept
+Scrobbler::OnHandshakeTimer() noexcept
 {
-	if (error)
-		return;
-
 	assert(config.file.empty());
 	assert(state == State::NOTHING);
-
-	assert(handshake_timer_scheduled);
-	handshake_timer_scheduled = false;
 
 	Handshake();
 }
@@ -415,13 +409,9 @@ Scrobbler::ScheduleHandshake() noexcept
 {
 	assert(config.file.empty());
 	assert(state == State::NOTHING);
-	assert(!handshake_timer_scheduled);
+	assert(!handshake_timer.IsPending());
 
-	handshake_timer_scheduled = true;
-
-	handshake_timer.expires_from_now(std::chrono::seconds(interval));
-	handshake_timer.async_wait(std::bind(&Scrobbler::OnHandshakeTimer,
-					     this, std::placeholders::_1));
+	handshake_timer.Schedule(std::chrono::seconds{interval});
 }
 
 void
@@ -465,7 +455,7 @@ Scrobbler::ScheduleNowPlaying(const Record &song) noexcept
 
 	now_playing = song;
 
-	if (state == State::READY && !submit_timer_scheduled)
+	if (state == State::READY && !submit_timer.IsPending())
 		ScheduleSubmit();
 }
 
@@ -477,7 +467,7 @@ Scrobbler::Submit() noexcept
 
 	assert(config.file.empty());
 	assert(state == State::READY);
-	assert(!submit_timer_scheduled);
+	assert(!submit_timer.IsPending());
 
 	if (queue.empty()) {
 		/* the submission queue is empty.  See if a "now playing" song is
@@ -552,20 +542,14 @@ Scrobbler::Push(const Record &song) noexcept
 
 	queue.emplace_back(song);
 
-	if (state == State::READY && !submit_timer_scheduled)
+	if (state == State::READY && !submit_timer.IsPending())
 		ScheduleSubmit();
 }
 
 void
-Scrobbler::OnSubmitTimer(const boost::system::error_code &error) noexcept
+Scrobbler::OnSubmitTimer() noexcept
 {
-	if (error)
-		return;
-
 	assert(state == State::READY);
-
-	assert(submit_timer_scheduled);
-	submit_timer_scheduled = false;
 
 	Submit();
 }
@@ -573,13 +557,10 @@ Scrobbler::OnSubmitTimer(const boost::system::error_code &error) noexcept
 void
 Scrobbler::ScheduleSubmit() noexcept
 {
-	assert(!submit_timer_scheduled);
+	assert(!submit_timer.IsPending());
 	assert(!queue.empty() || record_is_defined(&now_playing));
 
-	submit_timer_scheduled = true;
-	submit_timer.expires_from_now(std::chrono::seconds(interval));
-	submit_timer.async_wait(std::bind(&Scrobbler::OnSubmitTimer,
-					  this, std::placeholders::_1));
+	submit_timer.Schedule(std::chrono::seconds{interval});
 }
 
 void
@@ -602,15 +583,13 @@ Scrobbler::SubmitNow() noexcept
 {
 	interval = 1;
 
-	if (handshake_timer_scheduled) {
-		handshake_timer.cancel();
-		handshake_timer_scheduled = false;
+	if (handshake_timer.IsPending()) {
+		handshake_timer.Cancel();
 		ScheduleHandshake();
 	}
 
-	if (submit_timer_scheduled) {
-		submit_timer.cancel();
-		submit_timer_scheduled = false;
+	if (submit_timer.IsPending()) {
+		submit_timer.Cancel();
 		ScheduleSubmit();
 	}
 }

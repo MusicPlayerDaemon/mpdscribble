@@ -1,5 +1,8 @@
 /*
- * Copyright 2019 Max Kellermann <max.kellermann@gmail.com>
+ * Copyright 2007-2021 CM4all GmbH
+ * All rights reserved.
+ *
+ * author: Max Kellermann <mk@cm4all.com>
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -27,28 +30,30 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef ASIO_GET_IO_SERVICE_HXX
-#define ASIO_GET_IO_SERVICE_HXX
+#include "FineTimerEvent.hxx"
+#include "Loop.hxx"
 
-#if BOOST_VERSION >= 106600
-#include <boost/asio/io_service.hpp>
-#endif
-
-/**
- * Returns the #io_service/#io_context reference from a boost::asio
- * object.  This is a compatibility function which works with Boost
- * 1.68+ where #io_service was renamed to #io_context and
- * get_io_service() was replaced with get_executor().
- */
-template<typename T>
-inline auto &
-get_io_service(T &t) noexcept
+void
+FineTimerEvent::Schedule(Event::Duration d) noexcept
 {
-#if BOOST_VERSION >= 106600
-	return (boost::asio::io_context &)t.get_executor().context();
-#else
-	return t.get_io_service();
-#endif
+	Cancel();
+
+	due = loop.SteadyNow() + d;
+	loop.Insert(*this);
 }
 
-#endif
+void
+FineTimerEvent::ScheduleEarlier(Event::Duration d) noexcept
+{
+	const auto new_due = loop.SteadyNow() + d;
+
+	if (IsPending()) {
+		if (new_due >= due)
+			return;
+
+		Cancel();
+	}
+
+	due = new_due;
+	loop.Insert(*this);
+}

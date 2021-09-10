@@ -1,55 +1,67 @@
-/* mpdscribble (MPD Client)
- * Copyright (C) 2008-2019 The Music Player Daemon Project
- * Project homepage: http://musicpd.org
+/*
+ * Copyright 2008-2020 Max Kellermann <max.kellermann@gmail.com>
  *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * - Redistributions of source code must retain the above copyright
+ * notice, this list of conditions and the following disclaimer.
  *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+ * - Redistributions in binary form must reproduce the above copyright
+ * notice, this list of conditions and the following disclaimer in the
+ * documentation and/or other materials provided with the
+ * distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+ * FOR A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE
+ * FOUNDATION OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+ * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
+ * STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
+ * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 #include "Global.hxx"
 #include "Request.hxx"
-
-#include <boost/asio/posix/stream_descriptor.hpp>
+#include "event/Loop.hxx"
+#include "event/SocketEvent.hxx"
 
 #include <cassert>
-#include <stdexcept>
 
-#include <stdio.h>
-
-class CurlGlobal::Socket {
+/**
+ * Monitor for one socket created by CURL.
+ */
+class CurlSocket final {
 	CurlGlobal &global;
 
-	boost::asio::posix::stream_descriptor fd;
-
-	const int action;
-
-	bool *destroyed_p = nullptr;
+	SocketEvent socket_event;
 
 public:
-	Socket(CurlGlobal &_global, boost::asio::io_service &io_service,
-	       int _fd, int _action) noexcept
-		:global(_global), fd(io_service, _fd), action(_action)
-	{
-		AsyncWait();
+	CurlSocket(CurlGlobal &_global, EventLoop &_loop, SocketDescriptor _fd)
+		:global(_global),
+		 socket_event(_loop, BIND_THIS_METHOD(OnSocketReady), _fd) {}
+
+	~CurlSocket() noexcept {
+		/* TODO: sometimes, CURL uses CURL_POLL_REMOVE after
+		   closing the socket, and sometimes, it uses
+		   CURL_POLL_REMOVE just to move the (still open)
+		   connection to the pool; in the first case,
+		   Abandon() would be most appropriate, but it breaks
+		   the second case - is that a CURL bug?  is there a
+		   better solution? */
 	}
 
-	~Socket() noexcept {
-		/* CURL closes the socket */
-		fd.release();
+	CurlSocket(const CurlSocket &) = delete;
+	CurlSocket &operator=(const CurlSocket &) = delete;
 
-		if (destroyed_p != nullptr)
-			*destroyed_p = true;
+	auto &GetEventLoop() const noexcept {
+		return socket_event.GetEventLoop();
 	}
 
 	/**
@@ -60,151 +72,141 @@ public:
 				  void *userp, void *socketp) noexcept;
 
 private:
-	void Callback(const boost::system::error_code &error,
-		      int ev_bitmask) noexcept;
-
-	void AsyncRead() noexcept {
-		fd.async_read_some(boost::asio::null_buffers(),
-				   std::bind(&Socket::Callback, this, std::placeholders::_1,
-					     CURL_CSELECT_IN));
+	SocketDescriptor GetSocket() const noexcept {
+		return socket_event.GetSocket();
 	}
 
-	void AsyncWrite() noexcept {
-		fd.async_write_some(boost::asio::null_buffers(),
-				    std::bind(&Socket::Callback, this, std::placeholders::_1,
-					      CURL_CSELECT_OUT));
+	void OnSocketReady(unsigned events) noexcept;
+
+	static constexpr int FlagsToCurlCSelect(unsigned flags) noexcept {
+		return (flags & (SocketEvent::READ | SocketEvent::HANGUP) ? CURL_CSELECT_IN : 0) |
+			(flags & SocketEvent::WRITE ? CURL_CSELECT_OUT : 0) |
+			(flags & SocketEvent::ERROR ? CURL_CSELECT_ERR : 0);
 	}
 
-	void AsyncWait() noexcept;
+	gcc_const
+	static unsigned CurlPollToFlags(int action) noexcept {
+		switch (action) {
+		case CURL_POLL_NONE:
+			return 0;
+
+		case CURL_POLL_IN:
+			return SocketEvent::READ;
+
+		case CURL_POLL_OUT:
+			return SocketEvent::WRITE;
+
+		case CURL_POLL_INOUT:
+			return SocketEvent::READ|SocketEvent::WRITE;
+		}
+
+		assert(false);
+		gcc_unreachable();
+	}
 };
 
-void
-CurlGlobal::Socket::AsyncWait() noexcept
+CurlGlobal::CurlGlobal(EventLoop &_loop,
+		       const char *_proxy)
+	:proxy(_proxy),
+	 defer_read_info(_loop, BIND_THIS_METHOD(ReadInfo)),
+	 timeout_event(_loop, BIND_THIS_METHOD(OnTimeout))
 {
-	switch (action) {
-	case CURL_POLL_NONE:
-		break;
+	multi.SetOption(CURLMOPT_SOCKETFUNCTION, CurlSocket::SocketFunction);
+	multi.SetOption(CURLMOPT_SOCKETDATA, this);
 
-	case CURL_POLL_IN:
-		AsyncRead();
-		break;
+	multi.SetOption(CURLMOPT_TIMERFUNCTION, TimerFunction);
+	multi.SetOption(CURLMOPT_TIMERDATA, this);
+}
 
-	case CURL_POLL_OUT:
-		AsyncWrite();
-		break;
-
-	case CURL_POLL_INOUT:
-		AsyncRead();
-		AsyncWrite();
-		break;
-	}
+void
+CurlGlobal::Configure(CurlEasy &easy)
+{
+	if (proxy != nullptr)
+		easy.SetOption(CURLOPT_PROXY, proxy);
 }
 
 int
-CurlGlobal::Socket::SocketFunction(CURL *, curl_socket_t s, int action,
-				   void *userp, void *socketp) noexcept
+CurlSocket::SocketFunction([[maybe_unused]] CURL *easy,
+			   curl_socket_t s, int action,
+			   void *userp, void *socketp) noexcept
 {
 	auto &global = *(CurlGlobal *)userp;
+	auto *cs = (CurlSocket *)socketp;
 
-	auto *socket = (Socket *)socketp;
-	delete socket;
+	assert(global.GetEventLoop().IsInside());
 
-	if (action == CURL_POLL_REMOVE)
+	if (action == CURL_POLL_REMOVE) {
+		delete cs;
 		return 0;
+	}
 
-	socket = new Socket(global, global.get_io_service(), s, action);
-	global.Assign(s, *socket);
+	if (cs == nullptr) {
+		cs = new CurlSocket(global, global.GetEventLoop(),
+				    SocketDescriptor(s));
+		global.Assign(s, *cs);
+	}
+
+	unsigned flags = CurlPollToFlags(action);
+	if (flags != 0)
+		cs->socket_event.Schedule(flags);
 	return 0;
 }
 
-inline void
-CurlGlobal::Socket::Callback(const boost::system::error_code &error,
-			     int ev_bitmask) noexcept
+void
+CurlSocket::OnSocketReady(unsigned flags) noexcept
 {
-	if (error)
-		return;
+	assert(GetEventLoop().IsInside());
 
-	assert(destroyed_p == nullptr);
-	bool destroyed = false;
-	destroyed_p = &destroyed;
-
-	global.SocketAction(fd.native_handle(), ev_bitmask);
-
-	if (!destroyed) {
-		destroyed_p = nullptr;
-		AsyncWait();
-	}
+	global.SocketAction(GetSocket().Get(), FlagsToCurlCSelect(flags));
 }
 
 void
-CurlGlobal::Add(CURL *easy)
+CurlGlobal::Add(CurlRequest &r)
 {
-	multi.Add(easy);
+	assert(GetEventLoop().IsInside());
+
+	multi.Add(r.Get());
+
+	InvalidateSockets();
+}
+
+void
+CurlGlobal::Remove(CurlRequest &r) noexcept
+{
+	assert(GetEventLoop().IsInside());
+
+	multi.Remove(r.Get());
 }
 
 /**
  * Find a request by its CURL "easy" handle.
  */
+gcc_pure
 static CurlRequest *
-http_client_find_request(CURL *curl) noexcept
+ToRequest(CURL *easy) noexcept
 {
 	void *p;
-	CURLcode code = curl_easy_getinfo(curl, CURLINFO_PRIVATE, &p);
+	CURLcode code = curl_easy_getinfo(easy, CURLINFO_PRIVATE, &p);
 	if (code != CURLE_OK)
 		return nullptr;
 
 	return (CurlRequest *)p;
 }
 
-void
+inline void
 CurlGlobal::ReadInfo() noexcept
 {
-	while (auto *msg = multi.InfoRead()) {
+	assert(GetEventLoop().IsInside());
+
+	CURLMsg *msg;
+
+	while ((msg = multi.InfoRead()) != nullptr) {
 		if (msg->msg == CURLMSG_DONE) {
-			CurlRequest *request =
-				http_client_find_request(msg->easy_handle);
-			assert(request != nullptr);
-
-			long status = 0;
-			curl_easy_getinfo(msg->easy_handle,
-					  CURLINFO_RESPONSE_CODE, &status);
-
-			request->Done(msg->data.result);
+			auto *request = ToRequest(msg->easy_handle);
+			if (request != nullptr)
+				request->Done(msg->data.result);
 		}
 	}
-}
-
-void
-CurlGlobal::UpdateTimeout(long timeout_ms) noexcept
-{
-	timeout_timer.cancel();
-
-	if (timeout_ms < 0)
-		return;
-
-	if (timeout_ms < 10)
-		/* CURL 7.21.1 likes to report "timeout=0", which
-		   means we're running in a busy loop.  Quite a bad
-		   idea to waste so much CPU.  Let's use a lower limit
-		   of 10ms. */
-		timeout_ms = 10;
-
-	timeout_timer.expires_from_now(std::chrono::milliseconds(timeout_ms));
-	timeout_timer.async_wait([this](const boost::system::error_code &error){
-		if (!error)
-			SocketAction(CURL_SOCKET_TIMEOUT, 0);
-	});
-}
-
-int
-CurlGlobal::TimerFunction(CURLM *_multi, long timeout_ms, void *userp) noexcept
-{
-	auto &global = *(CurlGlobal *)userp;
-	assert(_multi == global.multi.Get());
-	(void)_multi;
-
-	global.UpdateTimeout(timeout_ms);
-	return 0;
 }
 
 void
@@ -213,30 +215,42 @@ CurlGlobal::SocketAction(curl_socket_t fd, int ev_bitmask) noexcept
 	int running_handles;
 	CURLMcode mcode = curl_multi_socket_action(multi.Get(), fd, ev_bitmask,
 						   &running_handles);
-	if (mcode != CURLM_OK)
-		fprintf(stderr, "curl_multi_socket_action() failed: %s",
-			curl_multi_strerror(mcode));
+	(void)mcode;
 
-	ScheduleReadInfo();
+	defer_read_info.Schedule();
 }
 
-CurlGlobal::CurlGlobal(boost::asio::io_service &io_service,
-		       const char *_proxy)
-	:proxy(_proxy),
-	 timeout_timer(io_service), read_info_timer(io_service)
+inline void
+CurlGlobal::UpdateTimeout(long timeout_ms) noexcept
 {
-	multi.SetOption(CURLMOPT_SOCKETFUNCTION, Socket::SocketFunction);
-	multi.SetOption(CURLMOPT_SOCKETDATA, this);
+	if (timeout_ms < 0) {
+		timeout_event.Cancel();
+		return;
+	}
 
-	multi.SetOption(CURLMOPT_TIMERFUNCTION, TimerFunction);
-	multi.SetOption(CURLMOPT_TIMERDATA, this);
+	if (timeout_ms < 1)
+		/* CURL's threaded resolver sets a timeout of 0ms, which
+		   means we're running in a busy loop.  Quite a bad
+		   idea to waste so much CPU.  Let's use a lower limit
+		   of 1ms. */
+		timeout_ms = 1;
+
+	timeout_event.Schedule(std::chrono::milliseconds(timeout_ms));
 }
 
-CurlGlobal::~CurlGlobal() noexcept = default;
+int
+CurlGlobal::TimerFunction([[maybe_unused]] CURLM *_multi, long timeout_ms,
+			  void *userp) noexcept
+{
+	auto &global = *(CurlGlobal *)userp;
+	assert(_multi == global.multi.Get());
+
+	global.UpdateTimeout(timeout_ms);
+	return 0;
+}
 
 void
-CurlGlobal::Configure(CurlEasy &easy)
+CurlGlobal::OnTimeout() noexcept
 {
-	if (proxy != nullptr)
-		easy.SetOption(CURLOPT_PROXY, proxy);
+	SocketAction(CURL_SOCKET_TIMEOUT, 0);
 }
