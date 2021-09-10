@@ -59,7 +59,7 @@ public:
 	void Add(CURL *easy);
 
 	void Remove(CURL *easy) noexcept {
-		curl_multi_remove_handle(multi.Get(), easy);
+		multi.Remove(easy);
 	}
 
 	void Assign(curl_socket_t fd, Socket &s) noexcept {

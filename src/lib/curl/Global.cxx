@@ -139,9 +139,7 @@ CurlGlobal::Socket::Callback(const boost::system::error_code &error,
 void
 CurlGlobal::Add(CURL *easy)
 {
-	CURLMcode mcode = curl_multi_add_handle(multi.Get(), easy);
-	if (mcode != CURLM_OK)
-		throw std::runtime_error(curl_multi_strerror(mcode));
+	multi.Add(easy);
 }
 
 /**
@@ -161,11 +159,7 @@ http_client_find_request(CURL *curl) noexcept
 void
 CurlGlobal::ReadInfo() noexcept
 {
-	CURLMsg *msg;
-	int msgs_in_queue;
-
-	while ((msg = curl_multi_info_read(multi.Get(),
-					   &msgs_in_queue)) != nullptr) {
+	while (auto *msg = multi.InfoRead()) {
 		if (msg->msg == CURLMSG_DONE) {
 			CurlRequest *request =
 				http_client_find_request(msg->easy_handle);
