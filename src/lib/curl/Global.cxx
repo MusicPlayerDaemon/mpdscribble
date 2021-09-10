@@ -169,7 +169,7 @@ CurlGlobal::ReadInfo() noexcept
 			curl_easy_getinfo(msg->easy_handle,
 					  CURLINFO_RESPONSE_CODE, &status);
 
-			request->Done(msg->data.result, status);
+			request->Done(msg->data.result);
 		}
 	}
 }

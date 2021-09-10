@@ -55,10 +55,10 @@ public:
 	/**
 	 * A HTTP request is finished: invoke its callback and free it.
 	 */
-	void Done(CURLcode result, long status) noexcept;
+	void Done(CURLcode result) noexcept;
 
 private:
-	void CheckResponse(CURLcode result, long status);
+	void CheckResponse(CURLcode result);
 
 	/**
 	 * Called by curl when new data is available.

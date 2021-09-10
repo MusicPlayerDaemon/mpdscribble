@@ -46,6 +46,7 @@ CurlRequest::CurlRequest(CurlGlobal &_global,
 	curl.SetOption(CURLOPT_FAILONERROR, true);
 	curl.SetOption(CURLOPT_ERRORBUFFER, error);
 	curl.SetOption(CURLOPT_BUFFERSIZE, (long)2048);
+	curl.SetFailOnError();
 
 	if (!request_body.empty()) {
 		curl.SetOption(CURLOPT_POST, true);
@@ -64,7 +65,7 @@ CurlRequest::~CurlRequest() noexcept
 }
 
 inline void
-CurlRequest::CheckResponse(CURLcode result, long status)
+CurlRequest::CheckResponse(CURLcode result)
 {
 	if (result == CURLE_WRITE_ERROR &&
 	    /* handle the postponed error that was caught in
@@ -74,18 +75,15 @@ CurlRequest::CheckResponse(CURLcode result, long status)
 	else if (result != CURLE_OK)
 		throw FormatRuntimeError("CURL failed: %s",
 					 error);
-	else if (status < 200 || status >= 300)
-		throw FormatRuntimeError("got HTTP status %ld",
-					 status);
 }
 
 void
-CurlRequest::Done(CURLcode result, long status) noexcept
+CurlRequest::Done(CURLcode result) noexcept
 {
 	/* invoke the handler method */
 
 	try {
-		CheckResponse(result, status);
+		CheckResponse(result);
 		handler.OnHttpResponse(std::move(response_body));
 	} catch (...) {
 		handler.OnHttpError(std::current_exception());
