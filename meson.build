@@ -27,7 +27,6 @@ thread_dep = dependency('threads')
 boost_dep = dependency('boost', version: '>= 1.62')
 libmpdclient_dep = dependency('libmpdclient', version: '>= 2.5')
 libgcrypt_dep = dependency('libgcrypt')
-libcurl_dep = dependency('libcurl', version: '>= 7.18')
 
 if host_machine.system() == 'linux'
   libsystemd_dep = dependency('libsystemd', required: get_option('systemd'))
@@ -90,6 +89,7 @@ inc = include_directories(
 )
 
 subdir('src/util')
+subdir('src/lib/curl')
 
 executable(
   'mpdscribble',
@@ -108,11 +108,6 @@ executable(
   'src/MpdObserver.cxx',
   'src/Log.cxx',
 
-  'src/lib/curl/Init.cxx',
-  'src/lib/curl/Global.cxx',
-  'src/lib/curl/Request.cxx',
-  'src/lib/curl/Escape.cxx',
-
   include_directories: inc,
   dependencies: [
     util_dep,
@@ -120,7 +115,7 @@ executable(
     boost_dep,
     libmpdclient_dep,
     libgcrypt_dep,
-    libcurl_dep,
+    curl_dep,
     libsystemd_dep,
   ],
   install: true
