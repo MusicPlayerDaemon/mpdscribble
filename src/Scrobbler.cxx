@@ -31,8 +31,8 @@
 #include <gcrypt.h>
 
 #include <array>
+#include <cassert>
 
-#include <assert.h>
 #include <errno.h>
 #include <string.h>
 

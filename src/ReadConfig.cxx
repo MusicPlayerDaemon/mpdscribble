@@ -32,7 +32,8 @@
 #include <systemd/sd-daemon.h>
 #endif
 
-#include <assert.h>
+#include <cassert>
+
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>

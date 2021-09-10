@@ -22,9 +22,9 @@
 
 #include <boost/asio/posix/stream_descriptor.hpp>
 
+#include <cassert>
 #include <stdexcept>
 
-#include <assert.h>
 #include <stdio.h>
 
 class CurlGlobal::Socket {
