@@ -38,7 +38,7 @@ static const char *summary =
 	"A Music Player Daemon (MPD) client which submits information about\n"
 	"tracks being played to Last.fm (formerly Audioscrobbler).";
 
-gcc_noreturn
+[[noreturn]]
 static void
 version() noexcept
 {
@@ -97,7 +97,7 @@ PrintOption(const OptionDef &opt) noexcept
 		       opt.GetDescription());
 }
 
-gcc_noreturn
+[[noreturn]]
 static void
 help() noexcept
 {
