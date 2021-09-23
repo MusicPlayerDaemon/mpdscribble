@@ -61,36 +61,21 @@ file_exists(const char *filename) noexcept
 }
 
 static std::string
-file_expand_tilde(const char *path)
-{
-	const char *home;
-
-	if (path[0] != '~')
-		return path;
-
-	home = getenv("HOME");
-	if (!home)
-		home = "./";
-
-	return std::string(home) + (path + 1);
-}
-
-static std::string
 get_default_config_path(Config &config)
 {
 #ifndef _WIN32
 	const char *XDG_CONFIG_HOME = getenv("XDG_CONFIG_HOME");
-	std::string FILE_HOME_CONF;
-	std::string LEGACY_FILE_HOME_CONF = "~/.mpdscribble/mpdscribble.conf";
-	if (XDG_CONFIG_HOME) {
-		FILE_HOME_CONF =
+	const char *HOME = getenv("HOME");
+	std::string FILE_HOME_CONF =
 			std::string(XDG_CONFIG_HOME) + "/mpdscribble/mpdscribble.conf";
-	} else if (file_exists(LEGACY_FILE_HOME_CONF.c_str())) {
-		FILE_HOME_CONF = LEGACY_FILE_HOME_CONF;
-	} else {
-		FILE_HOME_CONF = "~/.config/mpdscribble/mpdscribble.conf";
+	std::string LEGACY_FILE_HOME_CONF =
+			std::string(HOME) + "/.mpdscribble/mpdscribble.conf";
+	/* const char *LEGACY_FILE_HOME_CONF = "~/.mpdscribble/mpdscribble.conf"; */
+	if (file_exists(LEGACY_FILE_HOME_CONF.c_str()) &&
+			!file_exists(FILE_HOME_CONF.c_str())) {
+		FILE_HOME_CONF = LEGACY_FILE_HOME_CONF.c_str();
 	}
-	auto file = file_expand_tilde(FILE_HOME_CONF.c_str());
+	auto file = FILE_HOME_CONF;
 	if (file_exists(file.c_str())) {
 		config.loc = file_home;
 		return file;
@@ -124,20 +109,18 @@ get_default_cache_path(const Config &config)
 {
 #ifndef _WIN32
 	const char *XDG_CACHE_HOME = getenv("XDG_CACHE_HOME");
-	std::string FILE_HOME_CACHE;
-		std::string LEGACY_FILE_HOME_CACHE = "~/.mpdscribble/mpdscribble.cache";
-	if (XDG_CACHE_HOME) {
-		FILE_HOME_CACHE =
-			std::string(XDG_CACHE_HOME) + "/mpdscribble/mpdscribble.cache";
-	} else if (file_exists(LEGACY_FILE_HOME_CACHE.c_str())) {
-		FILE_HOME_CACHE = LEGACY_FILE_HOME_CACHE;
-		} else {
-	  FILE_HOME_CACHE = "~/.config/mpdscribble/mpdscribble.cache";
+	const char *HOME = getenv("HOME");
+	std::string FILE_HOME_CACHE =
+			std::string(XDG_CACHE_HOME) + "/.mpdscribble/mpdscribble.cache";
+	std::string LEGACY_FILE_HOME_CACHE =
+			std::string(HOME) + "/.mpdscribble/mpdscribble.cache";
+	if (file_exists(LEGACY_FILE_HOME_CACHE.c_str()) &&
+			!file_exists(FILE_HOME_CACHE.c_str())) {
+		FILE_HOME_CACHE = LEGACY_FILE_HOME_CACHE.c_str();
 	}
-
 	switch (config.loc) {
 	case file_home:
-		return file_expand_tilde(FILE_HOME_CACHE.c_str());
+		return FILE_HOME_CACHE.c_str();
 
 	case file_etc:
 		return FILE_CACHE;
