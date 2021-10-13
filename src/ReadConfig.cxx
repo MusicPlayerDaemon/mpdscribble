@@ -67,8 +67,9 @@ get_default_config_path(Config &config)
 #ifndef _WIN32
 	const char *XDG_CONFIG_HOME = getenv("XDG_CONFIG_HOME");
 	const char *HOME = getenv("HOME");
-	std::string FILE_HOME_CONF =
-			std::string(XDG_CONFIG_HOME) + "/mpdscribble/mpdscribble.conf";
+	std::string FILE_HOME_CONF = XDG_CONFIG_HOME ?
+		std::string(XDG_CONFIG_HOME) + "/mpdscribble/mpdscribble.conf" :
+		std::string(HOME) + "/.config/mpdscribble/mpdscribble.conf";
 	std::string LEGACY_FILE_HOME_CONF =
 			std::string(HOME) + "/.mpdscribble/mpdscribble.conf";
 	/* const char *LEGACY_FILE_HOME_CONF = "~/.mpdscribble/mpdscribble.conf"; */
