@@ -28,6 +28,10 @@
 class CurlGlobal;
 class HttpResponseHandler;
 
+/**
+ * A non-blocking HTTP request integrated via #CurlGlobal into the
+ * #EventLoop.
+ */
 class CurlRequest final
 {
 	CurlGlobal &global;
