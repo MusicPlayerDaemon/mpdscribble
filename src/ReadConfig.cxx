@@ -53,7 +53,7 @@
 
 #define AS_HOST "http://post.audioscrobbler.com/"
 
-gcc_pure
+[[gnu::pure]]
 static bool
 file_exists(const char *filename) noexcept
 {

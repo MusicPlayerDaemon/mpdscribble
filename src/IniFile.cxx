@@ -33,7 +33,7 @@ IsValidSectionNameChar(char ch) noexcept
 	return IsAlphaNumericASCII(ch) || ch == '_' || ch == '-' || ch == '.';
 }
 
-gcc_pure
+[[gnu::pure]]
 static bool
 IsValidSectionName(StringView name) noexcept
 {
@@ -53,7 +53,7 @@ IsValidKeyChar(char ch) noexcept
 	return IsAlphaNumericASCII(ch) || ch == '_';
 }
 
-gcc_pure
+[[gnu::pure]]
 static bool
 IsValidKey(StringView name) noexcept
 {
