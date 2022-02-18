@@ -29,6 +29,7 @@
 #include "system/Error.hxx"
 #include "util/Exception.hxx"
 #include "util/HexFormat.hxx"
+#include "util/SpanCast.hxx"
 
 #include <array>
 #include <cassert>
@@ -334,14 +335,14 @@ static constexpr size_t MD5_HEX_SIZE = MD5_SIZE * 2;
 static auto
 md5_hex(std::string_view s)
 {
-	auto binary = Gcrypt::MD5({s.data(), s.size()});
-	return HexFormatBuffer<MD5_SIZE>(binary.data());
+	const auto binary = Gcrypt::MD5(AsBytes(s));
+	return HexFormat(std::span{binary});
 }
 
 static auto
 as_md5(const std::string &password, const std::string &timestamp)
 {
-	StringBuffer<MD5_HEX_SIZE + 1> buffer;
+	std::array<char, MD5_HEX_SIZE> buffer;
 
 	const char *password_md5 = password.c_str();
 	if (password.length() != 32) {
@@ -371,7 +372,7 @@ Scrobbler::Handshake() noexcept
 	url.Append("v", AS_CLIENT_VERSION);
 	url.Append("u", config.username);
 	url.Append("t", timestr);
-	url.Append("a", md5.c_str());
+	url.Append("a", ToStringView(md5));
 
 	//  notice ("handshake url:\n%s", url);
 
