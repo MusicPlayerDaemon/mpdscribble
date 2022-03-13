@@ -39,6 +39,9 @@
 /* don't submit more than this amount of songs in a batch. */
 #define MAX_SUBMIT_COUNT 10
 
+/* maximum exponential backoff delay */
+#define MAX_INTERVAL (60 << 3)
+
 namespace ResponseStrings {
 static constexpr char OK[] = "OK";
 static constexpr char BADSESSION[] = "BADSESSION";
@@ -88,8 +91,8 @@ Scrobbler::IncreaseInterval() noexcept
 	else
 		interval <<= 1;
 
-	if (interval > 60 * 60 * 2)
-		interval = 60 * 60 * 2;
+	if (interval > MAX_INTERVAL)
+		interval = MAX_INTERVAL;
 
 	FormatWarning("[%s] waiting %u seconds before trying again",
 		      config.name.c_str(), interval);
