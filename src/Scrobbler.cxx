@@ -23,13 +23,12 @@
 #include "ScrobblerConfig.hxx"
 #include "Journal.hxx"
 #include "lib/curl/Request.hxx"
+#include "lib/gcrypt/MD5.hxx"
 #include "Form.hxx"
 #include "Log.hxx" /* for log_date() */
 #include "system/Error.hxx"
 #include "util/Exception.hxx"
 #include "util/HexFormat.hxx"
-
-#include <gcrypt.h>
 
 #include <array>
 #include <cassert>
@@ -335,9 +334,7 @@ static constexpr size_t MD5_HEX_SIZE = MD5_SIZE * 2;
 static auto
 md5_hex(std::string_view s)
 {
-	std::array<uint8_t, MD5_SIZE> binary;
-	gcry_md_hash_buffer(GCRY_MD_MD5, &binary.front(), s.data(), s.size());
-
+	auto binary = Gcrypt::MD5({s.data(), s.size()});
 	return HexFormatBuffer<MD5_SIZE>(binary.data());
 }
 

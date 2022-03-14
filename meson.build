@@ -28,7 +28,6 @@ endif
 
 thread_dep = dependency('threads')
 libmpdclient_dep = dependency('libmpdclient', version: '>= 2.5')
-libgcrypt_dep = dependency('libgcrypt')
 
 if host_machine.system() == 'linux'
   libsystemd_dep = dependency('libsystemd', required: get_option('systemd'))
@@ -119,6 +118,7 @@ subdir('src/system')
 subdir('src/net')
 subdir('src/event')
 subdir('src/lib/curl')
+subdir('src/lib/gcrypt')
 
 executable(
   'mpdscribble',
@@ -143,7 +143,7 @@ executable(
     event_dep,
     thread_dep,
     libmpdclient_dep,
-    libgcrypt_dep,
+    gcrypt_dep,
     curl_dep,
     libsystemd_dep,
   ],
