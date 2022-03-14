@@ -1,3 +1,5 @@
+mpdscribble 0.25 - not yet released
+
 mpdscribble 0.24 - (2022-03-14)
   * limit retry interval to 8 minutes
   * fix crash if $XDG_CACHE_HOME is not set
