@@ -124,21 +124,29 @@ GetLegacyHomeCachePath() noexcept
 	return std::string(home) + "/.mpdscribble/mpdscribble.cache";
 }
 
+[[gnu::pure]]
+static std::string
+GetHomeCachePath() noexcept
+{
+	std::string xdg_path = GetXdgCachePath();
+	std::string legacy_path = GetLegacyHomeCachePath();
+
+	if (file_exists(legacy_path.c_str()) &&
+	    !file_exists(xdg_path.c_str()))
+		return legacy_path;
+
+	return xdg_path;
+}
+
 #endif
 
 static std::string
 get_default_cache_path(const Config &config)
 {
 #ifndef _WIN32
-	std::string FILE_HOME_CACHE = GetXdgCachePath();
-	std::string LEGACY_FILE_HOME_CACHE = GetLegacyHomeCachePath();
-	if (file_exists(LEGACY_FILE_HOME_CACHE.c_str()) &&
-			!file_exists(FILE_HOME_CACHE.c_str())) {
-		FILE_HOME_CACHE = std::move(LEGACY_FILE_HOME_CACHE);
-	}
 	switch (config.loc) {
 	case file_home:
-		return FILE_HOME_CACHE;
+		return GetHomeCachePath();
 
 	case file_etc:
 		return FILE_CACHE;
