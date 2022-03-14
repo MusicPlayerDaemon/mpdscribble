@@ -332,25 +332,16 @@ static constexpr size_t MD5_HEX_SIZE = MD5_SIZE * 2;
  * checksum.
  */
 static std::array<char, MD5_HEX_SIZE + 1>
-md5_hex(const char *p, int len)
+md5_hex(std::string_view s)
 {
-	if (len == -1)
-		len = strlen(p);
-
 	std::array<uint8_t, MD5_SIZE> binary;
-	gcry_md_hash_buffer(GCRY_MD_MD5, &binary.front(), p, len);
+	gcry_md_hash_buffer(GCRY_MD_MD5, &binary.front(), s.data(), s.size());
 
 	std::array<char, MD5_HEX_SIZE + 1> result;
 	for (size_t i = 0; i < MD5_SIZE; ++i)
 		snprintf(&result[i * 2], 3, "%02x", binary[i]);
 
 	return result;
-}
-
-static auto
-md5_hex(std::string_view s) noexcept
-{
-	return md5_hex(s.data(), s.size());
 }
 
 static auto
