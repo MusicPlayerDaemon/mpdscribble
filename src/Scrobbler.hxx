@@ -64,7 +64,14 @@ class Scrobbler final : HttpResponseHandler {
 		SUBMITTING,
 	} state = State::NOTHING;
 
-	unsigned interval = 1;
+	static constexpr Event::Duration MIN_INTERVAL = std::chrono::minutes{1};
+
+	/**
+	 * Maximum exponential backoff delay.
+	 */
+	static constexpr Event::Duration MAX_INTERVAL = std::chrono::minutes{8};
+
+	Event::Duration interval = std::chrono::seconds{1};
 
 	CurlGlobal &curl_global;
 

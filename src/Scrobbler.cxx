@@ -39,9 +39,6 @@
 /* don't submit more than this amount of songs in a batch. */
 #define MAX_SUBMIT_COUNT 10
 
-/* maximum exponential backoff delay */
-#define MAX_INTERVAL (60 << 3)
-
 namespace ResponseStrings {
 static constexpr char OK[] = "OK";
 static constexpr char BADSESSION[] = "BADSESSION";
@@ -86,16 +83,17 @@ Scrobbler::~Scrobbler() noexcept
 void
 Scrobbler::IncreaseInterval() noexcept
 {
-	if (interval < 60)
-		interval = 60;
+	if (interval < MIN_INTERVAL)
+		interval = MIN_INTERVAL;
 	else
-		interval <<= 1;
+		interval *= 2;
 
 	if (interval > MAX_INTERVAL)
 		interval = MAX_INTERVAL;
 
 	FormatWarning("[%s] waiting %u seconds before trying again",
-		      config.name.c_str(), interval);
+		      config.name.c_str(),
+		      std::chrono::duration_cast<std::chrono::duration<unsigned>>(interval).count());
 }
 
 enum class SubmitResponseType {
@@ -231,7 +229,7 @@ Scrobbler::OnHandshakeResponse(std::string body) noexcept
 	}
 
 	state = State::READY;
-	interval = 1;
+	interval = std::chrono::seconds{1};
 
 	/* handshake was successful: see if we have songs to submit */
 	Submit();
@@ -279,7 +277,7 @@ Scrobbler::OnSubmitResponse(std::string body) noexcept
 	switch (scrobbler_parse_submit_response(config.name.c_str(),
 						body.data(), body.length())) {
 	case SubmitResponseType::OK:
-		interval = 1;
+		interval = std::chrono::seconds{1};
 
 		/* submission was accepted, so clean up the cache. */
 		if (pending > 0) {
@@ -414,7 +412,7 @@ Scrobbler::ScheduleHandshake() noexcept
 	assert(state == State::NOTHING);
 	assert(!handshake_timer.IsPending());
 
-	handshake_timer.Schedule(std::chrono::seconds{interval});
+	handshake_timer.Schedule(interval);
 }
 
 void
@@ -563,7 +561,7 @@ Scrobbler::ScheduleSubmit() noexcept
 	assert(!submit_timer.IsPending());
 	assert(!queue.empty() || record_is_defined(&now_playing));
 
-	submit_timer.Schedule(std::chrono::seconds{interval});
+	submit_timer.Schedule(interval);
 }
 
 void
@@ -584,7 +582,7 @@ Scrobbler::WriteJournal() const noexcept
 void
 Scrobbler::SubmitNow() noexcept
 {
-	interval = 1;
+	interval = std::chrono::seconds{1};
 
 	if (handshake_timer.IsPending()) {
 		handshake_timer.Cancel();
