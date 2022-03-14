@@ -27,6 +27,7 @@
 #include "Log.hxx" /* for log_date() */
 #include "system/Error.hxx"
 #include "util/Exception.hxx"
+#include "util/HexFormat.hxx"
 
 #include <gcrypt.h>
 
@@ -331,29 +332,25 @@ static constexpr size_t MD5_HEX_SIZE = MD5_SIZE * 2;
  * value is a newly allocated string containing the hexadecimal
  * checksum.
  */
-static std::array<char, MD5_HEX_SIZE + 1>
+static auto
 md5_hex(std::string_view s)
 {
 	std::array<uint8_t, MD5_SIZE> binary;
 	gcry_md_hash_buffer(GCRY_MD_MD5, &binary.front(), s.data(), s.size());
 
-	std::array<char, MD5_HEX_SIZE + 1> result;
-	for (size_t i = 0; i < MD5_SIZE; ++i)
-		snprintf(&result[i * 2], 3, "%02x", binary[i]);
-
-	return result;
+	return HexFormatBuffer<MD5_SIZE>(binary.data());
 }
 
 static auto
 as_md5(const std::string &password, const std::string &timestamp)
 {
-	std::array<char, MD5_HEX_SIZE + 1> buffer;
+	StringBuffer<MD5_HEX_SIZE + 1> buffer;
 
 	const char *password_md5 = password.c_str();
 	if (password.length() != 32) {
 		/* assume it's not hashed yet */
 		buffer = md5_hex(password);
-		password_md5 = &buffer.front();
+		password_md5 = buffer.data();
 	}
 
 	return md5_hex(password_md5 + timestamp);
@@ -377,7 +374,7 @@ Scrobbler::Handshake() noexcept
 	url.Append("v", AS_CLIENT_VERSION);
 	url.Append("u", config.username.c_str());
 	url.Append("t", timestr.c_str());
-	url.Append("a", &md5.front());
+	url.Append("a", md5.c_str());
 
 	//  notice ("handshake url:\n%s", url);
 
