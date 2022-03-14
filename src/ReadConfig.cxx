@@ -75,7 +75,7 @@ get_default_config_path(Config &config)
 	/* const char *LEGACY_FILE_HOME_CONF = "~/.mpdscribble/mpdscribble.conf"; */
 	if (file_exists(LEGACY_FILE_HOME_CONF.c_str()) &&
 			!file_exists(FILE_HOME_CONF.c_str())) {
-		FILE_HOME_CONF = LEGACY_FILE_HOME_CONF.c_str();
+		FILE_HOME_CONF = std::move(LEGACY_FILE_HOME_CONF);
 	}
 	auto file = FILE_HOME_CONF;
 	if (file_exists(file.c_str())) {
@@ -118,11 +118,11 @@ get_default_cache_path(const Config &config)
 			std::string(HOME) + "/.mpdscribble/mpdscribble.cache";
 	if (file_exists(LEGACY_FILE_HOME_CACHE.c_str()) &&
 			!file_exists(FILE_HOME_CACHE.c_str())) {
-		FILE_HOME_CACHE = LEGACY_FILE_HOME_CACHE.c_str();
+		FILE_HOME_CACHE = std::move(LEGACY_FILE_HOME_CACHE);
 	}
 	switch (config.loc) {
 	case file_home:
-		return FILE_HOME_CACHE.c_str();
+		return FILE_HOME_CACHE;
 
 	case file_etc:
 		return FILE_CACHE;
