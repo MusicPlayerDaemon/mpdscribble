@@ -116,7 +116,7 @@ GetXdgCachePath() noexcept
 	if (xdg_cache_home == nullptr)
 		return {};
 
-	return std::string(xdg_cache_home) + "/.mpdscribble/mpdscribble.cache";
+	return std::string(xdg_cache_home) + "/mpdscribble/mpdscribble.cache";
 }
 
 [[gnu::pure]]
