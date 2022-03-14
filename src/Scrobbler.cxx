@@ -348,7 +348,7 @@ md5_hex(const char *p, int len)
 }
 
 static auto
-md5_hex(const std::string &s) noexcept
+md5_hex(std::string_view s) noexcept
 {
 	return md5_hex(s.data(), s.size());
 }
