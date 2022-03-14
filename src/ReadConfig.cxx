@@ -51,7 +51,7 @@
 
 #endif
 
-#define AS_HOST "http://post.audioscrobbler.com/"
+#define AS_HOST "https://post.audioscrobbler.com/"
 
 [[gnu::pure]]
 static bool
