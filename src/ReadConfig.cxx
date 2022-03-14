@@ -106,16 +106,32 @@ get_default_log_path() noexcept
 #endif
 }
 
+#ifndef _WIN32
+
+[[gnu::pure]]
+static std::string
+GetXdgCachePath() noexcept
+{
+	const char *xdg_cache_home = getenv("XDG_CACHE_HOME");
+	return std::string(xdg_cache_home) + "/.mpdscribble/mpdscribble.cache";
+}
+
+[[gnu::pure]]
+static std::string
+GetLegacyHomeCachePath() noexcept
+{
+	const char *home = getenv("HOME");
+	return std::string(home) + "/.mpdscribble/mpdscribble.cache";
+}
+
+#endif
+
 static std::string
 get_default_cache_path(const Config &config)
 {
 #ifndef _WIN32
-	const char *XDG_CACHE_HOME = getenv("XDG_CACHE_HOME");
-	const char *HOME = getenv("HOME");
-	std::string FILE_HOME_CACHE =
-			std::string(XDG_CACHE_HOME) + "/.mpdscribble/mpdscribble.cache";
-	std::string LEGACY_FILE_HOME_CACHE =
-			std::string(HOME) + "/.mpdscribble/mpdscribble.cache";
+	std::string FILE_HOME_CACHE = GetXdgCachePath();
+	std::string LEGACY_FILE_HOME_CACHE = GetLegacyHomeCachePath();
 	if (file_exists(LEGACY_FILE_HOME_CACHE.c_str()) &&
 			!file_exists(FILE_HOME_CACHE.c_str())) {
 		FILE_HOME_CACHE = std::move(LEGACY_FILE_HOME_CACHE);
