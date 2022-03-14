@@ -113,6 +113,9 @@ static std::string
 GetXdgCachePath() noexcept
 {
 	const char *xdg_cache_home = getenv("XDG_CACHE_HOME");
+	if (xdg_cache_home == nullptr)
+		return {};
+
 	return std::string(xdg_cache_home) + "/.mpdscribble/mpdscribble.cache";
 }
 
@@ -121,6 +124,9 @@ static std::string
 GetLegacyHomeCachePath() noexcept
 {
 	const char *home = getenv("HOME");
+	if (home == nullptr)
+		return {};
+
 	return std::string(home) + "/.mpdscribble/mpdscribble.cache";
 }
 
@@ -131,8 +137,9 @@ GetHomeCachePath() noexcept
 	std::string xdg_path = GetXdgCachePath();
 	std::string legacy_path = GetLegacyHomeCachePath();
 
-	if (file_exists(legacy_path.c_str()) &&
-	    !file_exists(xdg_path.c_str()))
+	if (xdg_path.empty() ||
+	    (!legacy_path.empty() && !file_exists(xdg_path.c_str()) &&
+	     file_exists(legacy_path.c_str())))
 		return legacy_path;
 
 	return xdg_path;

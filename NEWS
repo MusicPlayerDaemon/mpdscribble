@@ -1,5 +1,6 @@
 mpdscribble 0.24 - not yet released
   * limit retry interval to 8 minutes
+  * fix crash if $XDG_CACHE_HOME is not set
 
 mpdscribble 0.23 - (2020-09-03)
   * notify systemd about start-up completion
