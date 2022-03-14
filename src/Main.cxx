@@ -24,6 +24,7 @@
 #include "ReadConfig.hxx"
 #include "Config.hxx"
 #include "Log.hxx"
+#include "lib/gcrypt/Init.hxx"
 #include "util/PrintException.hxx"
 #include "SdDaemon.hxx"
 
@@ -182,6 +183,8 @@ try {
 	if (!config.no_daemon)
 #endif
 		daemonize_close_stdout_stderr();
+
+	Gcrypt::Init();
 
 	Instance instance(config);
 
