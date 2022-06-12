@@ -29,6 +29,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
+#include <time.h>
 
 #ifdef HAVE_SYSLOG
 #include <syslog.h>
