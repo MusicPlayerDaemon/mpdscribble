@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2021 Max Kellermann <max.kellermann@gmail.com>
+ * Copyright 2013-2022 Max Kellermann <max.kellermann@gmail.com>
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -27,8 +27,7 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef SYSTEM_ERROR_HXX
-#define SYSTEM_ERROR_HXX
+#pragma once
 
 #include <system_error> // IWYU pragma: export
 #include <utility>
@@ -103,6 +102,7 @@ FormatLastError(const char *fmt, Args&&... args) noexcept
  *
  * @see https://stackoverflow.com/questions/28746372/system-error-categories-and-standard-system-error-codes
  */
+[[gnu::const]]
 static inline const std::error_category &
 ErrnoCategory() noexcept
 {
@@ -202,5 +202,3 @@ IsAccessDenied(const std::system_error &e) noexcept
 	return IsErrno(e, EACCES);
 #endif
 }
-
-#endif
