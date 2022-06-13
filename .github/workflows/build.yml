@@ -1,0 +1,73 @@
+---
+on:
+  workflow_dispatch:
+  push:
+    paths-ignore:
+      - 'contrib/**'
+      - 'doc/**'
+      - 'systemd/**'
+    branches:
+      - master
+  pull_request:
+    paths-ignore:
+      - 'contrib/**'
+      - 'doc/**'
+      - 'systemd/**'
+    branches:
+      - master
+
+jobs:
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - id: checkout
+        uses: actions/checkout@v2
+
+      - id: cache-ccache
+        uses: hendrikmuhs/ccache-action@v1
+        with:
+          key: linux
+
+      - name: Install dependencies
+        run: |
+          sudo apt install -y --no-install-recommends \
+            meson \
+            libsystemd-dev \
+            libgcrypt-dev \
+            libcurl4-gnutls-dev \
+            libmpdclient-dev
+
+      - name: Build
+        uses: BSFishy/meson-build@v1.0.3
+        with:
+          action: build
+          directory: output
+          setup-options: -Dtest=true
+
+  build-macos:
+    runs-on: macos-latest
+    steps:
+      - id: checkout
+        uses: actions/checkout@v2
+
+      - id: cache-ccache
+        uses: hendrikmuhs/ccache-action@v1
+        with:
+          key: macos
+
+      - uses: actions/setup-python@v1
+
+      - name: Install dependencies
+        run: |
+          brew install \
+            meson ninja \
+            gcrypt \
+            curl \
+            libmpdclient
+
+      - name: Meson Build
+        uses: BSFishy/meson-build@v1.0.3
+        with:
+          action: build
+          directory: output
+          setup-options: -Dtest=true
