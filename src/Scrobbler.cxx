@@ -369,8 +369,8 @@ Scrobbler::Handshake() noexcept
 	url.Append("p", "1.2");
 	url.Append("c", AS_CLIENT_ID);
 	url.Append("v", AS_CLIENT_VERSION);
-	url.Append("u", config.username.c_str());
-	url.Append("t", timestr.c_str());
+	url.Append("u", config.username);
+	url.Append("t", timestr);
 	url.Append("a", md5.c_str());
 
 	//  notice ("handshake url:\n%s", url);

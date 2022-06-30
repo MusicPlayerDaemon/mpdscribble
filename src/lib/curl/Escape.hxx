@@ -22,12 +22,13 @@
 #define CURL_ESCAPE_HXX
 
 #include <string>
+#include <string_view>
 
 /**
  * Escapes URI parameters with '%'.  Free the return value with
  * g_free().
  */
 std::string
-CurlEscape(const char *src) noexcept;
+CurlEscape(std::string_view src) noexcept;
 
 #endif

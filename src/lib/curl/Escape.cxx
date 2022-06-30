@@ -22,13 +22,16 @@
 #include <curl/curl.h>
 
 std::string
-CurlEscape(const char *src) noexcept
+CurlEscape(std::string_view src) noexcept
 {
 	/* curl_escape() is deprecated, but for some reason,
 	   curl_easy_escape() wants to have a CURL object, which we
 	   don't have right now */
-	char *tmp = curl_escape(src, 0);
-	std::string dest(tmp == nullptr ? src : tmp);
+	char *tmp = curl_escape(src.data(), src.size());
+	if (tmp == nullptr)
+		return std::string{src};
+
+	std::string dest{tmp};
 	curl_free(tmp);
 	return dest;
 }

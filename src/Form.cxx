@@ -32,7 +32,7 @@ FormDataBuilder::AppendVerbatim(unsigned value) noexcept
 }
 
 void
-FormDataBuilder::AppendEscape(const char *value) noexcept
+FormDataBuilder::AppendEscape(std::string_view value) noexcept
 {
 	s.append(CurlEscape(value));
 }

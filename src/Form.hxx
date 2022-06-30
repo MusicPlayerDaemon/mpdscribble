@@ -98,11 +98,7 @@ private:
 
 	void AppendVerbatim(unsigned value) noexcept;
 
-	void AppendEscape(const char *value) noexcept;
-
-	void AppendEscape(const std::string &value) noexcept {
-		AppendEscape(value.c_str());
-	}
+	void AppendEscape(std::string_view value) noexcept;
 
 	void AppendEscape(unsigned value) noexcept {
 		AppendVerbatim(value);
