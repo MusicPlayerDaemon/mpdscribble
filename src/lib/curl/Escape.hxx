@@ -21,14 +21,18 @@
 #ifndef CURL_ESCAPE_HXX
 #define CURL_ESCAPE_HXX
 
+#include "String.hxx"
+
 #include <string>
 #include <string_view>
 
 /**
- * Escapes URI parameters with '%'.  Free the return value with
- * g_free().
+ * Escapes URI parameters with '%'.
  */
-std::string
-CurlEscape(std::string_view src) noexcept;
+inline CurlString
+CurlEscape(std::string_view src) noexcept
+{
+	return CurlString{curl_escape(src.data(), src.size())};
+}
 
 #endif

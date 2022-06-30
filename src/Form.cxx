@@ -34,5 +34,6 @@ FormDataBuilder::AppendVerbatim(unsigned value) noexcept
 void
 FormDataBuilder::AppendEscape(std::string_view value) noexcept
 {
-	s.append(CurlEscape(value));
+	if (auto e = CurlEscape(value))
+		s.append(e);
 }
