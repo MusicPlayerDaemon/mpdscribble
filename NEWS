@@ -1,4 +1,5 @@
 mpdscribble 0.25 - not yet released
+  * fall back to "album artist" tag if there is no "artist" tag
 
 mpdscribble 0.24 - (2022-03-14)
   * limit retry interval to 8 minutes

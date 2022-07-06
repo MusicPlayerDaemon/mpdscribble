@@ -232,7 +232,8 @@ MpdObserver::Update() noexcept
 		current_song = nullptr;
 		last_id = -1;
 		was_paused = false;
-	} else if (mpd_song_get_tag(current_song, MPD_TAG_ARTIST, 0) == nullptr ||
+	} else if ((mpd_song_get_tag(current_song, MPD_TAG_ARTIST, 0) == nullptr &&
+		   mpd_song_get_tag(current_song, MPD_TAG_ALBUM_ARTIST, 0) == nullptr) ||
 		   mpd_song_get_tag(current_song, MPD_TAG_TITLE, 0) == nullptr) {
 		if (mpd_song_get_id(current_song) != last_id) {
 			FormatInfo("new song detected with tags missing (%s)",

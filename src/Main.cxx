@@ -70,17 +70,27 @@ song_repeated(const struct mpd_song *song,
 				   GetSongDuration(song));
 }
 
+static const char *
+artist(const struct mpd_song *song) noexcept
+{
+	if (mpd_song_get_tag(song, MPD_TAG_ARTIST, 0) != nullptr) {
+		return mpd_song_get_tag(song, MPD_TAG_ARTIST, 0);
+	} else {
+		return mpd_song_get_tag(song, MPD_TAG_ALBUM_ARTIST, 0);
+	}
+}
+
 void
 Instance::OnMpdSongChanged(const struct mpd_song *song) noexcept
 {
 	FormatInfo("new song detected (%s - %s), id: %u, pos: %u\n",
-		   mpd_song_get_tag(song, MPD_TAG_ARTIST, 0),
+		   artist(song),
 		   mpd_song_get_tag(song, MPD_TAG_TITLE, 0),
 		   mpd_song_get_id(song), mpd_song_get_pos(song));
 
 	stopwatch.Start();
 
-	scrobblers.NowPlaying(mpd_song_get_tag(song, MPD_TAG_ARTIST, 0),
+	scrobblers.NowPlaying(artist(song),
 			      mpd_song_get_tag(song, MPD_TAG_TITLE, 0),
 			      mpd_song_get_tag(song, MPD_TAG_ALBUM, 0),
 			      mpd_song_get_tag(song, MPD_TAG_TRACK, 0),
@@ -149,7 +159,7 @@ Instance::OnMpdEnded(const struct mpd_song *song, bool love) noexcept
 	/* FIXME:
 	   libmpdclient doesn't have any way to fetch the musicbrainz id. */
 	scrobblers.SongChange(mpd_song_get_uri(song),
-			      mpd_song_get_tag(song, MPD_TAG_ARTIST, 0),
+			      artist(song),
 			      mpd_song_get_tag(song, MPD_TAG_TITLE, 0),
 			      mpd_song_get_tag(song, MPD_TAG_ALBUM, 0),
 			      mpd_song_get_tag(song, MPD_TAG_TRACK, 0),
