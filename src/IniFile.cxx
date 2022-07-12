@@ -22,6 +22,7 @@
 #include "util/CharUtil.hxx"
 #include "util/RuntimeError.hxx"
 #include "util/ScopeExit.hxx"
+#include "util/StringSplit.hxx"
 #include "util/StringStrip.hxx"
 
 #include <string_view>
@@ -76,7 +77,7 @@ class IniParser {
 	IniFile::iterator section;
 
 public:
-	void ParseLine(char *line);
+	void ParseLine(std::string_view line);
 
 	auto Commit() noexcept {
 		return std::move(data);
@@ -84,29 +85,27 @@ public:
 };
 
 void
-IniParser::ParseLine(char *line)
+IniParser::ParseLine(std::string_view line)
 {
-	line = Strip(line);
-	if (*line == 0 || *line == '#')
+	line = StripLeft(line);
+	if (line.empty() || line.front() == '#')
 		/* ignore empty lines and comments */
 		return;
 
-	if (*line == '[') {
+	if (line.front() == '[') {
 		/* a new section */
 
-		line = StripLeft(line + 1);
-		char *end = strchr(line, ']');
-		if (end == nullptr)
+		line = StripLeft(line.substr(1));
+
+		auto [name, rest] = Split(line, ']');
+		if (rest.data() == nullptr)
 			throw std::runtime_error("Missing ']'");
 
-		std::string_view name{line, std::size_t(end - line)};
-		name = StripRight(name);
-
+		name = Strip(name);
 		if (!IsValidSectionName(name))
 			throw std::runtime_error("Invalid section name");
 
-		line = end + 1;
-		if (*line != 0)
+		if (!StripLeft(rest).empty())
 			throw std::runtime_error("Garbage after section");
 
 		auto i = data.emplace(name, IniSection{});
@@ -115,19 +114,16 @@ IniParser::ParseLine(char *line)
 						 int(name.size()), name.data());
 
 		section = i.first;
-	} else if (IsValidKeyChar(*line)) {
-		char *eq = strchr(line, '=');
-		if (eq == nullptr)
+	} else if (IsValidKeyChar(line.front())) {
+		auto [key, value] = Split(line, '=');
+		if (value.data() == nullptr)
 			throw std::runtime_error("Missing '='");
 
-		std::string_view key{line, std::size_t(eq - line)};
 		key = StripRight(key);
-
 		if (!IsValidKey(key))
 			throw std::runtime_error("Invalid key");
 
-		std::string_view value{eq + 1};
-		value = StripLeft(value);
+		value = Strip(value);
 
 		// TODO: support quoted values
 
