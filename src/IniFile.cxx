@@ -23,7 +23,8 @@
 #include "util/RuntimeError.hxx"
 #include "util/ScopeExit.hxx"
 #include "util/StringStrip.hxx"
-#include "util/StringView.hxx"
+
+#include <string_view>
 
 #include <stdio.h>
 
@@ -35,7 +36,7 @@ IsValidSectionNameChar(char ch) noexcept
 
 [[gnu::pure]]
 static bool
-IsValidSectionName(StringView name) noexcept
+IsValidSectionName(std::string_view name) noexcept
 {
 	if (name.empty())
 		return false;
@@ -55,7 +56,7 @@ IsValidKeyChar(char ch) noexcept
 
 [[gnu::pure]]
 static bool
-IsValidKey(StringView name) noexcept
+IsValidKey(std::string_view name) noexcept
 {
 	if (name.empty())
 		return false;
@@ -98,8 +99,8 @@ IniParser::ParseLine(char *line)
 		if (end == nullptr)
 			throw std::runtime_error("Missing ']'");
 
-		StringView name(line, end);
-		name.StripRight();
+		std::string_view name{line, std::size_t(end - line)};
+		name = StripRight(name);
 
 		if (!IsValidSectionName(name))
 			throw std::runtime_error("Invalid section name");
@@ -108,11 +109,10 @@ IniParser::ParseLine(char *line)
 		if (*line != 0)
 			throw std::runtime_error("Garbage after section");
 
-		auto i = data.emplace(std::string(name.data, name.size),
-				      IniSection());
+		auto i = data.emplace(name, IniSection{});
 		if (!i.second)
 			throw FormatRuntimeError("Duplicate section name: %.*s",
-						 int(name.size), name.data);
+						 int(name.size()), name.data());
 
 		section = i.first;
 	} else if (IsValidKeyChar(*line)) {
@@ -120,14 +120,14 @@ IniParser::ParseLine(char *line)
 		if (eq == nullptr)
 			throw std::runtime_error("Missing '='");
 
-		StringView key(line, eq);
-		key.StripRight();
+		std::string_view key{line, std::size_t(eq - line)};
+		key = StripRight(key);
 
 		if (!IsValidKey(key))
 			throw std::runtime_error("Invalid key");
 
-		StringView value(eq + 1);
-		value.StripLeft();
+		std::string_view value{eq + 1};
+		value = StripLeft(value);
 
 		// TODO: support quoted values
 
@@ -135,11 +135,10 @@ IniParser::ParseLine(char *line)
 			section = data.emplace(std::string(),
 					       IniSection()).first;
 
-		auto i = section->second.emplace(std::string(key.data, key.size),
-						 std::string(value.data, value.size));
+		auto i = section->second.emplace(key, value);
 		if (!i.second)
 			throw FormatRuntimeError("Duplicate key: %.*s",
-						 int(key.size), key.data);
+						 int(key.size()), key.data());
 	} else
 		throw std::runtime_error("Syntax error");
 }
