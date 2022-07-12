@@ -4,7 +4,6 @@ util = static_library(
   'OptionParser.cxx',
   'PrintException.cxx',
   'StringStrip.cxx',
-  'StringView.cxx',
   include_directories: inc,
 )
 
