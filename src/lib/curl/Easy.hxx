@@ -30,6 +30,8 @@
 #ifndef CURL_EASY_HXX
 #define CURL_EASY_HXX
 
+#include "String.hxx"
+
 #include <curl/curl.h>
 
 #include <utility>
@@ -214,8 +216,8 @@ public:
 		return ::curl_easy_pause(handle, CURLPAUSE_CONT) == CURLE_OK;
 	}
 
-	char *Escape(const char *string, int length=0) const noexcept {
-		return curl_easy_escape(handle, string, length);
+	CurlString Escape(const char *string, int length=0) const noexcept {
+		return CurlString(curl_easy_escape(handle, string, length));
 	}
 };
 
