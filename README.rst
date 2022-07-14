@@ -11,7 +11,7 @@ Installing mpdscribble
 Requirements
 ^^^^^^^^^^^^
 
-- a C++17 compliant compiler (e.g. gcc or clang)
+- a C++20 compliant compiler (e.g. gcc or clang)
 - `libmpdclient 2.2 <https://www.musicpd.org/libs/libmpdclient/>`__
 - `libcurl <https://curl.haxx.se/>`__
 - `libgcrypt <https://gnupg.org/software/libgcrypt/index.html>`__
