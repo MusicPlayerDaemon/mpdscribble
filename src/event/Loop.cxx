@@ -182,7 +182,7 @@ EventLoop::AddDefer(DeferEvent &e) noexcept
 void
 EventLoop::AddIdle(DeferEvent &e) noexcept
 {
-	idle.push_front(e);
+	idle.push_back(e);
 	again = true;
 }
 
