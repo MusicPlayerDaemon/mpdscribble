@@ -175,7 +175,7 @@ FileDescriptor::CreatePipeNonBlock(FileDescriptor &r,
 }
 
 void
-FileDescriptor::SetNonBlocking() noexcept
+FileDescriptor::SetNonBlocking() const noexcept
 {
 	assert(IsDefined());
 
@@ -184,7 +184,7 @@ FileDescriptor::SetNonBlocking() noexcept
 }
 
 void
-FileDescriptor::SetBlocking() noexcept
+FileDescriptor::SetBlocking() const noexcept
 {
 	assert(IsDefined());
 
@@ -193,7 +193,7 @@ FileDescriptor::SetBlocking() noexcept
 }
 
 void
-FileDescriptor::EnableCloseOnExec() noexcept
+FileDescriptor::EnableCloseOnExec() const noexcept
 {
 	assert(IsDefined());
 
@@ -202,7 +202,7 @@ FileDescriptor::EnableCloseOnExec() noexcept
 }
 
 void
-FileDescriptor::DisableCloseOnExec() noexcept
+FileDescriptor::DisableCloseOnExec() const noexcept
 {
 	assert(IsDefined());
 
@@ -217,7 +217,7 @@ FileDescriptor::Duplicate() const noexcept
 }
 
 bool
-FileDescriptor::CheckDuplicate(FileDescriptor new_fd) noexcept
+FileDescriptor::CheckDuplicate(FileDescriptor new_fd) const noexcept
 {
 	if (*this == new_fd) {
 		DisableCloseOnExec();
@@ -229,7 +229,7 @@ FileDescriptor::CheckDuplicate(FileDescriptor new_fd) noexcept
 #endif
 
 bool
-FileDescriptor::Rewind() noexcept
+FileDescriptor::Rewind() const noexcept
 {
 	assert(IsDefined());
 
@@ -246,7 +246,7 @@ FileDescriptor::GetSize() const noexcept
 }
 
 void
-FileDescriptor::FullRead(void *_buffer, std::size_t length)
+FileDescriptor::FullRead(void *_buffer, std::size_t length) const
 {
 	auto buffer = (std::byte *)_buffer;
 
@@ -264,7 +264,7 @@ FileDescriptor::FullRead(void *_buffer, std::size_t length)
 }
 
 void
-FileDescriptor::FullWrite(const void *_buffer, std::size_t length)
+FileDescriptor::FullWrite(const void *_buffer, std::size_t length) const
 {
 	auto buffer = (const std::byte *)_buffer;
 
