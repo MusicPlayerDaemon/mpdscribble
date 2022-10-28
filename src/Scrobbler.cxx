@@ -344,11 +344,11 @@ as_md5(const std::string &password, const std::string &timestamp)
 {
 	std::array<char, MD5_HEX_SIZE> buffer;
 
-	const char *password_md5 = password.c_str();
+	auto password_md5 = std::string(password);
 	if (password.length() != 32) {
 		/* assume it's not hashed yet */
 		buffer = md5_hex(password);
-		password_md5 = buffer.data();
+		password_md5 = std::string(buffer.data(), MD5_HEX_SIZE);
 	}
 
 	return md5_hex(password_md5 + timestamp);
