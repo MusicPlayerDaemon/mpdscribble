@@ -149,6 +149,18 @@ EventLoop::Insert(FineTimerEvent &t) noexcept
 	again = true;
 }
 
+/**
+ * Determines which timeout will happen earlier; either one may be
+ * negative to specify "no timeout at all".
+ */
+static constexpr Event::Duration
+GetEarlierTimeout(Event::Duration a, Event::Duration b) noexcept
+{
+	return b.count() < 0 || (a.count() >= 0 && a < b)
+		? a
+		: b;
+}
+
 inline Event::Duration
 EventLoop::HandleTimers() noexcept
 {
@@ -157,10 +169,7 @@ EventLoop::HandleTimers() noexcept
 	auto fine_timeout = timers.Run(now);
 	auto coarse_timeout = coarse_timers.Run(now);
 
-	return fine_timeout.count() < 0 ||
-		(coarse_timeout.count() >= 0 && coarse_timeout < fine_timeout)
-		? coarse_timeout
-		: fine_timeout;
+	return GetEarlierTimeout(coarse_timeout, fine_timeout);
 }
 
 void
