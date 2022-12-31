@@ -1,4 +1,4 @@
-curl_dep = dependency('libcurl', version: '>= 7.18')
+curl_dep = dependency('libcurl', version: '>= 7.55')
 
 curl = static_library(
   'curl',
