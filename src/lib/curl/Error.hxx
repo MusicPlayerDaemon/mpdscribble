@@ -1,5 +1,5 @@
 /*
- * Copyright 2008-2022 Max Kellermann <max.kellermann@gmail.com>
+ * Copyright 2022 Max Kellermann <max.kellermann@gmail.com>
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -27,21 +27,31 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "Init.hxx"
-#include "Error.hxx"
+#pragma once
 
 #include <curl/curl.h>
 
-void
-CurlInit()
+#include <system_error>
+
+namespace Curl {
+
+class ErrorCategory final : public std::error_category {
+public:
+	const char *name() const noexcept override {
+		return "curl";
+	}
+
+	std::string message(int condition) const override {
+		return curl_easy_strerror(static_cast<CURLcode>(condition));
+	}
+};
+
+inline ErrorCategory error_category;
+
+inline std::system_error
+MakeError(CURLcode code, const char *msg) noexcept
 {
-	CURLcode code = curl_global_init(CURL_GLOBAL_ALL);
-	if (code != CURLE_OK)
-		throw Curl::MakeError(code, "CURL initialization failed");
+	return std::system_error(static_cast<int>(code), error_category, msg);
 }
 
-void
-CurlDeinit() noexcept
-{
-	curl_global_cleanup();
-}
+} // namespace Curl
