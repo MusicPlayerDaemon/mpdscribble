@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: BSD-2-Clause
 // author: Max Kellermann <max.kellermann@gmail.com>
 
-#ifndef CURL_EASY_HXX
-#define CURL_EASY_HXX
+#pragma once
 
 #include "Error.hxx"
 #include "String.hxx"
@@ -102,6 +101,13 @@ public:
 		SetOption(CURLOPT_NOPROGRESS, (long)value);
 	}
 
+	void SetXferInfoFunction(curl_xferinfo_callback function,
+				 void *data) {
+		SetOption(CURLOPT_XFERINFOFUNCTION, function);
+		SetOption(CURLOPT_XFERINFODATA, data);
+		SetNoProgress(false);
+	}
+
 	void SetNoSignal(bool value=true) {
 		SetOption(CURLOPT_NOSIGNAL, (long)value);
 	}
@@ -161,6 +167,10 @@ public:
 		SetOption(CURLOPT_POSTFIELDSIZE, (long)size);
 	}
 
+	void SetMimePost(const curl_mime *mime) {
+		SetOption(CURLOPT_MIMEPOST, mime);
+	}
+
 	template<typename T>
 	bool GetInfo(CURLINFO info, T value_r) const noexcept {
 		return ::curl_easy_getinfo(handle, info, value_r) == CURLE_OK;
@@ -191,5 +201,3 @@ public:
 		return CurlString(curl_easy_escape(handle, string, length));
 	}
 };
-
-#endif
