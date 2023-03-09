@@ -9,10 +9,6 @@
 #include <unistd.h>
 #include <sys/types.h>
 
-#ifdef __linux__
-#include <csignal>
-#endif
-
 #ifdef _WIN32
 #include <wchar.h>
 #endif
@@ -175,10 +171,6 @@ public:
 	 * process, to be used by a newly executed program.
 	 */
 	bool CheckDuplicate(FileDescriptor new_fd) noexcept;
-#endif
-
-#ifdef __linux__
-	bool CreateSignalFD(const sigset_t *mask) noexcept;
 #endif
 
 	/**
