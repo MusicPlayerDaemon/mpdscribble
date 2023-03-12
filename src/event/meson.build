@@ -21,7 +21,6 @@ event = static_library(
   'TimerWheel.cxx',
   'CoarseTimerEvent.cxx',
   'DeferEvent.cxx',
-  'IdleEvent.cxx',
   'SocketEvent.cxx',
   'Loop.cxx',
   event_sources,
