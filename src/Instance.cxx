@@ -6,6 +6,10 @@
 #include "SdDaemon.hxx"
 #include "event/SignalMonitor.hxx"
 
+#ifndef _WIN32
+#include <signal.h>
+#endif
+
 Instance::Instance(const Config &config)
 	:curl_global(event_loop, NullableString(config.proxy)),
 	 mpd_observer(event_loop, *this,
