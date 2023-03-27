@@ -4,6 +4,10 @@ project('mpdscribble', 'cpp',
   default_options: [
     'cpp_std=c++2a',
     'warning_level=3',
+
+    # If we build libmpdclient, it should be linked statically into
+    # our executable.
+    'libmpdclient:default_library=static',
   ],
   license: 'GPLv2+',
 )
