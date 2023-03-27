@@ -8,6 +8,14 @@
 
 #include <utility>
 
+#ifdef _WIN32
+#include <windows.h>
+/* damn you, windows.h! */
+#ifdef ERROR
+#undef ERROR
+#endif
+#endif
+
 enum class LogLevel {
 	DEBUG,
 	INFO,
