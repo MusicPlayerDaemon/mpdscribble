@@ -26,16 +26,6 @@ if not get_option('syslog').disabled()
   endif
 endif
 
-thread_dep = dependency('threads')
-libmpdclient_dep = dependency('libmpdclient', version: '>= 2.5')
-
-if host_machine.system() == 'linux'
-  libsystemd_dep = dependency('libsystemd', required: get_option('systemd'))
-  conf.set('HAVE_LIBSYSTEMD', libsystemd_dep.found())
-else
-  libsystemd_dep = dependency('', required: false)
-endif
-
 common_cflags = [
 ]
 
@@ -102,6 +92,16 @@ endif
 add_global_arguments(compiler.get_supported_arguments(test_global_cxxflags), language: 'cpp')
 add_project_arguments(compiler.get_supported_arguments(test_cxxflags), language: 'cpp')
 add_project_link_arguments(compiler.get_supported_link_arguments(test_ldflags), language: 'cpp')
+
+thread_dep = dependency('threads')
+libmpdclient_dep = dependency('libmpdclient', version: '>= 2.5')
+
+if host_machine.system() == 'linux'
+  libsystemd_dep = dependency('libsystemd', required: get_option('systemd'))
+  conf.set('HAVE_LIBSYSTEMD', libsystemd_dep.found())
+else
+  libsystemd_dep = dependency('', required: false)
+endif
 
 configure_file(output: 'config.h', configuration: conf)
 
