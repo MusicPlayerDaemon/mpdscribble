@@ -1,6 +1,10 @@
-system_sources = [
-  'EventPipe.cxx',
-]
+system_sources = []
+
+if host_machine.system() != 'windows'
+  system_sources += [
+    'EventPipe.cxx',
+  ]
+endif
 
 if host_machine.system() == 'linux'
   system_sources += [
