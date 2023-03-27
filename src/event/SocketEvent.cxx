@@ -22,6 +22,8 @@ SocketEvent::Open(SocketDescriptor _fd) noexcept
 	fd = _fd;
 }
 
+#if 0 // not used by mpdscribble
+
 void
 SocketEvent::Close() noexcept
 {
@@ -45,6 +47,8 @@ SocketEvent::Close() noexcept
 	}
 	fd.Close();
 }
+
+#endif
 
 void
 SocketEvent::Abandon() noexcept
