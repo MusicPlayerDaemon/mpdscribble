@@ -19,7 +19,10 @@
 
 #include <stdlib.h>
 #include <string.h>
+
+#ifndef _WIN32
 #include <sys/stat.h>
+#endif
 
 /*
   default locations for files.
@@ -36,6 +39,8 @@
 
 #define AS_HOST "https://post.audioscrobbler.com/"
 
+#ifndef _WIN32
+
 [[gnu::pure]]
 static bool
 file_exists(const char *filename) noexcept
@@ -43,6 +48,8 @@ file_exists(const char *filename) noexcept
 	struct stat st;
 	return stat(filename, &st) == 0 && S_ISREG(st.st_mode);
 }
+
+#endif
 
 static std::string
 get_default_config_path(Config &config)
