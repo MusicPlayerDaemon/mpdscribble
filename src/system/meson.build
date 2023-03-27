@@ -17,7 +17,7 @@ system = static_library(
 )
 
 if is_windows
-  winsock_dep = c_compiler.find_library('ws2_32')
+  winsock_dep = compiler.find_library('ws2_32')
 else
   winsock_dep = dependency('', required: false)
 endif
