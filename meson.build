@@ -93,6 +93,30 @@ if get_option('buildtype') != 'debug'
   ]
 endif
 
+if is_windows
+  common_cppflags += [
+    # enable Windows Vista APIs
+    '-DWINVER=0x0600', '-D_WIN32_WINNT=0x0600',
+
+    # enable strict type checking in the Windows API headers
+    '-DSTRICT',
+
+    # reduce header bloat by disabling obscure and obsolete Windows
+    # APIs
+    '-DWIN32_LEAN_AND_MEAN',
+
+    # disable more Windows APIs which are not used by mpdscribble
+    '-DNOGDI', '-DNOBITMAP', '-DNOCOMM',
+    '-DNOUSER',
+
+    # reduce COM header bloat
+    '-DCOM_NO_WINDOWS_H',
+
+    # disable Internet Explorer specific APIs
+    '-D_WIN32_IE=0',
+  ]
+endif
+
 add_project_arguments(common_cppflags, language: 'c')
 add_project_arguments(common_cppflags, language: 'cpp')
 
