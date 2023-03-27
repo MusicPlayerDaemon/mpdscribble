@@ -30,7 +30,7 @@ if not get_option('syslog').disabled()
   endif
 endif
 
-common_cflags = [
+common_cppflags = [
 ]
 
 test_global_common_flags = [
@@ -92,6 +92,9 @@ if get_option('buildtype') != 'debug'
     '-Wl,--gc-sections',
   ]
 endif
+
+add_project_arguments(common_cppflags, language: 'c')
+add_project_arguments(common_cppflags, language: 'cpp')
 
 add_global_arguments(compiler.get_supported_arguments(test_global_cxxflags), language: 'cpp')
 add_project_arguments(compiler.get_supported_arguments(test_cxxflags), language: 'cpp')
