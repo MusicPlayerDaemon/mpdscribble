@@ -12,7 +12,6 @@
 #include "SdDaemon.hxx"
 
 #include <stdlib.h>
-#include <unistd.h>
 
 static std::chrono::steady_clock::duration
 GetSongDuration(const struct mpd_song *song) noexcept
