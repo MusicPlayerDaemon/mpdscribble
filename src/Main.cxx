@@ -7,9 +7,12 @@
 #include "ReadConfig.hxx"
 #include "Config.hxx"
 #include "Log.hxx"
-#include "lib/gcrypt/Init.hxx"
 #include "util/PrintException.hxx"
 #include "SdDaemon.hxx"
+
+#ifndef _WIN32
+#include "lib/gcrypt/Init.hxx"
+#endif
 
 #include <stdlib.h>
 
@@ -176,7 +179,9 @@ try {
 #endif
 		daemonize_close_stdout_stderr();
 
+#ifndef _WIN32
 	Gcrypt::Init();
+#endif
 
 	Instance instance(config);
 

@@ -6,13 +6,18 @@
 #include "ScrobblerConfig.hxx"
 #include "Journal.hxx"
 #include "lib/curl/Request.hxx"
-#include "lib/gcrypt/MD5.hxx"
 #include "Form.hxx"
 #include "Log.hxx" /* for log_date() */
 #include "system/Error.hxx"
 #include "util/Exception.hxx"
 #include "util/HexFormat.hxx"
 #include "util/SpanCast.hxx"
+
+#ifdef _WIN32
+#include "lib/wincrypt/MD5.hxx"
+#else
+#include "lib/gcrypt/MD5.hxx"
+#endif
 
 #include <array>
 #include <cassert>
@@ -318,7 +323,11 @@ static constexpr size_t MD5_HEX_SIZE = MD5_SIZE * 2;
 static auto
 md5_hex(std::string_view s)
 {
+#ifdef _WIN32
+	const auto binary = WinCrypt::MD5(AsBytes(s));
+#else
 	const auto binary = Gcrypt::MD5(AsBytes(s));
+#endif
 	return HexFormat(std::span{binary});
 }
 

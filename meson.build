@@ -149,7 +149,14 @@ subdir('src/system')
 subdir('src/net')
 subdir('src/event')
 subdir('src/lib/curl')
-subdir('src/lib/gcrypt')
+
+if host_machine.system() == 'windows'
+  subdir('src/lib/wincrypt')
+  md5_dep = wincrypt_dep
+else
+  subdir('src/lib/gcrypt')
+  md5_dep = gcrypt_dep
+endif
 
 executable(
   'mpdscribble',
@@ -174,7 +181,7 @@ executable(
     event_dep,
     thread_dep,
     libmpdclient_dep,
-    gcrypt_dep,
+    md5_dep,
     curl_dep,
     libsystemd_dep,
   ],
