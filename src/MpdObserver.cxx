@@ -80,7 +80,7 @@ MpdObserver::Connect() noexcept
 		   version[0], version[1], version[2],
 		   name.c_str());
 
-	socket.Open(SocketDescriptor{mpd_connection_get_fd(connection)});
+	socket.Open(SocketDescriptor(mpd_connection_get_fd(connection)));
 	socket.ScheduleRead();
 
 	subscribed = mpd_run_subscribe(connection, "mpdscribble");
