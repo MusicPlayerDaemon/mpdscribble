@@ -13,9 +13,9 @@ jobs:
         with:
           fetch-depth: 0
       - name: Install build tools
-        run: choco install meson --version 1.0.1 -y --ignorepackagecodes && refreshenv
+        run: choco install meson --version 1.0.1 -y --ignorepackagecodes && choco install ninja --version 1.11.1 -y --ignorepackagecodes && refreshenv
       - name: Setup build environment
-        run: meson build
+        run: &'C:\Program Files\Meson\meson.exe' build
       - name: Compile project
         run: cd .\build\ && ninja -j4
       - uses: actions/upload-artifact@v3
