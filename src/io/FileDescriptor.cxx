@@ -28,6 +28,15 @@
 #define O_CLOEXEC 0
 #endif
 
+#ifdef _WIN32
+typedef int mode_t;
+	#if defined(_WIN64)
+	 typedef __int64 ssize_t; 
+	#else
+	 typedef long ssize_t;
+	#endif
+#endif
+
 #ifndef _WIN32
 
 bool
