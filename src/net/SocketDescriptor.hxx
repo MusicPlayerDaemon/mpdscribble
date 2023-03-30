@@ -15,6 +15,11 @@
 
 #ifdef _WIN32
 #include <winsock2.h> // for SOCKET, INVALID_SOCKET
+	#if defined(_WIN64)
+	 typedef __int64 ssize_t; 
+	#else
+	 typedef long ssize_t;
+	#endif
 #endif
 
 class SocketAddress;
