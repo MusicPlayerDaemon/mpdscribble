@@ -13,7 +13,7 @@ jobs:
         with:
           fetch-depth: 0
       - name: Install build tools
-        run: choco install meson --version 1.0.1 -y
+        run: choco install meson --version 1.0.1 -y --usepackagecodes
       - name: Setup build environment
         run: meson build
       - name: Compile project
