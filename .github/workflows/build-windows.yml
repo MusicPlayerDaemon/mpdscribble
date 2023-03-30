@@ -7,6 +7,9 @@ jobs:
     defaults:
       run:
         shell: pwsh
+    env:
+        CC: clang
+        CXX: clang++
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
