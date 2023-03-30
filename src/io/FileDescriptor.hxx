@@ -188,16 +188,28 @@ public:
 	bool Rewind() noexcept;
 
 	off_t Seek(off_t offset) noexcept {
+		#ifdef _WIN32
+		return _lseek(Get(), offset, SEEK_SET);
+		#else
 		return lseek(Get(), offset, SEEK_SET);
+		#endif
 	}
 
 	off_t Skip(off_t offset) noexcept {
+		#ifdef _WIN32
+		return _lseek(Get(), offset, SEEK_CUR);
+		#else
 		return lseek(Get(), offset, SEEK_CUR);
+		#endif
 	}
 
 	[[gnu::pure]]
 	off_t Tell() const noexcept {
+		#ifdef _WIN32
+		return _lseek(Get(), 0, SEEK_CUR);
+		#else
 		return lseek(Get(), 0, SEEK_CUR);
+		#endif
 	}
 
 	/**
