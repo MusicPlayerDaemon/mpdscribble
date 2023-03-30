@@ -60,7 +60,9 @@ public:
 	 */
 	static constexpr unsigned IMPLICIT_FLAGS = ERROR|HANGUP;
 
+	#ifndef _WIN32
 	using ssize_t = std::make_signed<size_t>::type;
+	#endif
 
 	SocketEvent(EventLoop &_loop, Callback _callback,
 		    SocketDescriptor _fd=SocketDescriptor::Undefined()) noexcept
