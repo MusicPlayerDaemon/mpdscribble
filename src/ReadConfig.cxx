@@ -66,11 +66,12 @@ get_default_config_path(Config &config)
 	}
 
 	const char *HOME = getenv("HOME");
-	std::string LEGACY_FILE_HOME_CONF =
-			std::string(HOME) + "/.mpdscribble/mpdscribble.conf";
-	if (file_exists(LEGACY_FILE_HOME_CONF.c_str())) {
-		config.loc = file_home;
-		return LEGACY_FILE_HOME_CONF;
+	if (HOME != nullptr) {
+		auto path = BuildPath(HOME, ".mpdscribble/mpdscribble.conf");
+		if (file_exists(path.c_str())) {
+			config.loc = file_home;
+			return path;
+		}
 	}
 
 	config.loc = file_etc;
