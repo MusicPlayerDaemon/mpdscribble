@@ -10,6 +10,8 @@
 #include "IniFile.hxx"
 #include "SdDaemon.hxx"
 #include "config.h"
+#include "XdgBaseDirectory.hxx"
+#include "io/Path.hxx"
 
 #ifdef HAVE_LIBSYSTEMD
 #include <systemd/sd-daemon.h>
@@ -55,29 +57,24 @@ static std::string
 get_default_config_path(Config &config)
 {
 #ifndef _WIN32
-	const char *XDG_CONFIG_HOME = getenv("XDG_CONFIG_HOME");
+	if (auto dir = GetUserConfigDirectory(PACKAGE); !dir.empty()) {
+		auto path = BuildPath(dir, "mpdscribble.conf");
+		if (file_exists(path.c_str())) {
+			config.loc = file_home;
+			return path;
+		}
+	}
+
 	const char *HOME = getenv("HOME");
-	std::string FILE_HOME_CONF = XDG_CONFIG_HOME ?
-		std::string(XDG_CONFIG_HOME) + "/mpdscribble/mpdscribble.conf" :
-		std::string(HOME) + "/.config/mpdscribble/mpdscribble.conf";
 	std::string LEGACY_FILE_HOME_CONF =
 			std::string(HOME) + "/.mpdscribble/mpdscribble.conf";
-	/* const char *LEGACY_FILE_HOME_CONF = "~/.mpdscribble/mpdscribble.conf"; */
-	if (file_exists(LEGACY_FILE_HOME_CONF.c_str()) &&
-			!file_exists(FILE_HOME_CONF.c_str())) {
-		FILE_HOME_CONF = std::move(LEGACY_FILE_HOME_CONF);
-	}
-	auto file = FILE_HOME_CONF;
-	if (file_exists(file.c_str())) {
+	if (file_exists(LEGACY_FILE_HOME_CONF.c_str())) {
 		config.loc = file_home;
-		return file;
-	} else {
-		if (!file_exists(FILE_CONF))
-			return {};
-
-		config.loc = file_etc;
-		return FILE_CONF;
+		return LEGACY_FILE_HOME_CONF;
 	}
+
+	config.loc = file_etc;
+	return FILE_CONF;
 #else
 	(void)config;
 	return "mpdscribble.conf";
@@ -102,11 +99,11 @@ get_default_log_path() noexcept
 static std::string
 GetXdgCachePath() noexcept
 {
-	const char *xdg_cache_home = getenv("XDG_CACHE_HOME");
-	if (xdg_cache_home == nullptr)
+	auto dir = GetUserCacheDirectory(PACKAGE);
+	if (dir.empty())
 		return {};
 
-	return std::string(xdg_cache_home) + "/mpdscribble/mpdscribble.cache";
+	return BuildPath(dir, "mpdscribble.cache");
 }
 
 [[gnu::pure]]
