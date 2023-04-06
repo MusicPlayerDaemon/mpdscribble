@@ -174,6 +174,7 @@ executable(
   'src/Journal.cxx',
   'src/MpdObserver.cxx',
   'src/Log.cxx',
+  'src/XdgBaseDirectory.cxx',
 
   include_directories: inc,
   dependencies: [
