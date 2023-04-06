@@ -103,6 +103,7 @@ GetXdgCachePath() noexcept
 	if (dir.empty())
 		return {};
 
+	mkdir(dir.c_str(), 0777);
 	return BuildPath(dir, "mpdscribble.cache");
 }
 
