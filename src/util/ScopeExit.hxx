@@ -24,7 +24,7 @@ public:
 	   "noexcept" declaration allows the destructor to throw if
 	   the function can throw; without this, a throwing function
 	   would std::terminate() */
-	~ScopeExitGuard() noexcept(noexcept(F::operator()())) {
+	~ScopeExitGuard() noexcept(noexcept(std::declval<F>()())) {
 		if (enabled)
 			F::operator()();
 	}
