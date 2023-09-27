@@ -207,6 +207,10 @@ public:
 	[[gnu::pure]]
 	off_t GetSize() const noexcept;
 
+	ssize_t Read(std::span<std::byte> dest) const noexcept {
+		return ::read(fd, dest.data(), dest.size());
+	}
+
 	ssize_t Read(void *buffer, std::size_t length) const noexcept {
 		return ::read(fd, buffer, length);
 	}
@@ -216,6 +220,10 @@ public:
 	 * on error.
 	 */
 	void FullRead(std::span<std::byte> dest) const;
+
+	ssize_t Write(std::span<const std::byte> src) const noexcept {
+		return ::write(fd, src.data(), src.size());
+	}
 
 	ssize_t Write(const void *buffer, std::size_t length) const noexcept {
 		return ::write(fd, buffer, length);
