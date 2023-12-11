@@ -1,4 +1,4 @@
-mpdscribble 0.25 - not yet released
+mpdscribble 0.25 - (2023-12-11)
   * fall back to "album artist" tag if there is no "artist" tag
   * fix inverted "verbose" setting
   * improved XDG base directory support
