@@ -33,18 +33,12 @@
 #define CLANG_OR_GCC_VERSION(major, minor) \
 	(CLANG_VERSION > 0 || GCC_CHECK_VERSION(major, minor))
 
-#if CLANG_OR_GCC_VERSION(4,0)
-
-/* GCC 4.x */
-
+#ifdef __clang__
 #define gcc_printf(a,b) __attribute__((format(printf, a, b)))
-
+#elif defined(__GNUC__)
+#define gcc_printf(a,b) __attribute__((format(gnu_printf, a, b)))
 #else
-
-/* generic C compiler */
-
 #define gcc_printf(a,b)
-
 #endif
 
 #if defined(__GNUC__) || defined(__clang__)
