@@ -151,7 +151,6 @@ if is_windows
   ]
 endif
 
-add_project_arguments(common_cppflags, language: 'c')
 add_project_arguments(common_cppflags, language: 'cpp')
 
 add_global_arguments(compiler.get_supported_arguments(test_global_cxxflags), language: 'cpp')
