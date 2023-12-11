@@ -159,7 +159,7 @@ add_project_arguments(compiler.get_supported_arguments(test_cxxflags), language:
 add_project_link_arguments(compiler.get_supported_link_arguments(test_ldflags), language: 'cpp')
 
 thread_dep = dependency('threads')
-libmpdclient_dep = dependency('libmpdclient', version: '>= 2.5')
+libmpdclient_dep = dependency('libmpdclient', version: '>= 2.10')
 
 if host_machine.system() == 'linux'
   libsystemd_dep = dependency('libsystemd', required: get_option('systemd'))

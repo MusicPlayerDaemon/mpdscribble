@@ -19,11 +19,7 @@
 static std::chrono::steady_clock::duration
 GetSongDuration(const struct mpd_song *song) noexcept
 {
-#if LIBMPDCLIENT_CHECK_VERSION(2,10,0)
 	return std::chrono::milliseconds(mpd_song_get_duration_ms(song));
-#else
-	return std::chrono::seconds(mpd_song_get_duration(song));
-#endif
 }
 
 static constexpr bool

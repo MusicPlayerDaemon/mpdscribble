@@ -4,6 +4,7 @@ mpdscribble 0.25 - not yet released
   * improved XDG base directory support
   * fix crash if $HOME is not set
   * fix out-of-bounds read
+  * require libmpdclient 2.10 or later
   * require CURL 7.55.0 or later
 
 mpdscribble 0.24 - (2022-03-14)
