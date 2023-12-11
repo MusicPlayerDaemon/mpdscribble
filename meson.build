@@ -5,9 +5,43 @@ project('mpdscribble', 'cpp',
     'cpp_std=c++2a',
     'warning_level=3',
 
-    # If we build libmpdclient, it should be linked statically into
-    # our executable.
+    # If we build those libraries as Meson subproject, they shall be
+    # linked statically into the MPD executable.
+    'curl:default_library=static',
     'libmpdclient:default_library=static',
+
+    # disable CURL options we don't need
+    'curl:tool=disabled',
+    'curl:tests=disabled',
+    'curl:unittests=disabled',
+    'curl:brotli=disabled',
+    'curl:cookies=disabled',
+    'curl:progress-meter=disabled',
+    'curl:zstd=disabled',
+    'curl:kerberos-auth=disabled',
+    'curl:negotiate-auth=disabled',
+    'curl:gss-api=disabled',
+    'curl:ntlm=disabled',
+    'curl:ssh=disabled',
+    'curl:dict=disabled',
+    'curl:file=disabled',
+    'curl:ftp=disabled',
+    'curl:gopher=disabled',
+    'curl:imap=disabled',
+    'curl:ldap=disabled',
+    'curl:ldaps=disabled',
+    'curl:mqtt=disabled',
+    'curl:pop3=disabled',
+    'curl:rtmp=disabled',
+    'curl:rtsp=disabled',
+    'curl:smb=disabled',
+    'curl:smtp=disabled',
+    'curl:telnet=disabled',
+    'curl:tftp=disabled',
+
+    # Not interested in compiler warnings from subprojects.
+    'curl:werror=false',
+    'curl:warning_level=0',
   ],
   license: 'GPLv2+',
 )
