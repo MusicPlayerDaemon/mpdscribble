@@ -133,7 +133,7 @@ log_deinit() noexcept
 void
 Log(LogLevel level, const char *msg) noexcept
 {
-	if (level > log_threshold)
+	if (level < log_threshold)
 		return;
 
 #ifdef HAVE_SYSLOG
@@ -147,7 +147,7 @@ Log(LogLevel level, const char *msg) noexcept
 void
 LogFormat(LogLevel level, const char *fmt, ...) noexcept
 {
-	if (level > log_threshold)
+	if (level < log_threshold)
 		return;
 
 #ifdef HAVE_SYSLOG

@@ -1,5 +1,6 @@
 mpdscribble 0.25 - not yet released
   * fall back to "album artist" tag if there is no "artist" tag
+  * fix inverted "verbose" setting
   * improved XDG base directory support
   * fix crash if $HOME is not set
   * fix out-of-bounds read
