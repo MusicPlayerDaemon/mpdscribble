@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: BSD-2-Clause
 // author: Max Kellermann <max.kellermann@gmail.com>
 
-#ifndef SOCKET_DESCRIPTOR_HXX
-#define SOCKET_DESCRIPTOR_HXX
+#pragma once
 
 #include "Features.hxx"
 
@@ -19,6 +18,8 @@
 #include <winsock2.h> // for SOCKET, INVALID_SOCKET
 #endif
 
+struct msghdr;
+struct iovec;
 class SocketAddress;
 class StaticSocketAddress;
 class IPv4Address;
@@ -302,11 +303,19 @@ public:
 	[[nodiscard]]
 	ssize_t Receive(std::span<std::byte> dest, int flags=0) const noexcept;
 
+#ifndef _WIN32
 	/**
 	 * Wrapper for recvmsg().
 	 */
 	[[nodiscard]]
 	ssize_t Receive(struct msghdr &msg, int flags=0) const noexcept;
+
+	/**
+	 * Wrapper for recvmsg().
+	 */
+	[[nodiscard]]
+	ssize_t Receive(std::span<const struct iovec> v, int flags=0) const noexcept;
+#endif // !_WIN32
 
 	/**
 	 * Wrapper for send().
@@ -316,6 +325,7 @@ public:
 	[[nodiscard]]
 	ssize_t Send(std::span<const std::byte> src, int flags=0) const noexcept;
 
+#ifndef _WIN32
 	/**
 	 * Wrapper for sendmsg().
 	 *
@@ -323,6 +333,15 @@ public:
 	 */
 	[[nodiscard]]
 	ssize_t Send(const struct msghdr &msg, int flags=0) const noexcept;
+
+	/**
+	 * Wrapper for sendmsg().
+	 *
+	 * MSG_NOSIGNAL is implicitly added (if available).
+	 */
+	[[nodiscard]]
+	ssize_t Send(std::span<const struct iovec> v, int flags=0) const noexcept;
+#endif // !_WIN32
 
 	[[nodiscard]]
 	ssize_t Read(std::span<std::byte> dest) const noexcept {
@@ -382,5 +401,3 @@ public:
 };
 
 static_assert(std::is_trivial<SocketDescriptor>::value, "type is not trivial");
-
-#endif
