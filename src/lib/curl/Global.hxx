@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: BSD-2-Clause
 // author: Max Kellermann <max.kellermann@gmail.com>
 
-#ifndef CURL_GLOBAL_HXX
-#define CURL_GLOBAL_HXX
+#pragma once
 
 #include "Init.hxx"
 #include "Multi.hxx"
@@ -65,5 +64,3 @@ private:
 	/* callback for #timeout_event */
 	void OnTimeout() noexcept;
 };
-
-#endif
