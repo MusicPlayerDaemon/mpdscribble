@@ -9,6 +9,7 @@
 #include <cstddef>
 #include <span>
 #include <string_view>
+#include <type_traits>
 
 /**
  * Cast a std::span<std::byte> to a std::span<T>, rounding down to the
@@ -89,14 +90,7 @@ ToStringView(std::span<const std::byte> s) noexcept
 }
 
 template<typename T>
-constexpr std::basic_string_view<T>
-ToStringView(std::span<const T> s) noexcept
-{
-	return {s.data(), s.size()};
-}
-
-template<typename T>
-constexpr std::basic_string_view<T>
+constexpr std::basic_string_view<std::remove_const_t<T>>
 ToStringView(std::span<T> s) noexcept
 {
 	return {s.data(), s.size()};
