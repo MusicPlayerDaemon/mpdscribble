@@ -1,4 +1,5 @@
 #include "lib/curl/Global.hxx"
+#include "lib/curl/Init.hxx"
 #include "lib/curl/Request.hxx"
 #include "lib/curl/Handler.hxx"
 #include "event/Loop.hxx"
@@ -45,6 +46,7 @@ main(int argc, char **argv)
 		return EXIT_FAILURE;
 	}
 
+	const ScopeCurlInit init;
 	CurlGlobal curl_global(event_loop, nullptr);
 
 	const char *url = argv[1];

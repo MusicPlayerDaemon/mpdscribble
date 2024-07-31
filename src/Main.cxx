@@ -7,6 +7,7 @@
 #include "ReadConfig.hxx"
 #include "Config.hxx"
 #include "Log.hxx"
+#include "lib/curl/Init.hxx"
 #include "util/PrintException.hxx"
 #include "SdDaemon.hxx"
 
@@ -178,6 +179,7 @@ try {
 #ifndef _WIN32
 	Gcrypt::Init();
 #endif
+	const ScopeCurlInit init;
 
 	Instance instance(config);
 

@@ -3,7 +3,6 @@
 
 #pragma once
 
-#include "Init.hxx"
 #include "Multi.hxx"
 #include "event/CoarseTimerEvent.hxx"
 #include "event/DeferEvent.hxx"
@@ -17,8 +16,6 @@ class CurlEasy;
  */
 class CurlGlobal final {
 	const char *const proxy;
-
-	const ScopeCurlInit init;
 
 	CurlMulti multi;
 
