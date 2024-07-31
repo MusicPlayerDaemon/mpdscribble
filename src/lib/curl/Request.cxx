@@ -27,7 +27,6 @@ CurlRequest::CurlRequest(CurlGlobal &_global,
 	curl.SetPrivate(this);
 	curl.SetUserAgent(PACKAGE "/" VERSION);
 	curl.SetWriteFunction(WriteFunction, this);
-	curl.SetOption(CURLOPT_FAILONERROR, true);
 	curl.SetOption(CURLOPT_ERRORBUFFER, error);
 	curl.SetFailOnError();
 
