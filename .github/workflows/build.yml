@@ -29,14 +29,17 @@ jobs:
             cc: gcc-14
             cxx: g++-14
             packages: g++-14
+            meson_options:
           - os: ubuntu-22.04
             cc: gcc-11
             cxx: g++-11
             packages: g++-11
+            meson_options:
           - os: ubuntu-20.04
             cc: gcc-10
             cxx: g++-10
             packages: g++-10
+            meson_options:
 
     runs-on: ${{ matrix.os }}
 
@@ -65,12 +68,18 @@ jobs:
         with:
           key: ${{ matrix.os }}
 
+      - name: Configure
+        run: |
+          meson setup \
+            -Dsystemd=enabled \
+            -Dsyslog=enabled \
+            -Dtest=true \
+            --wrap-mode nofallback \
+            ${{ matrix.meson_options }} \
+            output
+
       - name: Build
-        uses: BSFishy/meson-build@v1.0.3
-        with:
-          action: build
-          directory: output
-          setup-options: -Dtest=true
+        run: ninja -C output --verbose
 
   build-macos:
     runs-on: macos-latest
@@ -96,9 +105,13 @@ jobs:
         with:
           key: macos
 
-      - name: Meson Build
-        uses: BSFishy/meson-build@v1.0.3
-        with:
-          action: build
-          directory: output
-          setup-options: -Dtest=true
+      - name: Configure
+        run: |
+          meson setup \
+            -Dtest=true \
+            --wrap-mode nofallback \
+            ${{ matrix.meson_options }} \
+            output
+
+      - name: Build
+        run: ninja -C output --verbose
