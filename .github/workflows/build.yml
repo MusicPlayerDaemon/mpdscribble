@@ -28,12 +28,15 @@ jobs:
           - os: ubuntu-24.04
             cc: gcc-14
             cxx: g++-14
+            packages: g++-14
           - os: ubuntu-22.04
             cc: gcc-11
             cxx: g++-11
+            packages: g++-11
           - os: ubuntu-20.04
             cc: gcc-10
             cxx: g++-10
+            packages: g++-10
 
     runs-on: ${{ matrix.os }}
 
@@ -49,9 +52,9 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
+            ${{ matrix.packages }} \
             meson \
             ccache \
-            ${{ matrix.cxx }} ${{matrix.cc }} \
             libsystemd-dev \
             libgcrypt-dev \
             libcurl4-gnutls-dev \
