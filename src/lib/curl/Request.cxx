@@ -29,7 +29,6 @@ CurlRequest::CurlRequest(CurlGlobal &_global,
 	curl.SetWriteFunction(WriteFunction, this);
 	curl.SetOption(CURLOPT_FAILONERROR, true);
 	curl.SetOption(CURLOPT_ERRORBUFFER, error);
-	curl.SetOption(CURLOPT_BUFFERSIZE, (long)2048);
 	curl.SetFailOnError();
 
 	if (!request_body.empty()) {
