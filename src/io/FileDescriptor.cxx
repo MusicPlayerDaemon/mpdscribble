@@ -13,6 +13,7 @@
 
 #ifndef _WIN32
 #include <poll.h>
+#include <sys/uio.h> // for struct iovec
 #endif
 
 #ifdef __linux__
@@ -284,6 +285,18 @@ FileDescriptor::FullWrite(std::span<const std::byte> src) const
 }
 
 #ifndef _WIN32
+
+ssize_t
+FileDescriptor::Read(std::span<const struct iovec> v) const noexcept
+{
+	return readv(fd, v.data(), v.size());
+}
+
+ssize_t
+FileDescriptor::Write(std::span<const struct iovec> v) const noexcept
+{
+	return writev(fd, v.data(), v.size());
+}
 
 int
 FileDescriptor::Poll(short events, int timeout) const noexcept

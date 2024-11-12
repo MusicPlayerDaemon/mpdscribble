@@ -14,6 +14,7 @@
 #include <wchar.h>
 #endif
 
+struct iovec;
 class UniqueFileDescriptor;
 
 /**
@@ -261,6 +262,18 @@ public:
 	void FullWrite(std::span<const std::byte> src) const;
 
 #ifndef _WIN32
+	/**
+	 * Wrapper for readv().
+	 */
+	[[nodiscard]]
+	ssize_t Read(std::span<const struct iovec> v) const noexcept;
+
+	/**
+	 * Wrapper for writev().
+	 */
+	[[nodiscard]]
+	ssize_t Write(std::span<const struct iovec> v) const noexcept;
+
 	[[nodiscard]]
 	int Poll(short events, int timeout) const noexcept;
 
