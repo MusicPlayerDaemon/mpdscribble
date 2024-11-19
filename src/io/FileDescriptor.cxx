@@ -28,6 +28,13 @@
 #define O_CLOEXEC 0
 #endif
 
+/* this library implies the O_NONBLOCK in all open() calls to avoid
+   blocking the caller when a FIFO is opened; this may not only affect
+   the open() call but also other operations like mandatory locking */
+#ifndef O_NONBLOCK
+#define O_NONBLOCK 0
+#endif
+
 #ifndef _WIN32
 
 bool
@@ -65,7 +72,7 @@ bool
 FileDescriptor::Open(FileDescriptor dir, const char *pathname,
 		     int flags, mode_t mode) noexcept
 {
-	fd = ::openat(dir.Get(), pathname, flags | O_NOCTTY | O_CLOEXEC, mode);
+	fd = ::openat(dir.Get(), pathname, flags | O_NOCTTY | O_CLOEXEC | O_NONBLOCK, mode);
 	return IsDefined();
 }
 
@@ -74,7 +81,7 @@ FileDescriptor::Open(FileDescriptor dir, const char *pathname,
 bool
 FileDescriptor::Open(const char *pathname, int flags, mode_t mode) noexcept
 {
-	fd = ::open(pathname, flags | O_NOCTTY | O_CLOEXEC, mode);
+	fd = ::open(pathname, flags | O_NOCTTY | O_CLOEXEC | O_NONBLOCK, mode);
 	return IsDefined();
 }
 
@@ -83,7 +90,7 @@ FileDescriptor::Open(const char *pathname, int flags, mode_t mode) noexcept
 bool
 FileDescriptor::Open(const wchar_t *pathname, int flags, mode_t mode) noexcept
 {
-	fd = ::_wopen(pathname, flags | O_NOCTTY | O_CLOEXEC, mode);
+	fd = ::_wopen(pathname, flags | O_NOCTTY | O_CLOEXEC | O_NONBLOCK, mode);
 	return IsDefined();
 }
 
@@ -102,20 +109,6 @@ FileDescriptor::OpenReadOnly(FileDescriptor dir, const char *pathname) noexcept
 {
 	return Open(dir, pathname, O_RDONLY);
 }
-
-#endif // __linux__
-
-#ifndef _WIN32
-
-bool
-FileDescriptor::OpenNonBlocking(const char *pathname) noexcept
-{
-	return Open(pathname, O_RDWR | O_NONBLOCK);
-}
-
-#endif
-
-#ifdef __linux__
 
 bool
 FileDescriptor::CreatePipe(FileDescriptor &r, FileDescriptor &w,
