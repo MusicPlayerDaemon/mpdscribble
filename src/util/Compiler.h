@@ -43,6 +43,8 @@
 
 #if defined(__GNUC__) || defined(__clang__)
 #define gcc_unreachable() __builtin_unreachable()
+#elif defined(_MSVC_VER)
+#define gcc_unreachable() __assume(false)
 #else
 #define gcc_unreachable()
 #endif
