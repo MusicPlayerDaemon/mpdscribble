@@ -208,6 +208,7 @@ executable(
   'src/MpdObserver.cxx',
   'src/Log.cxx',
   'src/XdgBaseDirectory.cxx',
+  'src/IgnoreList.cxx',
 
   include_directories: inc,
   dependencies: [

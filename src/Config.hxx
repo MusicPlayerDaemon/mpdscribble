@@ -8,6 +8,7 @@
 
 #include <forward_list>
 #include <string>
+#include <map>
 
 enum file_location { file_etc, file_home, file_unknown, };
 
@@ -17,7 +18,10 @@ NullableString(const std::string &s) noexcept
 	return s.empty() ? nullptr : s.c_str();
 }
 
+
 struct Config {
+	using IgnoreListMap = std::map<std::string, IgnoreList>;
+
 	/** don't daemonize the mpdscribble process */
 	bool no_daemon = false;
 
@@ -41,6 +45,8 @@ struct Config {
 	int verbose = -1;
 	enum file_location loc = file_unknown;
 
+	// Key=file path, value=loaded ignore list
+	IgnoreListMap ignore_lists;
 	std::forward_list<ScrobblerConfig> scrobblers;
 };
 

@@ -126,6 +126,56 @@ Your Last.fm password, either cleartext or its MD5 sum.
 The file where mpdscribble should store its journal in case you do not
 have a connection to the scrobbler.  This option used to be called
 "cache".  It is optional.
+.TP
+.B ignore = FILE
+Include an ignore file for this scrobbler to exclude tracks from scrobbling.
+
+.SH IGNORE FILE FORMAT
+Tracks can be ignored by listing them in an \fBignore file\fP.
+Each line in the file specifies a pattern to match tracks you wish to exclude from scrobbling.
+The format is simple and flexible, allowing you to match by artist, album, title, track number or a combination of these fields.
+.SS File Format
+A tag match is specified as tagname="value", where tagname is replaced with one of the supported tags (artist, album, title, track).
+Values \fBmust\fP be quoted and spaces are not allowed surrounding the equal sign.
+
+Each line consists of one or more tag matches separated by spaces:
+.nf
+.in +4
+tag1="value1" tag2="value2" ...
+.in
+.fi
+
+Tags can appear in any order and blank lines are ignored.
+
+A backslash (\e) is interpreted as escape character and may be used to escape literal double quotes within a value.
+To write a literal backslash, use a double backslash (\e\e).
+
+Each line is limited to 4096 characters including the newline character.
+Superflous characters are silently ignored.
+
+.SS Examples
+If a tag is omitted, any value for that field is matched:
+.TP
+.B title="Bohemian Rhapsody"
+Matches any track titled \fIBohemian Rhapsody\fP.
+.TP
+.B artist="Queen"
+Matches any track by \fIQueen\fP, regardless of album or title.
+.TP
+.B artist="Queen" album="A Night at the Opera"
+Matches any track by \fIQueen\fP from \fIA Night at the Opera\fP, regardless of title.
+.TP
+.B artist="Queen" album="A Night at the Opera" title="Bohemian Rhapsody"
+Matches a specific track by \fIQueen\fP, from \fIA Night at the Opera\fP, titled \fIBohemian Rhapsody\fP.
+.TP
+.B artist="Queen" album="A Night at the Opera" track="01"
+Matches the first track on the album \fIA Night at the Opera\fP by \fIQueen\fP.
+Note that track tags are interpreted as text and not numbers, meaning "01" is not the same as "1".
+.TP
+.B artist="Clark \e"Plazmataz\e" Powell"
+Matches tracks by \fIClark "Plazmataz" Powell\fP.
+
+
 .SH FILES
 .I /etc/mpdscribble.conf
 .RS
