@@ -4,6 +4,8 @@
 #ifndef SCROBBLER_CONFIG_HXX
 #define SCROBBLER_CONFIG_HXX
 
+#include "IgnoreList.hxx"
+
 #include <string>
 
 struct ScrobblerConfig {
@@ -29,6 +31,8 @@ struct ScrobblerConfig {
 	 * AudioScrobbler server.
 	 */
 	std::string file;
+
+	IgnoreList* ignore_list;
 };
 
 #endif

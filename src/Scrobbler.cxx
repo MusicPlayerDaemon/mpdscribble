@@ -436,6 +436,10 @@ Scrobbler::ScheduleNowPlaying(const Record &song) noexcept
 		/* there's no "now playing" support for files */
 		return;
 
+	if (config.ignore_list && config.ignore_list->matches_record(song)) {
+		return;
+	}
+
 	now_playing = song;
 
 	if (state == State::READY && !submit_timer.IsPending())
@@ -515,6 +519,10 @@ Scrobbler::Submit() noexcept
 void
 Scrobbler::Push(const Record &song) noexcept
 {
+	if (config.ignore_list && config.ignore_list->matches_record(song)) {
+		return;
+	}
+
 	if (file != nullptr) {
 		fprintf(file, "%s %s - %s\n",
 			log_date(),

@@ -21,6 +21,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <unordered_map>
 
 #ifndef _WIN32
 #include <sys/stat.h>
@@ -231,10 +232,151 @@ load_unsigned(const IniFile &file, const char *name, unsigned *value_r)
 	return true;
 }
 
+static std::unordered_map<std::string, std::string>
+parse_ignore_list_line(std::string_view input)
+{
+	IgnoreListEntry ignore_list_entry;
+
+	/*
+	  Format: tag1="value1" tag2="value2" ...
+	  Backslash escaping is supported.
+	*/
+
+	enum class ParserState {
+		ExpectTagStart,
+		InTag,
+		ExpectQuote,
+		InValue,
+		InEscapeSequence
+	} state = ParserState::ExpectTagStart;
+
+	std::string current_tag;
+	std::string current_value;
+	std::unordered_map<std::string, std::string> result;
+
+	for (size_t i = 0; i < input.length(); ++i) {
+		char c = input[i];
+
+		switch (state) {
+			case ParserState::ExpectTagStart:
+				if (std::isspace(c)) continue;
+				if (std::isalpha(c)) {
+					current_tag = c;
+					state = ParserState::InTag;
+				} else {
+					throw FormatRuntimeError("Error at position %d: expected tag start, got: '%c'", i, c);
+				}
+				break;
+
+			case ParserState::InTag:
+				if (std::isalpha(c)) {
+					current_tag += c;
+				} else if (c == '=') {
+					state = ParserState::ExpectQuote;
+				} else {
+					throw FormatRuntimeError("Error at position %d: invalid tag character, got: '%c'", i, c);
+				}
+				break;
+
+			case ParserState::ExpectQuote:
+				if (c == '"') {
+					current_value.clear();
+					state = ParserState::InValue;
+				} else {
+					throw FormatRuntimeError("Error at position %d: expected quote, got: '%c'", i, c);
+				}
+				break;
+
+			case ParserState::InValue:
+				if (c == '\\') {
+					state = ParserState::InEscapeSequence;
+				} else if (c == '"') {
+					if (result.contains(current_tag)) {
+						throw FormatRuntimeError("Error at position %d: tag '%s' is duplicated", i, current_tag.c_str());
+					}
+					result.emplace(std::move(current_tag), std::move(current_value));
+					state = ParserState::ExpectTagStart;
+				} else {
+					current_value += c;
+				}
+				break;
+
+			case ParserState::InEscapeSequence:
+				current_value += c;
+				state = ParserState::InValue;
+				break;
+		}
+	}
+
+	if (state != ParserState::ExpectTagStart) {
+		throw FormatRuntimeError("Unexpected end of line");
+	}
+
+	return result;
+}
+
+static IgnoreList*
+load_ignore_list(const std::string& path, Config::IgnoreListMap& ignore_lists)
+{
+
+	FILE *file = fopen(path.c_str(), "r");
+	if (file == nullptr) {
+		throw FormatRuntimeError("Cannot load ignore file: cannot open '%s' for reading", path.c_str());
+	}
+
+	AtScopeExit(file) { fclose(file); };
+
+	IgnoreList ignore_list;
+
+	{
+		char line_buf[4096];
+		size_t line_num = 0;
+		while (fgets(line_buf, sizeof(line_buf), file)) {
+			std::string_view line(line_buf);
+			if (line.back() == '\n') {
+				line.remove_suffix(1);
+			}
+
+			line_num++;
+			if (line.empty()) {
+				continue;
+			}
+
+			try {
+				auto parsed_line = parse_ignore_list_line(line);
+
+				if (parsed_line.empty()) {
+					continue;
+				}
+
+				IgnoreListEntry entry{};
+
+				for (auto& [tag, value] : parsed_line) {
+#define set_tag_entry(tagname) if (tag == #tagname) { entry.tagname = std::move(value); continue; }
+					set_tag_entry(artist)
+					set_tag_entry(album)
+					set_tag_entry(title)
+					set_tag_entry(track)
+#undef set_tag_entry
+					throw FormatRuntimeError("Unsupported tag: '%s'", tag.c_str());
+				}
+
+				ignore_list.entries.emplace_back(std::move(entry));
+			} catch (const std::runtime_error& error) {
+				throw FormatRuntimeError("Error loading ignore list '%s': Error parsing line %d: %s",
+					path.c_str(), line_num, error.what());
+			}
+		}
+	}
+
+	return &(ignore_lists[path] = std::move(ignore_list));
+}
+
 static ScrobblerConfig
 load_scrobbler_config(const Config &config,
 		      const std::string &section_name,
-		      const IniSection &section)
+		      const IniSection &section,
+		      Config::IgnoreListMap& ignore_lists)
 {
 	ScrobblerConfig scrobbler;
 
@@ -270,6 +412,17 @@ load_scrobbler_config(const Config &config,
 			scrobbler.journal = get_default_cache_path(config);
 	}
 
+	std::string ignore_list = GetStdString(section, "ignore");
+	if (!ignore_list.empty()) {
+		if (auto existing_ignore_list = ignore_lists.find(ignore_list); existing_ignore_list != ignore_lists.end()) {
+			scrobbler.ignore_list = &existing_ignore_list->second;
+		} else {
+			scrobbler.ignore_list = load_ignore_list(ignore_list, ignore_lists);
+		}
+	} else {
+		scrobbler.ignore_list = nullptr;
+	}
+
 	return scrobbler;
 }
 
@@ -300,7 +453,8 @@ load_config_file(Config &config, const char *path)
 
 		config.scrobblers.emplace_front(load_scrobbler_config(config,
 								      section.first,
-								      section.second));
+								      section.second,
+								      config.ignore_lists));
 	}
 }
 
