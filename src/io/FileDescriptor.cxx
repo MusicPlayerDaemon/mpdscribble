@@ -213,7 +213,7 @@ FileDescriptor::DisableCloseOnExec() const noexcept
 UniqueFileDescriptor
 FileDescriptor::Duplicate() const noexcept
 {
-	return UniqueFileDescriptor{::dup(Get())};
+	return UniqueFileDescriptor{AdoptTag{}, ::dup(Get())};
 }
 
 bool
