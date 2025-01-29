@@ -13,7 +13,7 @@
 #endif
 
 #ifdef HAVE_URING
-#include "UringManager.hxx"
+#include "uring/Manager.hxx"
 #include "util/PrintException.hxx"
 #include <stdio.h>
 #endif
