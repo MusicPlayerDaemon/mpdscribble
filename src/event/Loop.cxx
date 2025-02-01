@@ -14,6 +14,8 @@
 
 #ifdef HAVE_URING
 #include "uring/Manager.hxx"
+#include "io/uring/Operation.hxx"
+#include "io/uring/Queue.hxx"
 #endif
 
 EventLoop::EventLoop(
@@ -35,6 +37,14 @@ EventLoop::EventLoop(
 
 EventLoop::~EventLoop() noexcept
 {
+#if defined(HAVE_URING) && !defined(NDEBUG)
+	/* if Run() was never called (maybe because startup failed and
+	   an exception is pending), we need to destruct the
+	   Uring::Manager here or else the assertions below fail */
+	uring_poll.reset();
+	uring.reset();
+#endif
+
 	assert(defer.empty());
 	assert(idle.empty());
 #ifdef HAVE_THREADED_EVENT_LOOP
@@ -47,20 +57,46 @@ EventLoop::~EventLoop() noexcept
 void
 EventLoop::SetVolatile() noexcept
 {
-#ifdef HAVE_URING
-	if (uring)
-		uring->SetVolatile();
-#endif
 }
 
 #ifdef HAVE_URING
+
+class EventLoop::UringPoll final : Uring::Operation {
+	EventLoop &event_loop;
+
+public:
+	UringPoll(EventLoop &_event_loop) noexcept
+		:event_loop(_event_loop) {}
+
+	void Start();
+
+private:
+	void OnUringCompletion(int res) noexcept override {
+		(void)res; // TODO
+
+		event_loop.epoll_ready = true;
+	}
+};
+
+inline void
+EventLoop::UringPoll::Start()
+{
+	assert(!IsUringPending());
+	assert(event_loop.GetUring());
+
+	auto &queue = *event_loop.GetUring();
+
+	auto &s = queue.RequireSubmitEntry();
+	io_uring_prep_poll_multishot(&s, event_loop.poll_backend.GetFileDescriptor().Get(), EPOLLIN);
+	queue.Push(s, *this);
+}
 
 void
 EventLoop::EnableUring(unsigned entries, unsigned flags)
 {
 	assert(!uring);
 
-	uring = std::make_unique<Uring::Manager>(*this, entries, flags);
+	uring = std::make_unique<Uring::Manager>(entries, flags);
 }
 
 void
@@ -68,12 +104,13 @@ EventLoop::EnableUring(unsigned entries, struct io_uring_params &params)
 {
 	assert(!uring);
 
-	uring = std::make_unique<Uring::Manager>(*this, entries, params);
+	uring = std::make_unique<Uring::Manager>(entries, params);
 }
 
 void
 EventLoop::DisableUring() noexcept
 {
+	uring_poll.reset();
 	uring.reset();
 }
 
@@ -258,6 +295,29 @@ ExportTimeoutMS(Event::Duration timeout) noexcept
 		: -1;
 }
 
+#ifdef HAVE_URING
+
+static constexpr struct __kernel_timespec
+ExportTimeoutKernelTimespec(Event::Duration timeout) noexcept
+{
+	if (timeout < timeout.zero())
+		// TODO if there is no time, there should be no timeout at all
+		return { .tv_sec = 24 * 3600 };
+
+	if (timeout >= std::chrono::duration_cast<Event::Duration>(std::chrono::hours{24})) [[unlikely]]
+		return {
+			.tv_sec = std::chrono::ceil<std::chrono::duration<__kernel_time64_t>>(timeout).count(),
+		};
+
+	const auto nsec = std::chrono::ceil<std::chrono::nanoseconds>(timeout);
+	return {
+		.tv_sec = nsec.count() / 1000000000,
+		.tv_nsec = nsec.count() % 1000000000,
+	};
+}
+
+#endif
+
 inline bool
 EventLoop::Wait(Event::Duration timeout) noexcept
 {
@@ -340,7 +400,39 @@ EventLoop::Run() noexcept
 
 		/* wait for new event */
 
-		Wait(timeout);
+#ifdef HAVE_URING
+		if (uring) {
+			/* use io_uring_enter() and invoke
+			   epoll_wait() only if it's reported
+			   to be ready */
+
+			if (!uring_poll) [[unlikely]] {
+				/* start polling on the epoll
+				   file descriptor */
+				uring_poll = std::make_unique<UringPoll>(*this);
+				uring_poll->Start();
+			}
+
+			/* repeat epoll_wait() until it
+			   returns no more events; this is a
+			   temporary workaround because
+			   io_uring_prep_poll_multishot() is
+			   edge-triggered, so we have to
+			   consume all events to rearm it */
+
+			if (!epoll_ready) {
+				auto kernel_timeout = ExportTimeoutKernelTimespec(timeout);
+				Uring::Queue &uring_queue = *uring;
+				uring_queue.SubmitAndWaitDispatchCompletions(kernel_timeout);
+			}
+
+			if (epoll_ready) {
+				/* invoke epoll_wait() */
+				epoll_ready = Wait(Event::Duration{0});
+			}
+		} else
+#endif
+			Wait(timeout);
 
 		FlushClockCaches();
 
