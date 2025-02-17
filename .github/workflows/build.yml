@@ -23,19 +23,22 @@ jobs:
   build-linux:
     strategy:
       matrix:
-        os: [ubuntu-24.04, ubuntu-22.04, ubuntu-20.04]
+        compiler: [gcc14, gcc11, gcc10]
         include:
-          - os: ubuntu-24.04
+          - compiler: gcc14
+            os: ubuntu-24.04
             cc: gcc-14
             cxx: g++-14
             packages: g++-14 libfmt-dev
             meson_options:
-          - os: ubuntu-22.04
+          - compiler: gcc11
+            os: ubuntu-22.04
             cc: gcc-11
             cxx: g++-11
             packages: g++-11
             meson_options: --force-fallback-for=fmt
-          - os: ubuntu-22.04
+          - compiler: gcc10
+            os: ubuntu-22.04
             cc: gcc-10
             cxx: g++-10
             packages: g++-10
