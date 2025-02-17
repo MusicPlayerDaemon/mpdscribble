@@ -3,7 +3,7 @@
 
 #include "OptionParser.hxx"
 #include "OptionDef.hxx"
-#include "util/RuntimeError.hxx"
+#include "lib/fmt/RuntimeError.hxx"
 #include "util/StringCompare.hxx"
 
 static const char *
@@ -21,7 +21,7 @@ OptionParser::CheckShiftValue(const char *s, const OptionDef &option)
 		return nullptr;
 
 	if (args.empty())
-		throw FormatRuntimeError("Value expected after %s", s);
+		throw FmtRuntimeError("Value expected after {:?}", s);
 
 	return Shift(args);
 }
@@ -62,7 +62,7 @@ OptionParser::IdentifyOption(const char *s)
 		}
 	}
 
-	throw FormatRuntimeError("Unknown option: %s", s);
+	throw FmtRuntimeError("Unknown option: {:?}", s);
 }
 
 OptionParser::Result

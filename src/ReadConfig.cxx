@@ -2,8 +2,8 @@
 // Copyright The Music Player Daemon Project
 
 #include "ReadConfig.hxx"
+#include "lib/fmt/RuntimeError.hxx"
 #include "util/Compiler.h"
-#include "util/RuntimeError.hxx"
 #include "util/ScopeExit.hxx"
 #include "util/StringStrip.hxx"
 #include "Config.hxx"
@@ -211,7 +211,7 @@ load_integer(const IniFile &file, const char *name, int *value_r)
 	char *endptr;
 	auto value = strtol(s, &endptr, 10);
 	if (endptr == s || *endptr != 0)
-		throw FormatRuntimeError("Not a number: '%s'", s);
+		throw FmtRuntimeError("Not a number: {:?}", s);
 
 	*value_r = value;
 	return true;
@@ -226,7 +226,7 @@ load_unsigned(const IniFile &file, const char *name, unsigned *value_r)
 		return false;
 
 	if (value < 0)
-		throw FormatRuntimeError("Setting '%s' must not be negative", name);
+		throw FmtRuntimeError("Setting {:?} must not be negative", name);
 
 	*value_r = (unsigned)value;
 	return true;
@@ -264,7 +264,7 @@ parse_ignore_list_line(std::string_view input)
 					current_tag = c;
 					state = ParserState::InTag;
 				} else {
-					throw FormatRuntimeError("Error at position %d: expected tag start, got: '%c'", i, c);
+					throw FmtRuntimeError("Error at position {}: expected tag start, got: '{}'", i, c);
 				}
 				break;
 
@@ -274,7 +274,7 @@ parse_ignore_list_line(std::string_view input)
 				} else if (c == '=') {
 					state = ParserState::ExpectQuote;
 				} else {
-					throw FormatRuntimeError("Error at position %d: invalid tag character, got: '%c'", i, c);
+					throw FmtRuntimeError("Error at position {}: invalid tag character, got: '{}'", i, c);
 				}
 				break;
 
@@ -283,7 +283,7 @@ parse_ignore_list_line(std::string_view input)
 					current_value.clear();
 					state = ParserState::InValue;
 				} else {
-					throw FormatRuntimeError("Error at position %d: expected quote, got: '%c'", i, c);
+					throw FmtRuntimeError("Error at position %d: expected quote, got: '{}'", i, c);
 				}
 				break;
 
@@ -292,7 +292,7 @@ parse_ignore_list_line(std::string_view input)
 					state = ParserState::InEscapeSequence;
 				} else if (c == '"') {
 					if (result.contains(current_tag)) {
-						throw FormatRuntimeError("Error at position %d: tag '%s' is duplicated", i, current_tag.c_str());
+						throw FmtRuntimeError("Error at position {}: tag {:?} is duplicated", i, current_tag);
 					}
 					result.emplace(std::move(current_tag), std::move(current_value));
 					state = ParserState::ExpectTagStart;
@@ -309,7 +309,7 @@ parse_ignore_list_line(std::string_view input)
 	}
 
 	if (state != ParserState::ExpectTagStart) {
-		throw FormatRuntimeError("Unexpected end of line");
+		throw std::runtime_error{"Unexpected end of line"};
 	}
 
 	return result;
@@ -321,7 +321,7 @@ load_ignore_list(const std::string& path, Config::IgnoreListMap& ignore_lists)
 
 	FILE *file = fopen(path.c_str(), "r");
 	if (file == nullptr) {
-		throw FormatRuntimeError("Cannot load ignore file: cannot open '%s' for reading", path.c_str());
+		throw FmtRuntimeError("Cannot load ignore file: cannot open {:?} for reading", path);
 	}
 
 	AtScopeExit(file) { fclose(file); };
@@ -358,13 +358,13 @@ load_ignore_list(const std::string& path, Config::IgnoreListMap& ignore_lists)
 					set_tag_entry(title)
 					set_tag_entry(track)
 #undef set_tag_entry
-					throw FormatRuntimeError("Unsupported tag: '%s'", tag.c_str());
+					throw FmtRuntimeError("Unsupported tag: {:?}", tag);
 				}
 
 				ignore_list.entries.emplace_back(std::move(entry));
 			} catch (const std::runtime_error& error) {
-				throw FormatRuntimeError("Error loading ignore list '%s': Error parsing line %d: %s",
-					path.c_str(), line_num, error.what());
+				throw FmtRuntimeError("Error loading ignore list {:?}: Error parsing line {}: {}",
+						      path, line_num, error.what());
 			}
 		}
 	}
@@ -390,7 +390,7 @@ load_scrobbler_config(const Config &config,
 		if (scrobbler.file.empty()) {
 			scrobbler.url = GetStdString(section, "url");
 			if (scrobbler.url.empty())
-				throw FormatRuntimeError("Section '%s' has neither 'file' nor 'url'", section_name.c_str());
+				throw FmtRuntimeError("Section {:?} has neither 'file' nor 'url'", section_name);
 		}
 	}
 
@@ -473,8 +473,8 @@ file_read_config(Config &config)
 		throw std::runtime_error("cannot find configuration file");
 
 	if (config.scrobblers.empty())
-		throw FormatRuntimeError("No audioscrobbler host configured in %s",
-					 config.conf.c_str());
+		throw FmtRuntimeError("No audioscrobbler host configured in {:?}",
+				      config.conf);
 
 	if (config.log.empty())
 		config.log = get_default_log_path();

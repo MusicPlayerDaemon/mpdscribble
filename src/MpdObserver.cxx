@@ -13,9 +13,9 @@
 void
 MpdObserver::HandleError() noexcept
 {
-	FormatWarning("mpd error (%u): %s",
-		      mpd_connection_get_error(connection),
-		      mpd_connection_get_error_message(connection));
+	FmtWarning("mpd error ({}): {:?}",
+		   (int)mpd_connection_get_error(connection),
+		   mpd_connection_get_error_message(connection));
 
 	mpd_connection_free(connection);
 	connection = nullptr;
@@ -67,18 +67,18 @@ MpdObserver::Connect() noexcept
 	const unsigned *version = mpd_connection_get_server_version(connection);
 
 	if (mpd_connection_cmp_server_version(connection, 0, 16, 0) < 0) {
-		FormatWarning("Error: MPD version %d.%d.%d is too old (%s needed)",
-			      version[0], version[1], version[2],
-			      "0.16.0");
+		FmtWarning("Error: MPD version {}.{}.{} is too old ({} needed)",
+			   version[0], version[1], version[2],
+			   "0.16.0");
 		mpd_connection_free(connection);
 		connection = nullptr;
 		return false;
 	}
 
 	const auto name = connection_settings_name(connection);
-	FormatInfo("connected to mpd %i.%i.%i at %s",
-		   version[0], version[1], version[2],
-		   name.c_str());
+	FmtInfo("connected to mpd {}.{}.{} at {}",
+		version[0], version[1], version[2],
+		name);
 
 	socket.Open(SocketDescriptor(mpd_connection_get_fd(connection)));
 	socket.ScheduleRead();
@@ -219,8 +219,8 @@ MpdObserver::Update() noexcept
 		   mpd_song_get_tag(current_song, MPD_TAG_ALBUM_ARTIST, 0) == nullptr) ||
 		   mpd_song_get_tag(current_song, MPD_TAG_TITLE, 0) == nullptr) {
 		if (mpd_song_get_id(current_song) != last_id) {
-			FormatInfo("new song detected with tags missing (%s)",
-				   mpd_song_get_uri(current_song));
+			FmtInfo("new song detected with tags missing ({})",
+				mpd_song_get_uri(current_song));
 			last_id = mpd_song_get_id(current_song);
 		}
 
@@ -294,8 +294,8 @@ MpdObserver::ReadMessages() noexcept
 		if (strcmp(text, "love") == 0)
 			love = true;
 		else
-			FormatInfo("Unrecognized client-to-client message: '%s'",
-				   text);
+			FmtInfo("Unrecognized client-to-client message: {:?}",
+				text);
 
 		mpd_message_free(msg);
 	}

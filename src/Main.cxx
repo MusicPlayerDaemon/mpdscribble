@@ -65,10 +65,10 @@ artist(const struct mpd_song *song) noexcept
 void
 Instance::OnMpdSongChanged(const struct mpd_song *song) noexcept
 {
-	FormatInfo("new song detected (%s - %s), id: %u, pos: %u\n",
-		   artist(song),
-		   mpd_song_get_tag(song, MPD_TAG_TITLE, 0),
-		   mpd_song_get_id(song), mpd_song_get_pos(song));
+	FmtInfo("new song detected ({} - {}), id: {}, pos: {}\n",
+		artist(song),
+		mpd_song_get_tag(song, MPD_TAG_TITLE, 0),
+		mpd_song_get_id(song), mpd_song_get_pos(song));
 
 	stopwatch.Start();
 

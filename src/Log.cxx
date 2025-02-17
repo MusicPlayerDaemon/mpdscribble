@@ -2,19 +2,20 @@
 // Copyright The Music Player Daemon Project
 
 #include "Log.hxx"
-#include "system/Error.hxx"
+#include "lib/fmt/SystemError.hxx"
+#include "util/Compiler.h"
 #include "util/StringStrip.hxx"
 #include "config.h"
 
 #include <cassert>
 
-#include <stdarg.h>
-#include <stdio.h>
 #include <string.h>
 #include <errno.h>
 #include <time.h>
 
 #ifdef HAVE_SYSLOG
+#include <fmt/format.h> // for fmt::memory_buffer
+#include <iterator> // for std::back_inserter
 #include <syslog.h>
 #endif
 
@@ -54,7 +55,7 @@ log_init_file(const char *path)
 	} else {
 		log_file = fopen(path, "ab");
 		if (log_file == nullptr)
-			throw FormatErrno("cannot open %s", path);
+			throw FmtErrno("cannot open {:?}", path);
 	}
 
 	setvbuf(log_file, nullptr, _IONBF, 0);
@@ -141,33 +142,23 @@ Log(LogLevel level, const char *msg) noexcept
 		syslog(ToSyslog(level), "%s", msg);
 	else
 #endif
-		fprintf(log_file, "%s %s\n", log_date(), msg);
+		fmt::print(log_file, "{} {}\n", log_date(), msg);
 }
 
 void
-LogFormat(LogLevel level, const char *fmt, ...) noexcept
+LogVFmt(LogLevel level, fmt::string_view format_str, fmt::format_args args) noexcept
 {
 	if (level < log_threshold)
 		return;
 
 #ifdef HAVE_SYSLOG
 	if (log_file == nullptr) {
-		va_list ap;
-		va_start(ap, fmt);
-		vsyslog(ToSyslog(level), fmt, ap);
-		va_end(ap);
+		fmt::memory_buffer buffer;
+		fmt::vformat_to(std::back_inserter(buffer), format_str, args);
+		syslog(ToSyslog(level), "%.*s", (int)buffer.size(), buffer.data());
 	} else {
 #endif
-		char msg[1024];
-
-		{
-			va_list ap;
-			va_start(ap, fmt);
-			vsnprintf(msg, sizeof(msg), fmt, ap);
-			va_end(ap);
-		}
-
-		fprintf(log_file, "%s %s\n", log_date(), msg);
+		fmt::vprint(log_file, format_str, args);
 #ifdef HAVE_SYSLOG
 	}
 #endif

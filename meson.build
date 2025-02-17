@@ -5,9 +5,12 @@ project('mpdscribble', 'cpp',
     'cpp_std=c++2a',
     'warning_level=3',
 
+    'fmt:cpp_std=c++20',
+
     # If we build those libraries as Meson subproject, they shall be
     # linked statically into the MPD executable.
     'curl:default_library=static',
+    'fmt:default_library=static',
     'libmpdclient:default_library=static',
 
     # disable CURL options we don't need
@@ -42,6 +45,7 @@ project('mpdscribble', 'cpp',
     # Not interested in compiler warnings from subprojects.
     'curl:werror=false',
     'curl:warning_level=0',
+    'fmt:warning_level=0',
   ],
   license: 'GPLv2+',
 )
@@ -176,6 +180,8 @@ inc = include_directories(
   '.',
 )
 
+subdir('src/lib/fmt')
+
 subdir('src/util')
 subdir('src/io')
 subdir('src/system')
@@ -219,6 +225,7 @@ executable(
     md5_dep,
     curl_dep,
     libsystemd_dep,
+    fmt_dep,
   ],
   install: true
 )

@@ -9,6 +9,7 @@ curl = static_library(
   dependencies: [
     curl_dep,
     event_dep,
+    fmt_dep,
   ],
 )
 

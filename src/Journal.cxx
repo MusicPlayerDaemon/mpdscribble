@@ -6,6 +6,8 @@
 #include "util/StringStrip.hxx"
 #include "Log.hxx"
 
+#include <fmt/core.h>
+
 #include <cassert>
 
 #include <stdlib.h>
@@ -19,14 +21,14 @@ static void
 journal_write_string(FILE *file, char field, const char *value)
 {
 	if (value != nullptr)
-		fprintf(file, "%c = %s\n", field, value);
+		fmt::print(file, "{} = {}\n", field, value);
 }
 
 static void
 journal_write_string(FILE *file, char field, const std::string &value)
 {
 	if (!value.empty())
-		fprintf(file, "%c = %s\n", field, value.c_str());
+		fmt::print(file, "{} = {}\n", field, value);
 }
 
 static void
@@ -46,10 +48,9 @@ journal_write_record(FILE *file, const Record *record)
 	const auto length_s =
 		std::chrono::duration_cast<std::chrono::seconds>(record->length);
 
-	fprintf(file,
-		"l = %i\no = %s\n\n",
-		(int)length_s.count(),
-		record->source);
+	fmt::print(file, "l = {}\no = {}\n\n",
+		   length_s.count(),
+		   record->source);
 }
 
 bool
@@ -62,7 +63,7 @@ journal_write(const char *path, const std::list<Record> &queue)
 
 	handle = fopen(path, "wb");
 	if (!handle) {
-		FormatError("Failed to save %s: %s", path, strerror(errno));
+		FmtError("Failed to save {:?}: {}", path, strerror(errno));
 		return false;
 	}
 
@@ -101,8 +102,8 @@ journal_read(const char *path)
 			/* ENOENT is ignored silently, because the
 			   user might be starting mpdscribble for the
 			   first time */
-			FormatWarning("Failed to load %s: %s",
-				      path, strerror(errno));
+			FmtWarning("Failed to load {:?}: {}",
+				   path, strerror(errno));
 		return {};
 	}
 

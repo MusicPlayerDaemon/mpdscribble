@@ -1,10 +1,9 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 // Copyright The Music Player Daemon Project
 
-#ifndef LOG_HXX
-#define LOG_HXX
+#pragma once
 
-#include "util/Compiler.h"
+#include <fmt/core.h>
 
 #include <utility>
 
@@ -50,36 +49,33 @@ LogInfo(const char *msg) noexcept
 	Log(LogLevel::INFO, msg);
 }
 
-gcc_printf(2, 3)
 void
-LogFormat(LogLevel level, const char *fmt, ...) noexcept;
+LogVFmt(LogLevel level, fmt::string_view format_str, fmt::format_args args) noexcept;
 
-template<typename... Args>
+template<typename S, typename... Args>
 inline void
-FormatDebug(const char *fmt, Args&&... args) noexcept
+FmtDebug(const S &format_str, Args&&... args) noexcept
 {
-	LogFormat(LogLevel::DEBUG, fmt, std::forward<Args>(args)...);
+	LogVFmt(LogLevel::DEBUG, format_str, fmt::make_format_args(args...));
 }
 
-template<typename... Args>
+template<typename S, typename... Args>
 inline void
-FormatInfo(const char *fmt, Args&&... args) noexcept
+FmtInfo(const S &format_str, Args&&... args) noexcept
 {
-	LogFormat(LogLevel::INFO, fmt, std::forward<Args>(args)...);
+	LogVFmt(LogLevel::INFO, format_str, fmt::make_format_args(args...));
 }
 
-template<typename... Args>
+template<typename S, typename... Args>
 inline void
-FormatWarning(const char *fmt, Args&&... args) noexcept
+FmtWarning(const S &format_str, Args&&... args) noexcept
 {
-	LogFormat(LogLevel::WARNING, fmt, std::forward<Args>(args)...);
+	LogVFmt(LogLevel::WARNING, format_str, fmt::make_format_args(args...));
 }
 
-template<typename... Args>
+template<typename S, typename... Args>
 inline void
-FormatError(const char *fmt, Args&&... args) noexcept
+FmtError(const S &format_str, Args&&... args) noexcept
 {
-	LogFormat(LogLevel::ERROR, fmt, std::forward<Args>(args)...);
+	LogVFmt(LogLevel::ERROR, format_str, fmt::make_format_args(args...));
 }
-
-#endif

@@ -2,9 +2,9 @@
 // Copyright The Music Player Daemon Project
 
 #include "CommandLine.hxx"
+#include "lib/fmt/RuntimeError.hxx"
 #include "util/OptionDef.hxx"
 #include "util/OptionParser.hxx"
-#include "util/RuntimeError.hxx"
 #include "Config.hxx"
 #include "config.h"
 
@@ -152,5 +152,5 @@ parse_cmdline(Config &config, int argc, char **argv)
 
 	const auto remaining = parser.GetRemaining();
 	if (!remaining.empty())
-		throw FormatRuntimeError("Unknown option: %s", remaining.front());
+		throw FmtRuntimeError("Unknown option: {:?}", remaining.front());
 }

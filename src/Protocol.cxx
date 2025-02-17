@@ -3,12 +3,12 @@
 
 #include "Protocol.hxx"
 
+#include <fmt/core.h>
+
 #include <time.h>
 
 std::string
 as_timestamp() noexcept
 {
-	char buffer[64];
-	snprintf(buffer, sizeof(buffer), "%ld", (long)time(nullptr));
-	return buffer;
+	return fmt::format("{}", time(nullptr));
 }

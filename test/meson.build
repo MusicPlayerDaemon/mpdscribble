@@ -12,5 +12,6 @@ executable(
     thread_dep,
     curl_dep,
     util_dep,
+    fmt_dep,
   ],
 )

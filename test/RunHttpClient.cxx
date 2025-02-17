@@ -5,9 +5,10 @@
 #include "event/Loop.hxx"
 #include "util/PrintException.hxx"
 
+#include <fmt/core.h>
+
 #include <cassert>
 
-#include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 
@@ -42,7 +43,7 @@ int
 main(int argc, char **argv)
 {
 	if (argc != 2) {
-		fprintf(stderr, "Usage: run_http_client URL\n");
+		fmt::print(stderr, "Usage: run_http_client URL\n");
 		return EXIT_FAILURE;
 	}
 

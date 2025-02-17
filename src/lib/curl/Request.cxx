@@ -4,7 +4,7 @@
 #include "Request.hxx"
 #include "Handler.hxx"
 #include "Global.hxx"
-#include "util/RuntimeError.hxx"
+#include "lib/fmt/RuntimeError.hxx"
 #include "config.h"
 
 #include <curl/curl.h>
@@ -55,8 +55,7 @@ CurlRequest::CheckResponse(CURLcode result)
 	    response_body.length() > MAX_RESPONSE_BODY)
 		throw std::runtime_error("response body is too large");
 	else if (result != CURLE_OK)
-		throw FormatRuntimeError("CURL failed: %s",
-					 error);
+		throw FmtRuntimeError("CURL failed: {}", error);
 }
 
 void

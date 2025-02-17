@@ -28,18 +28,18 @@ jobs:
           - os: ubuntu-24.04
             cc: gcc-14
             cxx: g++-14
-            packages: g++-14
+            packages: g++-14 libfmt-dev
             meson_options:
           - os: ubuntu-22.04
             cc: gcc-11
             cxx: g++-11
             packages: g++-11
-            meson_options:
+            meson_options: --force-fallback-for=fmt
           - os: ubuntu-20.04
             cc: gcc-10
             cxx: g++-10
             packages: g++-10
-            meson_options:
+            meson_options: --force-fallback-for=fmt
 
     runs-on: ${{ matrix.os }}
 

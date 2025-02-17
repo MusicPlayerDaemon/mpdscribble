@@ -76,14 +76,14 @@ MultiScrobbler::SongChange(const char *file, const char *artist, const char *tra
 	   everything else is mandatory.
 	 */
 	if (!(artist && strlen(artist))) {
-		FormatWarning("empty artist, not submitting; "
-			      "please check the tags on %s\n", file);
+		FmtWarning("empty artist, not submitting; "
+			   "please check the tags on {:?}");
 		return;
 	}
 
 	if (!(track && strlen(track))) {
-		FormatWarning("empty title, not submitting; "
-			      "please check the tags on %s", file);
+		FmtWarning("empty title, not submitting; "
+			   "please check the tags on {:?}", file);
 		return;
 	}
 
@@ -104,10 +104,10 @@ MultiScrobbler::SongChange(const char *file, const char *artist, const char *tra
 	record.love = love;
 	record.source = strstr(file, "://") == nullptr ? "P" : "R";
 
-	FormatInfo("%s, songchange: %s - %s (%i)\n",
-		   record.time.c_str(), record.artist.c_str(),
-		   record.track.c_str(),
-		   (int)std::chrono::duration_cast<std::chrono::seconds>(record.length).count());
+	FmtInfo("{}, songchange: {} - {} ({})",
+		record.time, record.artist,
+		record.track,
+		std::chrono::duration_cast<std::chrono::seconds>(record.length).count());
 
 	for (auto &i : scrobblers)
 		i.Push(record);

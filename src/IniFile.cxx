@@ -2,9 +2,9 @@
 // Copyright The Music Player Daemon Project
 
 #include "IniFile.hxx"
-#include "system/Error.hxx"
+#include "lib/fmt/RuntimeError.hxx"
+#include "lib/fmt/SystemError.hxx"
 #include "util/CharUtil.hxx"
-#include "util/RuntimeError.hxx"
 #include "util/ScopeExit.hxx"
 #include "util/StringSplit.hxx"
 #include "util/StringStrip.hxx"
@@ -94,8 +94,7 @@ IniParser::ParseLine(std::string_view line)
 
 		auto i = data.emplace(name, IniSection{});
 		if (!i.second)
-			throw FormatRuntimeError("Duplicate section name: %.*s",
-						 int(name.size()), name.data());
+			throw FmtRuntimeError("Duplicate section name: {:?}", name);
 
 		section = i.first;
 	} else if (IsValidKeyChar(line.front())) {
@@ -117,8 +116,7 @@ IniParser::ParseLine(std::string_view line)
 
 		auto i = section->second.emplace(key, value);
 		if (!i.second)
-			throw FormatRuntimeError("Duplicate key: %.*s",
-						 int(key.size()), key.data());
+			throw FmtRuntimeError("Duplicate key: {:?}", key);
 	} else
 		throw std::runtime_error("Syntax error");
 }
@@ -136,8 +134,8 @@ ReadIniFile(const char *path, FILE *file)
 		try {
 			parser.ParseLine(line);
 		} catch (...) {
-			std::throw_with_nested(FormatRuntimeError("Error on %s line %u",
-								  path, no));
+			std::throw_with_nested(FmtRuntimeError("Error on {:?} line {}",
+							       path, no));
 		}
 
 		++no;
@@ -151,7 +149,7 @@ ReadIniFile(const char *path)
 {
 	FILE *file = fopen(path, "r");
 	if (file == nullptr)
-		throw FormatErrno("Failed to open %s", path);
+		throw FmtErrno("Failed to open {:?}", path);
 
 	AtScopeExit(file) { fclose(file); };
 

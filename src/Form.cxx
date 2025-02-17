@@ -4,14 +4,12 @@
 #include "Form.hxx"
 #include "lib/curl/Escape.hxx"
 
-#include <stdio.h>
+#include <fmt/format.h>
 
 void
 FormDataBuilder::AppendVerbatim(unsigned value) noexcept
 {
-	char buffer[16];
-	snprintf(buffer, sizeof(buffer), "%u", value);
-	AppendVerbatim(buffer);
+	AppendVerbatim(fmt::format_int{value}.c_str());
 }
 
 void

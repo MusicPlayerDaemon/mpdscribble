@@ -5,6 +5,9 @@ util = static_library(
   'PrintException.cxx',
   'StringStrip.cxx',
   include_directories: inc,
+  dependencies: [
+    fmt_dep,
+  ],
 )
 
 util_dep = declare_dependency(
