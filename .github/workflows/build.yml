@@ -46,6 +46,13 @@ jobs:
             ldflags:
             packages: g++-10
             meson_options: --force-fallback-for=fmt
+          - compiler: clang
+            os: ubuntu-24.04
+            cc: clang
+            cxx: clang++
+            ldflags: -fuse-ld=lld
+            packages: clang lld
+            meson_options: --force-fallback-for=fmt
 
     runs-on: ${{ matrix.os }}
 
