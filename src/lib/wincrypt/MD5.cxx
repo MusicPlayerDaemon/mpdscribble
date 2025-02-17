@@ -5,6 +5,8 @@
 #include "system/Error.hxx"
 #include "util/ScopeExit.hxx"
 
+#include <minwinbase.h> // for PSYSTEMTIME (needed by wincrypt.h)
+#include <windef.h> // for HWND (needed by dpapi.h, included by wincrypt.h)
 #include <wincrypt.h>
 
 namespace WinCrypt {
