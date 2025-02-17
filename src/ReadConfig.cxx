@@ -3,6 +3,8 @@
 
 #include "ReadConfig.hxx"
 #include "lib/fmt/RuntimeError.hxx"
+#include "io/BufferedReader.hxx"
+#include "io/FileReader.hxx"
 #include "util/Compiler.h"
 #include "util/ScopeExit.hxx"
 #include "util/StringStrip.hxx"
@@ -318,25 +320,14 @@ parse_ignore_list_line(std::string_view input)
 static IgnoreList*
 load_ignore_list(const std::string& path, Config::IgnoreListMap& ignore_lists)
 {
-
-	FILE *file = fopen(path.c_str(), "r");
-	if (file == nullptr) {
-		throw FmtRuntimeError("Cannot load ignore file: cannot open {:?} for reading", path);
-	}
-
-	AtScopeExit(file) { fclose(file); };
+	FileReader file{path.c_str()};
+	BufferedReader reader{file};
 
 	IgnoreList ignore_list;
 
-	char line_buf[4096];
-	size_t line_num = 0;
-	while (fgets(line_buf, sizeof(line_buf), file)) {
-		std::string_view line(line_buf);
-		if (line.back() == '\n') {
-			line.remove_suffix(1);
-		}
+	while (const char *_line = reader.ReadLine()) {
+		std::string_view line{_line};
 
-		line_num++;
 		if (line.empty()) {
 			continue;
 		}
@@ -363,7 +354,7 @@ load_ignore_list(const std::string& path, Config::IgnoreListMap& ignore_lists)
 			ignore_list.entries.emplace_back(std::move(entry));
 		} catch (const std::runtime_error& error) {
 			throw FmtRuntimeError("Error loading ignore list {:?}: Error parsing line {}: {}",
-					      path, line_num, error.what());
+					      path, reader.GetLineNumber(), error.what());
 		}
 	}
 

@@ -4,14 +4,14 @@
 #include "IniFile.hxx"
 #include "lib/fmt/RuntimeError.hxx"
 #include "lib/fmt/SystemError.hxx"
+#include "io/BufferedReader.hxx"
+#include "io/FileReader.hxx"
 #include "util/CharUtil.hxx"
 #include "util/ScopeExit.hxx"
 #include "util/StringSplit.hxx"
 #include "util/StringStrip.hxx"
 
 #include <string_view>
-
-#include <stdio.h>
 
 static constexpr bool
 IsValidSectionNameChar(char ch) noexcept
@@ -124,13 +124,12 @@ IniParser::ParseLine(std::string_view line)
 }
 
 static IniFile
-ReadIniFile(const char *path, FILE *file)
+ReadIniFile(const char *path, BufferedReader &reader)
 {
 	IniParser parser;
 
 	unsigned no = 1;
-	char buffer[4096];
-	while (auto line = fgets(buffer, sizeof(buffer), file)) {
+	while (const char *line = reader.ReadLine()) {
 		try {
 			parser.ParseLine(line);
 		} catch (...) {
@@ -147,11 +146,8 @@ ReadIniFile(const char *path, FILE *file)
 IniFile
 ReadIniFile(const char *path)
 {
-	FILE *file = fopen(path, "r");
-	if (file == nullptr)
-		throw FmtErrno("Failed to open {:?}", path);
+	FileReader file{path};
+	BufferedReader reader{file};
 
-	AtScopeExit(file) { fclose(file); };
-
-	return ReadIniFile(path, file);
+	return ReadIniFile(path, reader);
 }
