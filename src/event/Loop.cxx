@@ -5,7 +5,6 @@
 #include "Loop.hxx"
 #include "DeferEvent.hxx"
 #include "SocketEvent.hxx"
-#include "IdleEvent.hxx"
 #include "util/ScopeExit.hxx"
 
 #ifdef HAVE_THREADED_EVENT_LOOP
