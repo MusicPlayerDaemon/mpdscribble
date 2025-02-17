@@ -1,6 +1,7 @@
 mpdscribble 0.26 - not yet released
   * add ignore lists
   * require libfmt
+  * require Meson 0.56 or later
 
 mpdscribble 0.25 - (2023-12-11)
   * fall back to "album artist" tag if there is no "artist" tag

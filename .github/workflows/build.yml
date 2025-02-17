@@ -35,7 +35,7 @@ jobs:
             cxx: g++-11
             packages: g++-11
             meson_options: --force-fallback-for=fmt
-          - os: ubuntu-20.04
+          - os: ubuntu-22.04
             cc: gcc-10
             cxx: g++-10
             packages: g++-10
@@ -66,7 +66,7 @@ jobs:
       - id: cache-ccache
         uses: hendrikmuhs/ccache-action@v1
         with:
-          key: ${{ matrix.os }}
+          key: ${{ matrix.compiler }}
 
       - name: Configure
         run: |
