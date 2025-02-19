@@ -328,44 +328,42 @@ load_ignore_list(const std::string& path, Config::IgnoreListMap& ignore_lists)
 
 	IgnoreList ignore_list;
 
-	{
-		char line_buf[4096];
-		size_t line_num = 0;
-		while (fgets(line_buf, sizeof(line_buf), file)) {
-			std::string_view line(line_buf);
-			if (line.back() == '\n') {
-				line.remove_suffix(1);
-			}
+	char line_buf[4096];
+	size_t line_num = 0;
+	while (fgets(line_buf, sizeof(line_buf), file)) {
+		std::string_view line(line_buf);
+		if (line.back() == '\n') {
+			line.remove_suffix(1);
+		}
 
-			line_num++;
-			if (line.empty()) {
+		line_num++;
+		if (line.empty()) {
+			continue;
+		}
+
+		try {
+			auto parsed_line = parse_ignore_list_line(line);
+
+			if (parsed_line.empty()) {
 				continue;
 			}
 
-			try {
-				auto parsed_line = parse_ignore_list_line(line);
+			IgnoreListEntry entry{};
 
-				if (parsed_line.empty()) {
-					continue;
-				}
-
-				IgnoreListEntry entry{};
-
-				for (auto& [tag, value] : parsed_line) {
+			for (auto& [tag, value] : parsed_line) {
 #define set_tag_entry(tagname) if (tag == #tagname) { entry.tagname = std::move(value); continue; }
-					set_tag_entry(artist)
-					set_tag_entry(album)
-					set_tag_entry(title)
-					set_tag_entry(track)
+				set_tag_entry(artist)
+				set_tag_entry(album)
+				set_tag_entry(title)
+				set_tag_entry(track)
 #undef set_tag_entry
-					throw FmtRuntimeError("Unsupported tag: {:?}", tag);
-				}
-
-				ignore_list.entries.emplace_back(std::move(entry));
-			} catch (const std::runtime_error& error) {
-				throw FmtRuntimeError("Error loading ignore list {:?}: Error parsing line {}: {}",
-						      path, line_num, error.what());
+				throw FmtRuntimeError("Unsupported tag: {:?}", tag);
 			}
+
+			ignore_list.entries.emplace_back(std::move(entry));
+		} catch (const std::runtime_error& error) {
+			throw FmtRuntimeError("Error loading ignore list {:?}: Error parsing line {}: {}",
+					      path, line_num, error.what());
 		}
 	}
 
