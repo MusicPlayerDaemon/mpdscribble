@@ -3,6 +3,10 @@
 
 #include "Journal.hxx"
 #include "Record.hxx"
+#include "lib/fmt/ExceptionFormatter.hxx"
+#include "io/BufferedReader.hxx"
+#include "io/FileReader.hxx"
+#include "system/Error.hxx"
 #include "util/StringStrip.hxx"
 #include "Log.hxx"
 
@@ -89,26 +93,16 @@ journal_commit_record(std::list<Record> &queue, Record &&record)
 
 std::list<Record>
 journal_read(const char *path)
-{
-	FILE *file;
-	char line[1024];
+try {
+	FileReader file{path};
+	BufferedReader reader{file};
+
 	Record record;
 
 	journal_file_empty = true;
 
-	file = fopen(path, "r");
-	if (file == nullptr) {
-		if (errno != ENOENT)
-			/* ENOENT is ignored silently, because the
-			   user might be starting mpdscribble for the
-			   first time */
-			FmtWarning("Failed to load {:?}: {}",
-				   path, strerror(errno));
-		return {};
-	}
-
 	std::list<Record> queue;
-	while (fgets(line, sizeof(line), file) != nullptr) {
+	while (char *line = reader.ReadLine()) {
 		char *key, *value;
 
 		key = StripLeft(line);
@@ -146,9 +140,14 @@ journal_read(const char *path)
 			record.love = true;
 	}
 
-	fclose(file);
-
 	journal_commit_record(queue, std::move(record));
 
 	return queue;
+} catch (const std::system_error &e) {
+	if (!IsFileNotFound(e))
+		/* ENOENT is ignored silently, because the user might
+		   be starting mpdscribble for the first time */
+		FmtWarning("Failed to load {:?}: {}", path, std::current_exception());
+
+	return {};
 }
