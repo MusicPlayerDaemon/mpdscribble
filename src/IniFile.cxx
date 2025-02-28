@@ -128,16 +128,13 @@ ReadIniFile(const char *path, BufferedReader &reader)
 {
 	IniParser parser;
 
-	unsigned no = 1;
 	while (const char *line = reader.ReadLine()) {
 		try {
 			parser.ParseLine(line);
 		} catch (...) {
 			std::throw_with_nested(FmtRuntimeError("Error on {:?} line {}",
-							       path, no));
+							       path, reader.GetLineNumber()));
 		}
-
-		++no;
 	}
 
 	return parser.Commit();
