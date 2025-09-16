@@ -7,8 +7,11 @@
 
 #ifdef __linux__
 #include "FileAt.hxx"
+#include "system/linux/Features.h"
+#ifdef HAVE_OPENAT2
 #include "system/linux/openat2.h"
-#endif
+#endif // HAVE_OPENAT2
+#endif // __linux__
 
 #include <fcntl.h>
 
@@ -59,44 +62,46 @@ OpenPath(const char *path, int flags)
 }
 
 UniqueFileDescriptor
-OpenPath(FileDescriptor directory, const char *name, int flags)
+OpenPath(FileAt file, int flags)
 {
 	UniqueFileDescriptor fd;
-	if (!fd.Open(directory, name, O_PATH|flags))
-		throw FmtErrno("Failed to open {:?}", name);
+	if (!fd.Open(file, O_PATH|flags))
+		throw FmtErrno("Failed to open {:?}", file.name);
 
 	return fd;
 }
 
 UniqueFileDescriptor
-OpenReadOnly(FileDescriptor directory, const char *name, int flags)
+OpenReadOnly(FileAt file, int flags)
 {
 	UniqueFileDescriptor fd;
-	if (!fd.Open(directory, name, O_RDONLY|flags))
-		throw FmtErrno("Failed to open {:?}", name);
+	if (!fd.Open(file, O_RDONLY|flags))
+		throw FmtErrno("Failed to open {:?}", file.name);
 
 	return fd;
 }
 
 UniqueFileDescriptor
-OpenWriteOnly(FileDescriptor directory, const char *name, int flags)
+OpenWriteOnly(FileAt file, int flags)
 {
 	UniqueFileDescriptor fd;
-	if (!fd.Open(directory, name, O_WRONLY|flags))
-		throw FmtErrno("Failed to open {:?}", name);
+	if (!fd.Open(file, O_WRONLY|flags))
+		throw FmtErrno("Failed to open {:?}", file.name);
 
 	return fd;
 }
 
 UniqueFileDescriptor
-OpenDirectory(FileDescriptor directory, const char *name, int flags)
+OpenDirectory(FileAt file, int flags)
 {
 	UniqueFileDescriptor fd;
-	if (!fd.Open(directory, name, O_DIRECTORY|O_RDONLY|flags))
-		throw FmtErrno("Failed to open {:?}", name);
+	if (!fd.Open(file, O_DIRECTORY|O_RDONLY|flags))
+		throw FmtErrno("Failed to open {:?}", file.name);
 
 	return fd;
 }
+
+#ifdef HAVE_OPENAT2
 
 UniqueFileDescriptor
 TryOpen(FileAt file, const struct open_how &how) noexcept
@@ -114,5 +119,7 @@ Open(FileAt file, const struct open_how &how)
 
 	return fd;
 }
+
+#endif // HAVE_OPENAT2
 
 #endif // __linux__
