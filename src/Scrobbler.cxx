@@ -353,7 +353,7 @@ Scrobbler::Handshake() noexcept
 	url.Append("v", AS_CLIENT_VERSION);
 	url.Append("u", config.username);
 	url.Append("t", timestr);
-	url.Append("a", ToStringView(md5));
+	url.Append("a", md5);
 
 	//  notice ("handshake url:\n%s", url);
 
