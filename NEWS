@@ -3,6 +3,7 @@ mpdscribble 0.26 - not yet released
   * require libfmt
   * require Meson 1.2 or later
   * fix build with glibc 2.43
+  * fix build failure after CURL 8.19 API change
   * support libfmt 12.2.0
   * switch to C++23
 
