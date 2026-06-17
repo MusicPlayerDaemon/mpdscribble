@@ -33,18 +33,11 @@ jobs:
             packages: g++-14 mold libfmt-dev
             meson_options:
           - compiler: gcc11
-            os: ubuntu-22.04
-            cc: gcc-11
-            cxx: g++-11
+            os: ubuntu-24.04
+            cc: gcc-12
+            cxx: g++-12
             ldflags:
-            packages: g++-11
-            meson_options: --force-fallback-for=fmt
-          - compiler: gcc10
-            os: ubuntu-22.04
-            cc: gcc-10
-            cxx: g++-10
-            ldflags:
-            packages: g++-10
+            packages: g++-12
             meson_options: --force-fallback-for=fmt
           - compiler: clang
             os: ubuntu-24.04
