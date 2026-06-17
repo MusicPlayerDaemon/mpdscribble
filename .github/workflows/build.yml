@@ -23,7 +23,7 @@ jobs:
   build-linux:
     strategy:
       matrix:
-        compiler: [gcc14, gcc11, gcc10]
+        compiler: [gcc14, gcc12]
         include:
           - compiler: gcc14
             os: ubuntu-24.04
