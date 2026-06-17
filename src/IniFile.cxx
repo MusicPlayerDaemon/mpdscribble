@@ -11,6 +11,7 @@
 #include "util/StringSplit.hxx"
 #include "util/StringStrip.hxx"
 
+#include <exception> // for std::throw_with_nested()
 #include <string_view>
 
 static constexpr bool
