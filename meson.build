@@ -2,10 +2,10 @@ project('mpdscribble', 'cpp',
   version: '0.26',
   meson_version: '>= 1.2',
   default_options: [
-    'cpp_std=c++2a',
+    'cpp_std=c++23',
     'warning_level=3',
 
-    'fmt:cpp_std=c++20',
+    'fmt:cpp_std=c++23',
 
     # If we build those libraries as Meson subproject, they shall be
     # linked statically into the MPD executable.
