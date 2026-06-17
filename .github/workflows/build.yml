@@ -32,7 +32,7 @@ jobs:
             ldflags: -fuse-ld=mold
             packages: g++-14 mold libfmt-dev
             meson_options:
-          - compiler: gcc11
+          - compiler: gcc12
             os: ubuntu-24.04
             cc: gcc-12
             cxx: g++-12
