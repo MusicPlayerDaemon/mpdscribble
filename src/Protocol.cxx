@@ -3,7 +3,7 @@
 
 #include "Protocol.hxx"
 
-#include <fmt/core.h>
+#include <fmt/format.h>
 
 #include <time.h>
 
