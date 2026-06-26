@@ -1,5 +1,5 @@
 project('mpdscribble', 'cpp',
-  version: '0.26',
+  version: '0.27',
   meson_version: '>= 1.2',
   default_options: [
     'cpp_std=c++23',
