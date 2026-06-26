@@ -1,4 +1,4 @@
-mpdscribble 0.26 - not yet released
+mpdscribble 0.26 - (2026-06-26)
   * add ignore lists
   * require libfmt
   * require Meson 1.2 or later
