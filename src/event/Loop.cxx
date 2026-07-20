@@ -18,6 +18,8 @@
 #include "io/uring/Queue.hxx"
 #endif
 
+#include <limits.h> // for INT_MAX
+
 #ifdef HAVE_URING
 
 class EventLoop::UringPoll final : Uring::Operation {
@@ -346,9 +348,14 @@ EventLoop::RunOneIdle() noexcept
 static constexpr int
 ExportTimeoutMS(Event::Duration timeout) noexcept
 {
-	return timeout >= timeout.zero()
-		? static_cast<int>(std::chrono::ceil<std::chrono::milliseconds>(timeout).count())
-		: -1;
+	if (timeout < timeout.zero())
+		return -1;
+
+	const auto ms = std::chrono::ceil<std::chrono::milliseconds>(timeout).count();
+	if (ms > INT_MAX)
+		return INT_MAX;
+
+	return static_cast<int>(ms);
 }
 
 #ifdef HAVE_URING
