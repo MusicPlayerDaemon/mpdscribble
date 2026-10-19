@@ -38,6 +38,9 @@ public:
 			CloseHandle(handle);
 	}
 #else
+	explicit FileReader(UniqueFileDescriptor &&_fd) noexcept
+		:fd(std::move(_fd)) {}
+
 	FileReader(FileReader &&other) noexcept
 		:fd(std::move(other.fd)) {}
 #endif
