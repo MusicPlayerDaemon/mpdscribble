@@ -17,6 +17,7 @@
 #include <string.h>
 #include <stdlib.h>
 
+#include <grp.h>
 #include <pwd.h>
 #endif
 
@@ -78,18 +79,13 @@ daemonize_set_user()
 	if (user_name == nullptr)
 		return;
 
-	/* get uid */
+	/* Initialize supplementary groups before dropping privileges. */
+	if (initgroups(user_name, user_gid) == -1)
+		throw FmtErrno("cannot init supplementary groups of user {:?}",
+			       user_name);
+
 	if (setgid(user_gid) == -1)
 		throw FmtErrno("cannot setgid for user {:?}", user_name);
-
-#ifdef _BSD_SOURCE
-	/* init suplementary groups
-	 * (must be done before we change our uid)
-	 */
-	if (initgroups(user_name, user_gid) == -1)
-		FmtErrno("cannot init supplementary groups of user {:?}",
-			 user_name);
-#endif
 
 	/* set uid */
 	if (setuid(user_uid) == -1)
