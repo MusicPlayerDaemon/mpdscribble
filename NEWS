@@ -1,4 +1,5 @@
 mpdscribble 0.27 - not yet released
+  * fix missing newlines in the log file
 
 mpdscribble 0.26 - (2026-06-26)
   * add ignore lists

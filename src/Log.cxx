@@ -58,7 +58,7 @@ log_init_file(const char *path)
 			throw FmtErrno("cannot open {:?}", path);
 	}
 
-	setvbuf(log_file, nullptr, _IONBF, 0);
+	setvbuf(log_file, nullptr, _IOLBF, 0);
 }
 
 #ifdef HAVE_SYSLOG
@@ -159,6 +159,7 @@ LogVFmt(LogLevel level, fmt::string_view format_str, fmt::format_args args) noex
 	} else {
 #endif
 		fmt::vprint(log_file, format_str, args);
+		putc('\n', log_file);
 #ifdef HAVE_SYSLOG
 	}
 #endif
