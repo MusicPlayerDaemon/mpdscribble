@@ -17,12 +17,6 @@
 
 #include <stdlib.h>
 
-static std::chrono::steady_clock::duration
-GetSongDuration(const struct mpd_song *song) noexcept
-{
-	return std::chrono::milliseconds(mpd_song_get_duration_ms(song));
-}
-
 static constexpr bool
 played_long_enough(std::chrono::steady_clock::duration elapsed,
 		   std::chrono::steady_clock::duration length) noexcept
@@ -43,13 +37,13 @@ played_long_enough(std::chrono::steady_clock::duration elapsed,
  * the "elapsed" value with the previous one.
  */
 static bool
-song_repeated(const struct mpd_song *song,
+song_repeated(std::chrono::steady_clock::duration duration,
 	      std::chrono::steady_clock::duration elapsed,
 	      std::chrono::steady_clock::duration prev_elapsed) noexcept
 {
 	return elapsed < std::chrono::minutes(1) && prev_elapsed > elapsed &&
 		played_long_enough(prev_elapsed - elapsed,
-				   GetSongDuration(song));
+				   duration);
 }
 
 static const char *
@@ -63,7 +57,8 @@ artist(const struct mpd_song *song) noexcept
 }
 
 void
-Instance::OnMpdSongChanged(const struct mpd_song *song) noexcept
+Instance::OnMpdSongChanged(const struct mpd_song *song,
+			    std::chrono::steady_clock::duration duration) noexcept
 {
 	FmtInfo("new song detected ({} - {}), id: {}, pos: {}",
 		artist(song),
@@ -77,7 +72,7 @@ Instance::OnMpdSongChanged(const struct mpd_song *song) noexcept
 			      mpd_song_get_tag(song, MPD_TAG_ALBUM, 0),
 			      mpd_song_get_tag(song, MPD_TAG_TRACK, 0),
 			      mpd_song_get_tag(song, MPD_TAG_MUSICBRAINZ_TRACKID, 0),
-			      GetSongDuration(song));
+			      duration);
 }
 
 /**
@@ -102,9 +97,10 @@ Instance::OnMpdResumed() noexcept
  * MPD started playing this song.
  */
 void
-Instance::OnMpdStarted(const struct mpd_song *song) noexcept
+Instance::OnMpdStarted(const struct mpd_song *song,
+		       std::chrono::steady_clock::duration duration) noexcept
 {
-	OnMpdSongChanged(song);
+	OnMpdSongChanged(song, duration);
 }
 
 /**
@@ -112,17 +108,18 @@ Instance::OnMpdStarted(const struct mpd_song *song) noexcept
  */
 void
 Instance::OnMpdPlaying(const struct mpd_song *song,
+		       std::chrono::steady_clock::duration duration,
 		       std::chrono::steady_clock::duration elapsed) noexcept
 {
 	const auto prev_elapsed = stopwatch.GetDuration();
 
-	if (song_repeated(song, elapsed, prev_elapsed)) {
+	if (song_repeated(duration, elapsed, prev_elapsed)) {
 		/* the song is playing repeatedly: make it virtually
 		   stop and re-start */
 		LogDebug("repeated song detected");
 
-		OnMpdEnded(song, false);
-		OnMpdStarted(song);
+		OnMpdEnded(song, duration, false);
+		OnMpdStarted(song, duration);
 	}
 }
 
@@ -130,10 +127,11 @@ Instance::OnMpdPlaying(const struct mpd_song *song,
  * MPD stopped playing this song.
  */
 void
-Instance::OnMpdEnded(const struct mpd_song *song, bool love) noexcept
+Instance::OnMpdEnded(const struct mpd_song *song,
+		     std::chrono::steady_clock::duration length,
+		     bool love) noexcept
 {
 	const auto elapsed = stopwatch.GetDuration();
-	const auto length = GetSongDuration(song);
 
 	if (!played_long_enough(elapsed, length))
 		return;

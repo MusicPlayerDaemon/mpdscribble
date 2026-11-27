@@ -136,6 +136,7 @@ MpdObserver::~MpdObserver() noexcept
 
 enum mpd_state
 MpdObserver::QueryState(struct mpd_song **song_r,
+			std::chrono::steady_clock::duration &duration_r,
 			std::chrono::steady_clock::duration &elapsed_r) noexcept
 {
 	struct mpd_status *status;
@@ -157,6 +158,11 @@ MpdObserver::QueryState(struct mpd_song **song_r,
 
 	state = mpd_status_get_state(status);
 	elapsed_r = std::chrono::milliseconds(mpd_status_get_elapsed_ms(status));
+
+	/* this may be the only source of the duration if MPD does
+	   not know it for the song object (e.g. streams via UPnP);
+	   the song's own duration takes precedence, see below */
+	duration_r = std::chrono::seconds(mpd_status_get_total_time(status));
 
 	mpd_status_free(status);
 
@@ -190,6 +196,10 @@ MpdObserver::QueryState(struct mpd_song **song_r,
 		return MPD_STATE_UNKNOWN;
 	}
 
+	if (const unsigned duration_ms = mpd_song_get_duration_ms(song);
+	    duration_ms > 0)
+		duration_r = std::chrono::milliseconds(duration_ms);
+
 	*song_r = song;
 	return MPD_STATE_PLAY;
 }
@@ -199,10 +209,11 @@ MpdObserver::Update() noexcept
 {
 	struct mpd_song *prev;
 	enum mpd_state state;
-	std::chrono::steady_clock::duration elapsed{};
+	std::chrono::steady_clock::duration duration{}, elapsed{};
 
 	prev = current_song;
-	state = QueryState(&current_song, elapsed);
+	const auto prev_duration = current_duration;
+	state = QueryState(&current_song, duration, elapsed);
 
 	if (state == MPD_STATE_PAUSE) {
 		if (!was_paused)
@@ -239,7 +250,7 @@ MpdObserver::Update() noexcept
 	if (prev != nullptr &&
 	    (current_song == nullptr ||
 	     mpd_song_get_id(prev) != mpd_song_get_id(current_song))) {
-		listener.OnMpdEnded(prev, love);
+		listener.OnMpdEnded(prev, prev_duration, love);
 		love = false;
 	}
 
@@ -247,13 +258,17 @@ MpdObserver::Update() noexcept
 		if (mpd_song_get_id(current_song) != last_id) {
 			/* new song. */
 
-			listener.OnMpdStarted(current_song);
+			listener.OnMpdStarted(current_song, duration);
 			last_id = mpd_song_get_id(current_song);
 		} else {
 			/* still playing the previous song */
 
-			listener.OnMpdPlaying(current_song, elapsed);
+			listener.OnMpdPlaying(current_song, duration, elapsed);
 		}
+
+		current_duration = duration;
+	} else {
+		current_duration = {};
 	}
 
 	if (prev != nullptr)

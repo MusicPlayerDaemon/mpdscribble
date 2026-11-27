@@ -14,10 +14,17 @@
 
 class MpdObserverListener {
 public:
-	virtual void OnMpdStarted(const struct mpd_song *song) noexcept = 0;
+	/**
+	 * @param duration the duration of the song; may be zero if
+	 * MPD does not know it
+	 */
+	virtual void OnMpdStarted(const struct mpd_song *song,
+				  std::chrono::steady_clock::duration duration) noexcept = 0;
 	virtual void OnMpdPlaying(const struct mpd_song *song,
+				  std::chrono::steady_clock::duration duration,
 				  std::chrono::steady_clock::duration elapsed) noexcept = 0;
 	virtual void OnMpdEnded(const struct mpd_song *song,
+				std::chrono::steady_clock::duration duration,
 				bool love) noexcept = 0;
 	virtual void OnMpdPaused() noexcept = 0;
 	virtual void OnMpdResumed() noexcept = 0;
@@ -34,6 +41,14 @@ class MpdObserver {
 	bool idle_notified = false;
 	unsigned last_id = -1;
 	struct mpd_song *current_song = nullptr;
+
+	/**
+	 * The duration of #current_song.  This is taken from the
+	 * song, falling back to the "status" response, because some
+	 * songs (e.g. streams via UPnP) have no duration in the song
+	 * object.
+	 */
+	std::chrono::steady_clock::duration current_duration{};
 	bool was_paused = false;
 
 	/**
@@ -64,6 +79,7 @@ private:
 	void ScheduleUpdate() noexcept;
 	void OnUpdateTimer() noexcept;
 	enum mpd_state QueryState(struct mpd_song **song_r,
+				  std::chrono::steady_clock::duration &duration_r,
 				  std::chrono::steady_clock::duration &elapsed_r) noexcept;
 	/**
 	 * Update: determine MPD's current song and enqueue submissions.
